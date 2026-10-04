@@ -71,8 +71,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  let reqUrl = req.url.split('?')[0];
+  const [pathname, queryString] = req.url.split('?');
+  const params = new URLSearchParams(queryString || '');
+  let reqUrl = pathname;
+
   if (reqUrl === '/' || reqUrl === '/index.html') {
+    // Si la URL pide explícitamente vista overlay o panel, servir cola-slow-md.html
+    if (params.get('view') === 'overlay' || params.get('view') === 'panel') {
+      reqUrl = '/cola-slow-md.html';
+    } else {
+      // Por defecto, cargar el panel multiversal Slow MD Stream Studio
+      reqUrl = '/dashboard.html';
+    }
+  } else if (reqUrl === '/dashboard' || reqUrl === '/studio') {
+    reqUrl = '/dashboard.html';
+  } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
     reqUrl = '/cola-slow-md.html';
   }
 

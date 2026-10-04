@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD Stream Studio | Suite de Widgets para TikTok Live</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0a0b10;
+      --bg-sidebar: #0f1118;
+      --bg-card: rgba(22, 25, 37, 0.85);
+      --bg-card-hover: rgba(30, 35, 52, 0.95);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(255, 15, 59, 0.35);
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.4);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --accent-green: #22c55e;
+      --accent-gold: #f59e0b;
+      --accent-purple: #a855f7;
+      --sidebar-width: 290px;
+      --header-height: 68px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* BARRA LATERAL (SIDEBAR) */
+    .studio-sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .brand-header {
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--blood-red), #99001f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+
+    .brand-text-col h1 {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-text-col p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .sidebar-nav-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .nav-section-title {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      padding: 0 10px 8px 10px;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: rgba(255, 15, 59, 0.12);
+      color: #fff;
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 0 20px rgba(255, 15, 59, 0.15);
+    }
+
+    .nav-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-item-icon {
+      font-size: 17px;
+      width: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-status {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .badge-active {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .badge-soon {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-subtle);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+      background: rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cloud-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    /* ESCENARIO PRINCIPAL (MAIN WORKSPACE) */
+    .studio-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+
+    /* TOP BAR */
+    .studio-topbar {
+      height: var(--header-height);
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(15, 17, 24, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .topbar-widget-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-widget-title h2 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .topbar-widget-title .widget-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    .topbar-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .btn-copy-overlay {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+
+    .btn-copy-overlay:hover {
+      background: #ff2d52;
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(255, 15, 59, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    /* CONTENEDOR DE CONTENIDO ACTIVO */
+    .studio-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #0d0e15;
+    }
+
+    .widget-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    .widget-frame.active {
+      display: block;
+    }
+
+    /* VISTA DE PLACEHOLDER PARA WIDGETS PRÓXIMOS */
+    .soon-placeholder-view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px 20px;
+      background: radial-gradient(circle at center, rgba(30, 20, 35, 0.5) 0%, rgba(10, 11, 16, 0.95) 100%);
+    }
+
+    .soon-placeholder-view.active {
+      display: flex;
+    }
+
+    .soon-icon-box {
+      font-size: 54px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 20px rgba(255, 15, 59, 0.4));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .soon-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .soon-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 460px;
+      line-height: 1.6;
+      margin-bottom: 26px;
+    }
+
+    .soon-features-list {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 550px;
+    }
+
+    .soon-feature-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* TOAST DE NOTIFICACIÓN */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(18, 20, 30, 0.95);
+      border: 1px solid var(--blood-red);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px var(--blood-red-glow);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      z-index: 9999;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA LATERAL (SIDEBAR) -->
+  <aside class="studio-sidebar">
+    <div class="brand-header">
+      <div class="brand-logo-badge">⚡</div>
+      <div class="brand-text-col">
+        <h1>SLOW MD <span>STUDIO</span></h1>
+        <p>Suite de Widgets para TikTok Live</p>
+      </div>
+    </div>
+
+    <div class="sidebar-nav-container">
+      
+      <!-- WIDGETS ACTIVOS -->
+      <div>
+        <div class="nav-section-title">WIDGETS ACTIVOS</div>
+        <ul class="nav-list">
+          <li class="nav-item active" onclick="seleccionarWidget('cola-canciones')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">🎵</span>
+              <span>Cola de Canciones</span>
+            </div>
+            <span class="badge-status badge-active">ACTIVO</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PRÓXIMOS WIDGETS -->
+      <div>
+        <div class="nav-section-title">PRÓXIMAS HERRAMIENTAS</div>
+        <ul class="nav-list">
+          <li class="nav-item" onclick="seleccionarWidget('ruleta')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">🎡</span>
+              <span>Ruleta de Retos</span>
+            </div>
+            <span class="badge-status badge-soon">PRONTO</span>
+          </li>
+
+          <li class="nav-item" onclick="seleccionarWidget('metas')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">🎯</span>
+              <span>Barra de Metas</span>
+            </div>
+            <span class="badge-status badge-soon">PRONTO</span>
+          </li>
+
+          <li class="nav-item" onclick="seleccionarWidget('alertas')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">💥</span>
+              <span>Alertas de Regalos</span>
+            </div>
+            <span class="badge-status badge-soon">PRONTO</span>
+          </li>
+
+          <li class="nav-item" onclick="seleccionarWidget('top-donadores')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">👑</span>
+              <span>Top Donadores</span>
+            </div>
+            <span class="badge-status badge-soon">PRONTO</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- INFORMACIÓN Y TIPS -->
+      <div style="margin-top: auto; padding: 14px; background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-md); border: 1px dashed rgba(255, 255, 255, 0.08);">
+        <div style="font-size: 11px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+          <span>💡</span> ¿Nueva idea de widget?
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+          Cada nuevo widget se agrega a esta suite sin tocar los anteriores.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="cloud-status-indicator">
+        <span class="pulse-dot"></span>
+        <span>Servidor en la Nube Activo</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ESCENARIO PRINCIPAL -->
+  <main class="studio-main">
+    
+    <!-- TOP BAR DINÁMICA -->
+    <header class="studio-topbar">
+      <div class="topbar-widget-title">
+        <h2 id="topbar-title">🎵 COLA DE CANCIONES</h2>
+        <span class="widget-tag" id="topbar-tag">Widget Activo</span>
+      </div>
+
+      <div class="topbar-actions-row">
+        <button class="btn-action btn-copy-overlay" id="btn-copy-overlay-url" onclick="copiarOverlayUrl()">
+          <span>📋</span> Copiar URL Overlay (Meld / OBS)
+        </button>
+        <a class="btn-action btn-secondary" id="btn-open-standalone" href="/cola-slow-md.html?view=panel" target="_blank">
+          <span>↗️</span> Abrir Panel en Pestaña Completa
+        </a>
+      </div>
+    </header>
+
+    <!-- ÁREA DE VISUALIZACIÓN DE WIDGETS -->
+    <section class="studio-viewport">
+      
+      <!-- WIDGET 1: COLA DE CANCIONES (IFRAME EN VIVO) -->
+      <iframe id="frame-cola-canciones" class="widget-frame active" src="/cola-slow-md.html?view=panel"></iframe>
+
+      <!-- VISTA PLACEHOLDER: RULETA DE RETOS -->
+      <div id="view-ruleta" class="soon-placeholder-view">
+        <div class="soon-icon-box">🎡</div>
+        <h3 class="soon-title">Ruleta Interactiva de Retos</h3>
+        <p class="soon-desc">Gira automáticamente en pantalla cada vez que un espectador envía un regalo configurable (Rosa, Sombrero o Rosquilla). Asigna tus propios retos y castigos.</p>
+        <div class="soon-features-list">
+          <span class="soon-feature-pill"><span>⚡</span> Activada por Regalos de TikTok</span>
+          <span class="soon-feature-pill"><span>🎨</span> Overlay Transparente para OBS</span>
+          <span class="soon-feature-pill"><span>🔊</span> Efectos de Sonido de Giro</span>
+        </div>
+      </div>
+
+      <!-- VISTA PLACEHOLDER: BARRA DE METAS -->
+      <div id="view-metas" class="soon-placeholder-view">
+        <div class="soon-icon-box">🎯</div>
+        <h3 class="soon-title">Barra de Metas en Vivo</h3>
+        <p class="soon-desc">Visualiza en tiempo real tu meta de Likes, Rosas o Seguidores en tu Live con barras de progreso animadas y mensajes de agradecimiento al completarlas.</p>
+        <div class="soon-features-list">
+          <span class="soon-feature-pill"><span>❤️</span> Meta de Likes Acumulables</span>
+          <span class="soon-feature-pill"><span>🌹</span> Meta de Rosas</span>
+          <span class="soon-feature-pill"><span>✨</span> Animación de Celebración</span>
+        </div>
+      </div>
+
+      <!-- VISTA PLACEHOLDER: ALERTAS ESPECIALES -->
+      <div id="view-alertas" class="soon-placeholder-view">
+        <div class="soon-icon-box">💥</div>
+        <h3 class="soon-title">Alertas Animadas de Regalos</h3>
+        <p class="soon-desc">Pop-ups con efectos de sonido y animaciones en pantalla cada vez que recibes donaciones, nuevos seguidores o compartidos en el directo.</p>
+        <div class="soon-features-list">
+          <span class="soon-feature-pill"><span>🔊</span> Sonidos personalizados</span>
+          <span class="soon-feature-pill"><span>💎</span> Detección de Grandes Donadores</span>
+        </div>
+      </div>
+
+      <!-- VISTA PLACEHOLDER: TOP DONADORES -->
+      <div id="view-top-donadores" class="soon-placeholder-view">
+        <div class="soon-icon-box">👑</div>
+        <h3 class="soon-title">Podio de Top Donadores</h3>
+        <p class="soon-desc">Muestra los 3 mayores donadores de tu directo actual con avatares, nombres y conteo de diamantes/rosas para incentivar la competencia.</p>
+        <div class="soon-features-list">
+          <span class="soon-feature-pill"><span>🥇</span> Top 1, 2 y 3 en Vivo</span>
+          <span class="soon-feature-pill"><span>🔥</span> Actualización instantánea</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- TOAST DE CONFIRMACIÓN -->
+  <div id="toast-popup" class="toast-popup">
+    <span>✅</span>
+    <span id="toast-msg">¡URL de Overlay copiada al portapapeles!</span>
+  </div>
+
+  <script>
+    let widgetActual = 'cola-canciones';
+
+    const WIDGETS_CONFIG = {
+      'cola-canciones': {
+        title: '🎵 COLA DE CANCIONES (TIKTOK LIVE)',
+        tag: 'Widget Activo',
+        overlayPath: '/cola-slow-md.html?view=overlay',
+        panelPath: '/cola-slow-md.html?view=panel',
+        frameId: 'frame-cola-canciones'
+      },
+      'ruleta': {
+        title: '🎡 RULETA DE RETOS',
+        tag: 'Próximamente',
+        overlayPath: '/widgets/ruleta/overlay',
+        panelPath: '/widgets/ruleta/panel',
+        viewId: 'view-ruleta'
+      },
+      'metas': {
+        title: '🎯 BARRA DE METAS',
+        tag: 'Próximamente',
+        overlayPath: '/widgets/metas/overlay',
+        panelPath: '/widgets/metas/panel',
+        viewId: 'view-metas'
+      },
+      'alertas': {
+        title: '💥 ALERTAS DE REGALOS',
+        tag: 'Próximamente',
+        overlayPath: '/widgets/alertas/overlay',
+        panelPath: '/widgets/alertas/panel',
+        viewId: 'view-alertas'
+      },
+      'top-donadores': {
+        title: '👑 PODIO DE TOP DONADORES',
+        tag: 'Próximamente',
+        overlayPath: '/widgets/top-donadores/overlay',
+        panelPath: '/widgets/top-donadores/panel',
+        viewId: 'view-top-donadores'
+      }
+    };
+
+    function seleccionarWidget(id) {
+      widgetActual = id;
+      const config = WIDGETS_CONFIG[id];
+      if (!config) return;
+
+      // Actualizar navegación sidebar
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = event ? event.currentTarget : null;
+      if (activeNav) activeNav.classList.add('active');
+
+      // Actualizar Top Bar
+      document.getElementById('topbar-title').textContent = config.title;
+      document.getElementById('topbar-tag').textContent = config.tag;
+
+      const btnCopy = document.getElementById('btn-copy-overlay-url');
+      const btnStandalone = document.getElementById('btn-open-standalone');
+
+      if (id === 'cola-canciones') {
+        btnCopy.style.display = 'inline-flex';
+        btnStandalone.style.display = 'inline-flex';
+        btnStandalone.href = config.panelPath;
+      } else {
+        btnCopy.style.display = 'none';
+        btnStandalone.style.display = 'none';
+      }
+
+      // Ocultar todos los frames y views
+      document.querySelectorAll('.widget-frame').forEach(f => f.classList.remove('active'));
+      document.querySelectorAll('.soon-placeholder-view').forEach(v => v.classList.remove('active'));
+
+      // Mostrar el seleccionado
+      if (config.frameId) {
+        const frame = document.getElementById(config.frameId);
+        if (frame) frame.classList.add('active');
+      } else if (config.viewId) {
+        const view = document.getElementById(config.viewId);
+        if (view) view.classList.add('active');
+      }
+    }
+
+    function copiarOverlayUrl() {
+      const config = WIDGETS_CONFIG[widgetActual];
+      if (!config) return;
+
+      const fullUrl = window.location.origin + config.overlayPath;
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        mostrarToast(`¡URL copiada para Meld Studio / OBS!\n${fullUrl}`);
+      }).catch(() => {
+        const input = document.createElement('input');
+        input.value = fullUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        mostrarToast(`¡URL copiada para Meld Studio / OBS!\n${fullUrl}`);
+      });
+    }
+
+    function mostrarToast(texto) {
+      const toast = document.getElementById('toast-popup');
+      const msg = document.getElementById('toast-msg');
+      if (!toast || !msg) return;
+      msg.textContent = texto;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
