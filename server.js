@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
@@ -17,6 +18,18 @@ let botConfig = {
     mediumGifts: 'dedo, corazon, corazón',
     vipGifts: 'sombrero, bigote, donut, rosquilla',
     vipMinDiamonds: 30
+  },
+  tts: {
+    voiceURI: 'google_hd_es',
+    voiceName: 'Google Español (HD)',
+    voiceLang: 'es',
+    volume: 1.0,
+    rate: 1.0,
+    pitch: 1.0,
+    audioOutput: 'both',
+    tiktokVoice: false,
+    followersOnly: false,
+    antiSpam: true
   }
 };
 try {
@@ -104,6 +117,31 @@ const server = http.createServer((req, res) => {
     reqUrl = '/cola-slow-md.html';
   } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
     reqUrl = '/comentarios-tts.html';
+  } else if (reqUrl === '/api/tts') {
+    const text = (params.get('q') || params.get('text') || '').slice(0, 350);
+    const lang = params.get('tl') || params.get('lang') || 'es';
+    if (!text) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Falta el texto');
+      return;
+    }
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(text)}`;
+    https.get(ttsUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://translate.google.com/'
+      }
+    }, (ttsRes) => {
+      res.writeHead(ttsRes.statusCode, {
+        'Content-Type': 'audio/mpeg',
+        'Access-Control-Allow-Origin': '*'
+      });
+      ttsRes.pipe(res);
+    }).on('error', (err) => {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Error TTS');
+    });
+    return;
   }
 
   const filePath = path.join(__dirname, decodeURIComponent(reqUrl));
@@ -724,6 +762,7 @@ wss.on('connection', (ws) => {
   // Enviar estado actual, cola de canciones, reglas y logs iniciales al nuevo cliente
   ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
   ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
+  ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
   ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
   ws.send(JSON.stringify({ type: 'RECENT_LOGS', logs: recentLogs }));
 
@@ -736,6 +775,16 @@ wss.on('connection', (ws) => {
         disconnectTikTok();
       } else if (payload.action === 'getStatus') {
         ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
+      } else if (payload.action === 'getTTSConfig') {
+        ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
+      } else if (payload.action === 'updateTTSConfig') {
+        botConfig.tts = {
+          ...botConfig.tts,
+          ...(payload.config || {})
+        };
+        saveConfig();
+        broadcast({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts });
+        addLog(`🎙️ Voz de TTS actualizada: ${botConfig.tts.voiceName || botConfig.tts.voiceURI}`, 'info');
       } else if (payload.action === 'getRules') {
         ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
       } else if (payload.action === 'updateRules') {

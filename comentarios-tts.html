@@ -845,6 +845,18 @@
                   <span style="font-size: 12px; color: var(--text-secondary);">Activar estilo robótico viral</span>
                 </div>
               </div>
+
+              <div class="form-group" style="grid-column: 1 / -1; margin-top: 6px;">
+                <label for="select-audio-output">🔊 Dónde Reproducir el Audio y Voz</label>
+                <select id="select-audio-output" class="form-control" onchange="guardarConfiguracionVoz()">
+                  <option value="both">🔊 Reproducir en Ambos (Panel y Overlay de Meld / OBS)</option>
+                  <option value="overlay">📺 Solo en el Overlay (Meld Studio / OBS)</option>
+                  <option value="panel">🎛️ Solo en este Panel de Control</option>
+                </select>
+                <span style="font-size: 11px; color: var(--text-muted);">
+                  Recomendado "Ambos" para escuchar las voces aquí mientras configuras y transmites.
+                </span>
+              </div>
             </div>
 
             <!-- Filtros de Chat & Spam -->
@@ -1068,10 +1080,13 @@
 
     // Estado principal
     let ttsConfig = {
-      voiceURI: '',
+      voiceURI: 'google_hd_es',
+      voiceName: 'Google Español (Oficial HD)',
+      voiceLang: 'es',
       volume: 1.0,
       rate: 1.0,
       pitch: 1.0,
+      audioOutput: 'both',
       tiktokVoice: false,
       followersOnly: false,
       antiSpam: true
@@ -1284,50 +1299,81 @@
     const ttsQueue = [];
     let isSpeaking = false;
     let voicesList = [];
+    let currentTtsAudio = null;
 
     function cargarVocesNativas() {
-      if (!('speechSynthesis' in window)) return;
-      voicesList = window.speechSynthesis.getVoices();
       const select = document.getElementById('select-voice');
       if (!select) return;
 
       select.innerHTML = '';
-      if (voicesList.length === 0) {
-        select.innerHTML = '<option value="">Cargando voces...</option>';
-        return;
+
+      // 1. Grupo Voces HD en la Nube (Google & TikTok)
+      const grpCloud = document.createElement('optgroup');
+      grpCloud.label = '🌟 Voces HD en la Nube (Google & TikTok)';
+
+      const cloudVoices = [
+        { id: 'google_hd_es', name: 'Google Español (Oficial HD)', lang: 'es' },
+        { id: 'google_hd_us', name: 'Google Español Latino (América Latina HD)', lang: 'es-US' },
+        { id: 'tiktok_viral', name: 'TikTok - Voz Robótica Viral (Efecto)', lang: 'es-MX' }
+      ];
+
+      cloudVoices.forEach(cv => {
+        const opt = document.createElement('option');
+        opt.value = cv.id;
+        opt.textContent = cv.name;
+        opt.setAttribute('data-name', cv.name);
+        opt.setAttribute('data-lang', cv.lang);
+        if (ttsConfig.voiceURI === cv.id) opt.selected = true;
+        grpCloud.appendChild(opt);
+      });
+      select.appendChild(grpCloud);
+
+      // 2. Voces del Sistema / Navegador (Web Speech API)
+      if ('speechSynthesis' in window) {
+        voicesList = window.speechSynthesis.getVoices() || [];
+        if (voicesList.length > 0) {
+          const spanishVoices = voicesList.filter(v => v.lang && v.lang.startsWith('es'));
+          const otherVoices = voicesList.filter(v => !v.lang || !v.lang.startsWith('es'));
+
+          if (spanishVoices.length > 0) {
+            const grpEs = document.createElement('optgroup');
+            grpEs.label = '🇪🇸 Voces del Sistema en Español (Web Speech)';
+            spanishVoices.forEach(v => {
+              const opt = document.createElement('option');
+              opt.value = v.voiceURI || v.name;
+              opt.textContent = `${v.name} (${v.lang})`;
+              opt.setAttribute('data-name', v.name);
+              opt.setAttribute('data-lang', v.lang);
+              if (ttsConfig.voiceURI === (v.voiceURI || v.name)) opt.selected = true;
+              grpEs.appendChild(opt);
+            });
+            select.appendChild(grpEs);
+          }
+
+          if (otherVoices.length > 0) {
+            const grpOther = document.createElement('optgroup');
+            grpOther.label = '🌐 Otras Voces del Sistema';
+            otherVoices.forEach(v => {
+              const opt = document.createElement('option');
+              opt.value = v.voiceURI || v.name;
+              opt.textContent = `${v.name} (${v.lang})`;
+              opt.setAttribute('data-name', v.name);
+              opt.setAttribute('data-lang', v.lang);
+              if (ttsConfig.voiceURI === (v.voiceURI || v.name)) opt.selected = true;
+              grpOther.appendChild(opt);
+            });
+            select.appendChild(grpOther);
+          }
+        }
       }
 
-      // Priorizar voces en español
-      const spanishVoices = voicesList.filter(v => v.lang.startsWith('es'));
-      const otherVoices = voicesList.filter(v => !v.lang.startsWith('es'));
-
-      const grpEs = document.createElement('optgroup');
-      grpEs.label = '🇪🇸 Voces en Español';
-      spanishVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.voiceURI;
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (v.voiceURI === ttsConfig.voiceURI) opt.selected = true;
-        grpEs.appendChild(opt);
-      });
-      select.appendChild(grpEs);
-
-      const grpOther = document.createElement('optgroup');
-      grpOther.label = '🌐 Otras Voces';
-      otherVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.voiceURI;
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (v.voiceURI === ttsConfig.voiceURI) opt.selected = true;
-        grpOther.appendChild(opt);
-      });
-      select.appendChild(grpOther);
-
-      // Si no hay voz elegida, elegir la primera en español por defecto
-      if (!ttsConfig.voiceURI && spanishVoices.length > 0) {
-        ttsConfig.voiceURI = spanishVoices[0].voiceURI;
-        select.value = ttsConfig.voiceURI;
+      // Si no hay voz seleccionada, seleccionar Google Español HD por defecto
+      if (!ttsConfig.voiceURI) {
+        ttsConfig.voiceURI = 'google_hd_es';
+        ttsConfig.voiceName = 'Google Español (Oficial HD)';
+        ttsConfig.voiceLang = 'es';
       }
+      select.value = ttsConfig.voiceURI;
     }
 
     if ('speechSynthesis' in window) {
@@ -1335,37 +1381,103 @@
     }
 
     function hablarTexto(texto, alTerminar) {
-      if (!('speechSynthesis' in window) || !texto) {
+      if (!texto) {
         if (alTerminar) alTerminar();
         return;
       }
 
+      // Detener audios anteriores
+      if (currentTtsAudio) {
+        currentTtsAudio.pause();
+        currentTtsAudio = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      const waves = document.getElementById('voice-waves');
+      const startWaves = () => { if (waves) waves.style.display = 'inline-flex'; };
+      const stopWaves = () => { if (waves) waves.style.display = 'none'; };
+
+      // CASO A: Voces HD de Google (vía /api/tts)
+      if (ttsConfig.voiceURI === 'google_hd_es' || ttsConfig.voiceURI === 'google_hd_us' || ttsConfig.voiceURI.includes('google')) {
+        const lang = ttsConfig.voiceURI === 'google_hd_us' ? 'es-us' : 'es';
+        const cleanText = texto.slice(0, 320);
+        const url = `/api/tts?tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(cleanText)}`;
+        
+        currentTtsAudio = new Audio(url);
+        currentTtsAudio.volume = ttsConfig.volume;
+        currentTtsAudio.playbackRate = Math.min(Math.max(ttsConfig.rate, 0.5), 2.0);
+
+        startWaves();
+        currentTtsAudio.onended = () => {
+          stopWaves();
+          currentTtsAudio = null;
+          if (alTerminar) alTerminar();
+        };
+        currentTtsAudio.onerror = (err) => {
+          console.warn('Error en /api/tts de Google, usando fallback nativo:', err);
+          stopWaves();
+          currentTtsAudio = null;
+          hablarNativo(texto, alTerminar);
+        };
+        currentTtsAudio.play().catch(() => {
+          stopWaves();
+          hablarNativo(texto, alTerminar);
+        });
+        return;
+      }
+
+      // CASO B: Síntesis nativa del navegador / sistema
+      hablarNativo(texto, alTerminar);
+    }
+
+    function hablarNativo(texto, alTerminar) {
+      if (!('speechSynthesis' in window)) {
+        if (alTerminar) alTerminar();
+        return;
+      }
+
+      const waves = document.getElementById('voice-waves');
+      const startWaves = () => { if (waves) waves.style.display = 'inline-flex'; };
+      const stopWaves = () => { if (waves) waves.style.display = 'none'; };
+
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
-      
-      if (ttsConfig.voiceURI) {
-        const found = voicesList.find(v => v.voiceURI === ttsConfig.voiceURI);
-        if (found) utterance.voice = found;
+      const allVoices = window.speechSynthesis.getVoices() || [];
+      if (allVoices.length > 0) voicesList = allVoices;
+
+      // Buscar voz configurada por voiceURI o nombre
+      let found = voicesList.find(v => (v.voiceURI && v.voiceURI === ttsConfig.voiceURI) || (v.name && v.name === ttsConfig.voiceURI) || (v.name && v.name === ttsConfig.voiceName));
+      if (!found) {
+        // Fallback a primera voz en español
+        found = voicesList.find(v => v.lang && v.lang.startsWith('es'));
+      }
+
+      if (found) {
+        utterance.voice = found;
+        utterance.lang = found.lang || 'es-ES';
+      } else {
+        utterance.lang = 'es-ES';
       }
 
       utterance.volume = ttsConfig.volume;
-      utterance.rate = ttsConfig.rate;
-      utterance.pitch = ttsConfig.pitch;
 
-      utterance.onstart = () => {
-        const waves = document.getElementById('voice-waves');
-        if (waves) waves.style.display = 'inline-flex';
-      };
+      if (ttsConfig.voiceURI === 'tiktok_viral' || ttsConfig.tiktokVoice) {
+        utterance.pitch = 1.35;
+        utterance.rate = 1.15;
+      } else {
+        utterance.rate = ttsConfig.rate;
+        utterance.pitch = ttsConfig.pitch;
+      }
 
+      startWaves();
       utterance.onend = () => {
-        const waves = document.getElementById('voice-waves');
-        if (waves) waves.style.display = 'none';
+        stopWaves();
         if (alTerminar) alTerminar();
       };
-
       utterance.onerror = () => {
-        const waves = document.getElementById('voice-waves');
-        if (waves) waves.style.display = 'none';
+        stopWaves();
         if (alTerminar) alTerminar();
       };
 
@@ -1411,10 +1523,15 @@
     function silenciarTodo() {
       ttsQueue.length = 0;
       isSpeaking = false;
+      if (currentTtsAudio) {
+        currentTtsAudio.pause();
+        currentTtsAudio = null;
+      }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       detenerCancion10kLikes();
       ocultarAlertaOverlay();
       detenerAnimaciones3D();
+      syncChannel.postMessage({ type: 'PANIC_STOP' });
     }
 
     // =============================================================
@@ -1692,13 +1809,17 @@
         sound: rule.sound
       };
 
-      // Si es la vista Overlay, lo añade a la cola directamente
-      if (document.getElementById('overlay-view').classList.contains('active')) {
+      // Si debe reproducirse localmente (Overlay o Panel con permiso de salida)
+      const isOverlayActive = document.getElementById('overlay-view').classList.contains('active');
+      const outMode = ttsConfig.audioOutput || 'both';
+      const shouldPlayHere = isOverlayActive || outMode === 'both' || outMode === 'panel';
+
+      if (shouldPlayHere) {
         ttsQueue.push(item);
         procesarColaTTS();
       }
 
-      // Sincronizar vía BroadcastChannel
+      // Sincronizar vía BroadcastChannel con otras ventanas abiertas
       syncChannel.postMessage({
         type: 'TRIGGER_ALERT',
         item
@@ -1708,13 +1829,16 @@
     syncChannel.onmessage = (e) => {
       if (!e.data) return;
       if (e.data.type === 'TRIGGER_ALERT') {
-        if (document.getElementById('overlay-view').classList.contains('active')) {
+        const isOverlayActive = document.getElementById('overlay-view').classList.contains('active');
+        const outMode = ttsConfig.audioOutput || 'both';
+        // El overlay siempre procesa alertas visuales; el panel solo si no hay overlay o si outMode es 'panel'
+        if (isOverlayActive || outMode === 'panel') {
           ttsQueue.push(e.data.item);
           procesarColaTTS();
         }
       } else if (e.data.type === 'CONFIG_UPDATE') {
-        ttsConfig = e.data.config;
-        ttsRules = e.data.rules;
+        if (e.data.config) ttsConfig = { ...ttsConfig, ...e.data.config };
+        if (Array.isArray(e.data.rules)) ttsRules = e.data.rules;
         actualizarUI();
       } else if (e.data.type === 'PANIC_STOP') {
         silenciarTodo();
@@ -1742,6 +1866,11 @@
             despacharEventoAlerta(isMVP ? 'mvp_gift' : 'gift', msg);
           } else if (msg.type === 'LIKES_MILESTONE') {
             despacharEventoAlerta('milestone_likes', msg);
+          } else if (msg.type === 'TTS_CONFIG_UPDATE') {
+            if (msg.config) {
+              ttsConfig = { ...ttsConfig, ...msg.config };
+              actualizarUI();
+            }
           }
         } catch (err) {}
       };
@@ -1952,7 +2081,9 @@
     }
 
     function probarTTSDemo() {
-      hablarTexto('Prueba de voz artificial para la transmisión de Slow MD.');
+      guardarConfiguracionVoz();
+      const voiceLabel = ttsConfig.voiceName || 'seleccionada';
+      hablarTexto(`¡Hola! Esta es una prueba de la voz ${voiceLabel} para tu directo de TikTok.`);
     }
 
     function actualizarValoresSliders() {
@@ -1964,14 +2095,53 @@
       if (pitch) document.getElementById('label-pitch').textContent = pitch.value;
     }
 
+    function actualizarUI() {
+      const vol = document.getElementById('slider-volume');
+      const rate = document.getElementById('slider-rate');
+      const pitch = document.getElementById('slider-pitch');
+      const tk = document.getElementById('toggle-tiktok-voice');
+      const fo = document.getElementById('filter-followers-only');
+      const as = document.getElementById('filter-anti-spam');
+      const sel = document.getElementById('select-voice');
+      const out = document.getElementById('select-audio-output');
+
+      if (vol) vol.value = ttsConfig.volume;
+      if (rate) rate.value = ttsConfig.rate;
+      if (pitch) pitch.value = ttsConfig.pitch;
+      if (tk) tk.checked = ttsConfig.tiktokVoice;
+      if (fo) fo.checked = ttsConfig.followersOnly;
+      if (as) as.checked = ttsConfig.antiSpam;
+      if (sel && ttsConfig.voiceURI) sel.value = ttsConfig.voiceURI;
+      if (out && ttsConfig.audioOutput) out.value = ttsConfig.audioOutput;
+
+      actualizarValoresSliders();
+      renderizarReglas();
+    }
+
     function guardarConfiguracionVoz() {
-      ttsConfig.voiceURI = document.getElementById('select-voice').value;
-      ttsConfig.volume = Number(document.getElementById('slider-volume').value);
-      ttsConfig.rate = Number(document.getElementById('slider-rate').value);
-      ttsConfig.pitch = Number(document.getElementById('slider-pitch').value);
-      ttsConfig.tiktokVoice = document.getElementById('toggle-tiktok-voice').checked;
-      ttsConfig.followersOnly = document.getElementById('filter-followers-only').checked;
-      ttsConfig.antiSpam = document.getElementById('filter-anti-spam').checked;
+      const select = document.getElementById('select-voice');
+      if (select && select.value) {
+        ttsConfig.voiceURI = select.value;
+        const opt = select.options[select.selectedIndex];
+        ttsConfig.voiceName = opt ? (opt.getAttribute('data-name') || opt.textContent) : select.value;
+        ttsConfig.voiceLang = opt ? (opt.getAttribute('data-lang') || 'es') : 'es';
+      }
+      const vol = document.getElementById('slider-volume');
+      const rate = document.getElementById('slider-rate');
+      const pitch = document.getElementById('slider-pitch');
+      const tk = document.getElementById('toggle-tiktok-voice');
+      const fo = document.getElementById('filter-followers-only');
+      const as = document.getElementById('filter-anti-spam');
+      const out = document.getElementById('select-audio-output');
+
+      if (vol) ttsConfig.volume = Number(vol.value);
+      if (rate) ttsConfig.rate = Number(rate.value);
+      if (pitch) ttsConfig.pitch = Number(pitch.value);
+      if (tk) ttsConfig.tiktokVoice = tk.checked;
+      if (fo) ttsConfig.followersOnly = fo.checked;
+      if (as) ttsConfig.antiSpam = as.checked;
+      if (out) ttsConfig.audioOutput = out.value;
+
       guardarTodo();
     }
 
@@ -1983,33 +2153,24 @@
         config: ttsConfig,
         rules: ttsRules
       });
+      if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+        liveSocket.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: ttsConfig,
+          rules: ttsRules
+        }));
+      }
     }
 
     function cargarTodo() {
       try {
         const savedCfg = localStorage.getItem(STORAGE_KEY_TTS_CFG);
         const savedRules = localStorage.getItem(STORAGE_KEY_RULES);
-        if (savedCfg) ttsConfig = JSON.parse(savedCfg);
+        if (savedCfg) ttsConfig = { ...ttsConfig, ...JSON.parse(savedCfg) };
         if (savedRules) ttsRules = JSON.parse(savedRules);
       } catch (e) {}
 
-      // Restaurar controles del formulario
-      const vol = document.getElementById('slider-volume');
-      const rate = document.getElementById('slider-rate');
-      const pitch = document.getElementById('slider-pitch');
-      const tk = document.getElementById('toggle-tiktok-voice');
-      const fo = document.getElementById('filter-followers-only');
-      const as = document.getElementById('filter-anti-spam');
-
-      if (vol) vol.value = ttsConfig.volume;
-      if (rate) rate.value = ttsConfig.rate;
-      if (pitch) pitch.value = ttsConfig.pitch;
-      if (tk) tk.checked = ttsConfig.tiktokVoice;
-      if (fo) fo.checked = ttsConfig.followersOnly;
-      if (as) as.checked = ttsConfig.antiSpam;
-
-      actualizarValoresSliders();
-      renderizarReglas();
+      actualizarUI();
       actualizarListaAudios();
     }
 
