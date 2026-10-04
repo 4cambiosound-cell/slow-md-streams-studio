@@ -1,0 +1,5 @@
+node_modules/
+.npm/
+bot-config.json
+*.log
+.DS_Store

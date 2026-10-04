@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD - Sistema de Cola para TikTok Live</title>
+  <style>
+    :root {
+      --bg-dark: rgba(7, 8, 12, 0.90);
+      --bg-card: rgba(18, 19, 26, 0.82);
+      --bg-card-hover: rgba(28, 30, 42, 0.92);
+      --blood-red: #ff0f3b;
+      --blood-red-dark: #8b0015;
+      --blood-red-glow: rgba(255, 15, 59, 0.45);
+      --blood-red-subtle: rgba(255, 15, 59, 0.12);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.4);
+      --purple-priority: #b347eb;
+      --cyan-accent: #00e5ff;
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: rgba(255, 15, 59, 0.25);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --glass-blur: blur(16px);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-family);
+      color: var(--text-main);
+      background-color: transparent;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Vistas: Overlay vs Panel */
+    .view-container {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .view-container.active {
+      display: flex;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* BOTÓN FLOTANTE PARA CAMBIAR ENTRE OVERLAY Y PANEL             */
+    /* ------------------------------------------------------------- */
+    .floating-mode-switch {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 9999;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+      backdrop-filter: var(--glass-blur);
+      opacity: 0.25;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+    .floating-mode-switch:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+    .floating-mode-switch button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    .floating-mode-switch button.active-btn {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+
+    /* ------------------------------------------------------------- */
+    /* MODO 1: OVERLAY PÚBLICO (MINIMALISTA, FONDO TRANSPARENTE)     */
+    /* ------------------------------------------------------------- */
+    #overlay-view {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 18px 14px;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      background: transparent !important;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .overlay-frame {
+      width: 100%;
+      background: transparent !important;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Gran título con la fórmula */
+    .overlay-formula-banner {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      padding: 14px 18px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .formula-main-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: #FFFFFF;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+
+    .formula-rules {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #F1F5F9;
+      letter-spacing: 0.8px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .formula-rules strong {
+      color: #FFFFFF;
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
+
+    .overlay-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 6px;
+    }
+
+    .overlay-list-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #FFFFFF;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .overlay-count-pill {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #FFFFFF;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Indicador de Sonando Ahora minimalista */
+    .now-playing-banner {
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-left: 5px solid #FFFFFF;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+      text-transform: uppercase;
+      backdrop-filter: blur(6px);
+    }
+
+    .now-label {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .now-song-title {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .now-user {
+      font-size: 11px;
+      font-weight: 700;
+      color: #E2E8F0;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Lista de canciones en Overlay */
+    .overlay-song-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 800px;
+      overflow-y: auto;
+      text-transform: uppercase;
+    }
+
+    .overlay-song-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .overlay-song-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    /* Tarjeta de canción minimalista */
+    .song-card {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(6px);
+      transition: all 0.25s ease;
+    }
+
+    .song-card-main-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .song-pos {
+      font-size: 15px;
+      font-weight: 900;
+      color: #FFFFFF;
+      min-width: 28px;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .song-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .song-title-text {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .song-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #E2E8F0;
+      flex-wrap: wrap;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    .song-user {
+      color: #FFFFFF;
+      font-weight: 800;
+    }
+
+    /* Estado Bloqueada vs Desbloqueada */
+    .badge-status {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-locked {
+      background: rgba(239, 68, 68, 0.35);
+      border: 1px solid #EF4444;
+      color: #FEE2E2;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .badge-unlocked {
+      background: rgba(34, 197, 94, 0.35);
+      border: 1px solid #22C55E;
+      color: #DCFCE7;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .badge-vip {
+      background: rgba(234, 179, 8, 0.35);
+      border: 1px solid #EAB308;
+      color: #FEF08A;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Barra de progreso de requisitos */
+    .song-progress-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-top: 2px;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #FFFFFF;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+      transition: width 0.3s ease;
+    }
+
+    .progress-labels-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #CBD5E1;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Destacado canción en turno */
+    .song-card.is-current-song {
+      border: 1.5px solid #FFFFFF;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .song-card.song-is-locked {
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(15, 5, 8, 0.65);
+    }
+
+    .song-card.priority-vip {
+      border-color: #EAB308;
+      box-shadow: 0 0 15px rgba(234, 179, 8, 0.35);
+    }
+
+    .empty-queue-message {
+      padding: 30px 16px;
+      text-align: center;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+    }
+
+    .empty-queue-icon {
+      font-size: 28px;
+      color: #FFFFFF;
+      opacity: 0.9;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* MODO 2: PANEL DE CONTROL PRIVADO DEL STREAMER                 */
+    /* ------------------------------------------------------------- */
+    #panel-view {
+      flex-direction: column;
+      background: #090a0f;
+      padding: 24px;
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .panel-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Barra Superior del Panel */
+    .panel-top-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: var(--glass-blur);
+    }
+
+    .panel-brand-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .panel-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #fff;
+    }
+
+    .panel-tagline {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .panel-actions-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: rgba(255, 15, 59, 0.15);
+      border: 1px solid var(--blood-red);
+      color: #ff3355;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-danger:hover {
+      background: var(--blood-red);
+      color: #fff;
+    }
+
+    /* Grid Principal del Panel */
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tarjeta Principal: Canción en Foco (#1) */
+    .featured-song-card {
+      background: linear-gradient(145deg, rgba(35, 12, 18, 0.9) 0%, rgba(18, 19, 26, 0.95) 100%);
+      border: 2px solid var(--blood-red);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 10px 30px var(--blood-red-glow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .featured-badge {
+      align-self: flex-start;
+      background: var(--blood-red);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+
+    .featured-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .featured-requester {
+      font-size: 15px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .featured-requester strong {
+      color: #fff;
+    }
+
+    .featured-controls-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .btn-copy {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 12px 22px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: #e2e8f0;
+      transform: translateY(-2px);
+    }
+
+    .btn-unlock-featured {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-unlock-featured:hover {
+      background: #22c55e;
+      transform: translateY(-2px);
+    }
+
+    .btn-reacted {
+      background: var(--blood-red);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px var(--blood-red-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-reacted:hover {
+      background: #ff2b52;
+      transform: translateY(-2px);
+    }
+
+    .btn-quick-search {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-quick-search:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Toast de Confirmación (ej: Copiado!) */
+    .toast-feedback {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: #10b981;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: popToast 0.3s ease forwards;
+    }
+
+    @keyframes popToast {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Columna Lista y Gestión */
+    .panel-section-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .panel-song-row {
+      background: rgba(10, 11, 16, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+
+    .panel-song-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .panel-song-row.is-next {
+      border-left: 4px solid var(--blood-red);
+    }
+
+    .panel-song-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .panel-song-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .panel-song-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-icon-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .action-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .action-icon-btn.btn-del:hover {
+      background: var(--blood-red);
+      color: #fff;
+      border-color: var(--blood-red);
+    }
+
+    .action-icon-btn.btn-unlock {
+      border-color: rgba(34, 197, 94, 0.4);
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+
+    .action-icon-btn.btn-unlock:hover {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    /* Formulario para agregar canción manual */
+    .manual-add-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 120px auto;
+      gap: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .manual-add-form {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-field, .select-field {
+      background: rgba(10, 11, 16, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .input-field:focus, .select-field:focus {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-red-subtle);
+    }
+
+    .btn-submit-manual {
+      background: var(--blood-red);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-submit-manual:hover {
+      background: #ff2b52;
+    }
+
+    /* Simulador de TikTok Live */
+    .simulator-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .sim-gift-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 12px 10px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .sim-gift-btn:hover {
+      background: rgba(255, 15, 59, 0.15);
+      border-color: var(--blood-red);
+      transform: translateY(-2px);
+    }
+
+    .sim-icon {
+      font-size: 24px;
+    }
+
+    .sim-gift-btn.vip-sim {
+      border-color: rgba(255, 184, 0, 0.5);
+    }
+
+    .sim-gift-btn.vip-sim:hover {
+      background: rgba(255, 184, 0, 0.2);
+    }
+
+    /* Historial */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .history-row {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-secondary);
+    }
+
+    .history-song {
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    /* BARRA DE CONEXIÓN EN VIVO TIKTOK */
+    .tiktok-live-bar {
+      background: linear-gradient(135deg, rgba(20, 22, 35, 0.95) 0%, rgba(35, 15, 25, 0.95) 100%);
+      border: 1px solid rgba(255, 15, 59, 0.35);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tiktok-conn-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tiktok-live-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .status-dot.disconnected {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    }
+    .status-dot.connecting {
+      background: #eab308;
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.8);
+      animation: pulseDot 1s infinite alternate;
+    }
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+      animation: pulseDot 1.2s infinite alternate;
+    }
+
+    .tiktok-conn-inputs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .input-field-tiktok {
+      background: rgba(10, 11, 16, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 220px;
+      outline: none;
+    }
+    .input-field-tiktok:focus {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-red-subtle);
+    }
+
+    .btn-tiktok-connect {
+      background: linear-gradient(135deg, #ff0f3b 0%, #e10030 100%);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px var(--blood-red-glow);
+      transition: all 0.2s;
+    }
+    .btn-tiktok-connect:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--blood-red-glow);
+    }
+
+    .btn-tiktok-disconnect {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-tiktok-disconnect:hover {
+      background: rgba(255, 15, 59, 0.2);
+      color: #fff;
+    }
+
+    .tiktok-live-activity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .activity-label {
+      color: var(--text-secondary);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .activity-text {
+      color: #f1f5f9;
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================= -->
+  <!-- VISTA 1: OVERLAY PÚBLICO (PARA MELD STUDIO - 1080x1920)        -->
+  <!-- ============================================================= -->
+  <div id="overlay-view" class="view-container">
+    <div class="overlay-frame">
+      
+      <!-- TÍTULO GRANDE CON LA FÓRMULA PARA ENTRAR A LA LISTA -->
+      <div class="overlay-formula-banner">
+        <div class="formula-main-title">ESCUCHA TU CANCIÓN</div>
+        <div class="formula-rules">
+          <div class="formula-step">1. SÍGUEME Y ESCRIBE: <strong>ESCUCHA [CANCIÓN]</strong></div>
+          <div class="formula-step">2. DESBLOQUEA CON: <strong>5 ROSAS 🌹</strong> • <strong>1000 LIKES ❤️</strong> • <strong>10 COMPARTIDOS 🔄</strong></div>
+        </div>
+      </div>
+
+      <!-- ENCABEZADO Y CONTADOR -->
+      <div class="overlay-header-row">
+        <span class="overlay-list-title">COLA DE CANCIONES</span>
+        <span id="overlay-count-badge" class="overlay-count-pill">0 EN LISTA</span>
+      </div>
+
+      <!-- Tarjeta "Sonando Ahora" -->
+      <div id="now-playing-section" class="now-playing-banner" style="display: none;">
+        <div class="now-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+          REACCIONANDO AHORA
+        </div>
+        <div class="now-song-title" id="now-playing-title">-</div>
+        <div class="now-user" id="now-playing-user">
+          PETICIÓN DE: <strong id="now-user-name">-</strong>
+        </div>
+      </div>
+
+      <!-- Lista de canciones en espera -->
+      <div class="overlay-song-list" id="overlay-song-container">
+        <!-- Renderizado dinámico -->
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================================= -->
+  <!-- VISTA 2: PANEL DE CONTROL PRIVADO (PARA EL STREAMER)          -->
+  <!-- ============================================================= -->
+  <div id="panel-view" class="view-container">
+    <div class="panel-container">
+      
+      <!-- Barra superior de control -->
+      <div class="panel-top-nav">
+        <div class="panel-brand-area">
+          <div>
+            <div class="panel-title">SLOW MD • PANEL DE CONTROL</div>
+            <div class="panel-tagline">Consola de gestión de reacciones en vivo</div>
+          </div>
+        </div>
+        <div class="panel-actions-top">
+          <button class="btn-secondary" id="btn-toggle-sound">
+            <span id="sound-icon">🔊</span>
+            <span id="sound-status-text">Sonido Alerta: ON</span>
+          </button>
+          <button class="btn-secondary" id="btn-open-overlay-window">
+            <span>🪟</span> Abrir Overlay en Ventana
+          </button>
+          <button class="btn-danger" id="btn-clear-queue">
+            Vaciar Cola
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Conexión en Tiempo Real a TikTok Live -->
+      <div class="tiktok-live-bar" id="tiktok-live-bar">
+        <div class="tiktok-conn-header">
+          <div class="tiktok-live-pill" id="tiktok-status-pill">
+            <span class="status-dot disconnected" id="tiktok-status-dot"></span>
+            <span id="tiktok-status-label">TIKTOK: DESCONECTADO</span>
+          </div>
+          <div class="tiktok-conn-inputs">
+            <input type="text" id="tiktok-username-input" class="input-field-tiktok" placeholder="Tu usuario @ de TikTok" value="" autocomplete="off" />
+            <button class="btn-tiktok-connect" id="btn-tiktok-connect">
+              <span>⚡</span> CONECTAR AL EN VIVO
+            </button>
+            <button class="btn-tiktok-disconnect" id="btn-tiktok-disconnect" style="display:none;">
+              DESCONECTAR
+            </button>
+          </div>
+        </div>
+        <div class="tiktok-live-activity" id="tiktok-live-activity">
+          <span class="activity-label">Actividad en vivo:</span>
+          <span class="activity-text" id="tiktok-last-activity">Inicia el servidor local y haz clic en "CONECTAR AL EN VIVO"</span>
+        </div>
+      </div>
+
+      <!-- Canción Principal #1 (En Reacción o Siguiente) -->
+      <div class="featured-song-card" id="featured-card">
+        <div class="featured-badge" id="featured-priority-badge">EN TURNO ACTUAL (#1)</div>
+        <div class="featured-title" id="featured-title">No hay canciones en la cola</div>
+        <div class="featured-requester" id="featured-user-line">
+          Enviada por: <strong id="featured-user">---</strong> • <span id="featured-gift-info">Sin regalo</span>
+        </div>
+        <div class="featured-controls-row">
+          <button class="btn-copy" id="btn-copy-song">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            COPIAR CANCIÓN
+          </button>
+          <button class="btn-unlock-featured" id="btn-unlock-featured" style="display: none;">
+            🔓 DESBLOQUEAR AHORA
+          </button>
+          <button class="btn-reacted" id="btn-mark-reacted">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            MARCAR COMO REACCIONADA
+          </button>
+          <a class="btn-quick-search" id="link-search-youtube" target="_blank" href="#">
+            <span>▶</span> Buscar en YouTube
+          </a>
+          <a class="btn-quick-search" id="link-search-spotify" target="_blank" href="#">
+            <span>🎵</span> Buscar en Spotify
+          </a>
+        </div>
+      </div>
+
+      <!-- Cuadrícula: Gestión de Cola + Simulador de Regalos -->
+      <div class="panel-grid">
+        
+        <!-- Columna Izquierda: Cola activa -->
+        <div class="panel-section-box">
+          <div class="section-header-title">
+            <span>Canciones en Espera (<span id="panel-queue-count">0</span>)</span>
+            <span style="font-size: 12px; color: var(--text-secondary);">Arrastra o usa flechas para ordenar</span>
+          </div>
+
+          <div class="panel-queue-list" id="panel-queue-container">
+            <!-- Canciones en panel -->
+          </div>
+
+          <!-- Formulario Agregar Canción Manual -->
+          <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+            <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-secondary);">
+              + Agregar canción manualmente:
+            </div>
+            <form id="form-manual-add" class="manual-add-form">
+              <input type="text" id="manual-song-input" class="input-field" placeholder="Nombre de canción - Artista" required>
+              <input type="text" id="manual-user-input" class="input-field" placeholder="@Usuario" value="@Admin">
+              <select id="manual-priority-select" class="select-field">
+                <option value="normal">Normal</option>
+                <option value="medium">Media (🫰)</option>
+                <option value="high">Alta (🍩)</option>
+                <option value="vip">VIP (🎩)</option>
+              </select>
+              <button type="submit" class="btn-submit-manual">Agregar</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Simulador y Registro -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- Simulador de Regalos TikTok Live -->
+          <div class="panel-section-box">
+            <div class="section-header-title">
+              <span>🎮 Simulador TikTok Live (Pruebas)</span>
+              <span style="font-size: 11px; background: rgba(255,15,59,0.2); color: var(--blood-red); padding: 2px 6px; border-radius: 4px;">TEST MELD</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+              Haz clic para probar cómo reacciona el sistema y el overlay cuando los espectadores mandan regalos o mensajes en TikTok:
+            </p>
+            <div class="simulator-grid">
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('chat_no_seguidor')">
+                <span class="sim-icon">👤</span>
+                <span>No Seguidor</span>
+                <span style="font-size: 10px; color: #ef4444;">Ignorado</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('follow_nuevo')">
+                <span class="sim-icon">➕</span>
+                <span>Nuevo Seguidor</span>
+                <span style="font-size: 10px; color: #22c55e;">Registrar Follow</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('chat_seguidor')">
+                <span class="sim-icon">💬</span>
+                <span>Escucha [Canción]</span>
+                <span style="font-size: 10px; color: #f59e0b;">🔒 Entra Bloqueada</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('rosa_1')">
+                <span class="sim-icon">🌹</span>
+                <span>Enviar 1 Rosa</span>
+                <span style="font-size: 10px; color: #f59e0b;">Progreso 1/5</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('rosas_5')">
+                <span class="sim-icon">🌹</span>
+                <span>Enviar 5 Rosas</span>
+                <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('share_1')">
+                <span class="sim-icon">🔄</span>
+                <span>Compartir x1</span>
+                <span style="font-size: 10px; color: #38bdf8;">Progreso 1/10</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('shares_10')">
+                <span class="sim-icon">🔄</span>
+                <span>Compartir x10</span>
+                <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('likes_100')">
+                <span class="sim-icon">❤️</span>
+                <span>Dar 100 Likes</span>
+                <span style="font-size: 10px; color: #f43f5e;">Progreso 100/1000</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('likes_1000')">
+                <span class="sim-icon">❤️</span>
+                <span>Dar 1000 Likes</span>
+                <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
+              </button>
+              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('gift_vip_donut')">
+                <span class="sim-icon">🍩</span>
+                <span>Rosquilla (VIP)</span>
+                <span style="font-size: 10px; color: var(--gold-vip);">👑 VIP DIRECTO</span>
+              </button>
+              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('gift_vip_sombrero')">
+                <span class="sim-icon">🎩</span>
+                <span>Sombrero & Bigote</span>
+                <span style="font-size: 10px; color: var(--gold-vip);">👑 VIP MÁXIMO</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('gift_corazon')">
+                <span class="sim-icon">🫰</span>
+                <span>Corazón dedos</span>
+                <span style="font-size: 10px; color: #b347eb;">Prioridad Media</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Historial de Reaccionadas -->
+          <div class="panel-section-box">
+            <div class="section-header-title">
+              <span>Historial de Reaccionadas (<span id="history-count">0</span>)</span>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" id="btn-clear-history">Limpiar</button>
+            </div>
+            <div class="history-list" id="history-container">
+              <!-- Historial -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast flotante para feedback inmediato -->
+  <div id="toast-notification" class="toast-feedback">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-text">¡Copiado al portapapeles!</span>
+  </div>
+
+  <!-- Switch flotante para alternar vista fácil -->
+  <div class="floating-mode-switch">
+    <span style="font-size: 11px; color: var(--text-muted);">VISTA:</span>
+    <button id="switch-to-overlay" onclick="cambiarVista('overlay')">Overlay (Meld)</button>
+    <button id="switch-to-panel" onclick="cambiarVista('panel')">Panel Streamer</button>
+  </div>
+
+
+  <!-- ============================================================= -->
+  <!-- LÓGICA DE SINCRONIZACIÓN, PRIORIDADES Y EVENTOS DE MELD       -->
+  <!-- ============================================================= -->
+  <script>
+    /**
+     * SISTEMA DE COLA SLOW MD PARA TIKTOK LIVE & MELD STUDIO
+     * - Sincronización bidireccional vía BroadcastChannel y LocalStorage
+     * - Detección inteligente de canciones (paréntesis, comandos, notas de regalo)
+     * - Niveles jerárquicos de prioridad (Rosquilla/Sombrero = Alta/VIP)
+     * - Copiado de canción al portapapeles en 1 clic
+     * - Historial persistente de reaccionadas
+     */
+
+    const STORAGE_KEY_QUEUE = 'slow_md_queue_v1';
+    const STORAGE_KEY_HISTORY = 'slow_md_history_v1';
+    const STORAGE_KEY_CONFIG = 'slow_md_config_v1';
+
+    // Canal de sincronización en tiempo real entre ventanas
+    const channel = new BroadcastChannel('slow_md_live_channel');
+
+    // Estado local
+    let state = {
+      queue: [],
+      history: [],
+      soundEnabled: true,
+      currentView: 'overlay'
+    };
+
+    // Sintetizador Web Audio API para alertas sonoras sin requerir archivos externos
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playAlertSound(type = 'vip') {
+      if (!state.soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'vip') {
+          // Sonido brillante y enérgico para regalos VIP
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.1); // G5
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25); // C6
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } else {
+          // Sonido sutil para canciones normales
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now); // A4
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12); // E5
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        }
+      } catch (err) {
+        console.warn('Audio no soportado o bloqueado por el navegador', err);
+      }
+    }
+
+    // Inicializar estado desde LocalStorage
+    function cargarDatos() {
+      try {
+        const savedQueue = localStorage.getItem(STORAGE_KEY_QUEUE);
+        const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
+        const savedConfig = localStorage.getItem(STORAGE_KEY_CONFIG);
+
+        if (savedQueue) state.queue = JSON.parse(savedQueue);
+        if (savedHistory) state.history = JSON.parse(savedHistory);
+        if (savedConfig) {
+          const cfg = JSON.parse(savedConfig);
+          state.soundEnabled = cfg.soundEnabled ?? true;
+        }
+      } catch (e) {
+        console.error('Error cargando datos de LocalStorage:', e);
+      }
+    }
+
+    // Guardar estado y notificar a todas las ventanas/layers abiertas
+    function persistirYNotificar(emitirBroadcast = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(state.queue));
+        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({ soundEnabled: state.soundEnabled }));
+
+        if (emitirBroadcast) {
+          channel.postMessage({
+            type: 'STATE_UPDATE',
+            queue: state.queue,
+            history: state.history,
+            soundEnabled: state.soundEnabled
+          });
+          // Sincronizar en tiempo real con Meld Studio / OBS vía WebSocket
+          if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+            liveSocket.send(JSON.stringify({
+              action: 'syncQueue',
+              queue: state.queue,
+              history: state.history
+            }));
+          }
+        }
+      } catch (e) {
+        console.error('Error guardando en LocalStorage:', e);
+      }
+      renderizarTodo();
+    }
+
+    // Escuchar mensajes de otras pestañas o instancias de Meld
+    channel.onmessage = (event) => {
+      if (event.data && event.data.type === 'STATE_UPDATE') {
+        state.queue = event.data.queue || [];
+        state.history = event.data.history || [];
+        state.soundEnabled = event.data.soundEnabled ?? true;
+        renderizarTodo();
+      } else if (event.data && event.data.type === 'PLAY_SOUND') {
+        playAlertSound(event.data.soundType);
+      }
+    };
+
+    // Escuchar cambios de LocalStorage como respaldo adicional
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY_QUEUE || e.key === STORAGE_KEY_HISTORY) {
+        cargarDatos();
+        renderizarTodo();
+      }
+    });
+
+    // Determinar la prioridad según regalo o tipo
+    function calcularPrioridad(regaloNombre) {
+      if (!regaloNombre) return 'normal';
+      const r = regaloNombre.toLowerCase();
+      if (r.includes('sombrero') || r.includes('bigote') || r.includes('donut') || r.includes('rosquilla')) {
+        return 'vip';
+      }
+      if (r.includes('dedo') || r.includes('corazon') || r.includes('corazón')) {
+        return 'medium';
+      }
+      return 'normal';
+    }
+
+    // Agregar una canción respetando jerarquía de regalos y estado de bloqueo
+    function agregarCancion(titulo, usuario, regaloNombre = '', prioridadForzada = null, estadoForzado = null, handle = '') {
+      if (!titulo || !titulo.trim()) return;
+
+      const prioridad = prioridadForzada || calcularPrioridad(regaloNombre);
+      const userKey = resolverClaveUsuario(usuario, handle);
+      const likesActuales = userLikes[userKey] || 0;
+      const sharesActuales = userShares[userKey] || 0;
+      const rosesActuales = userRoses[userKey] || 0;
+
+      const yaCumple = Boolean(
+        prioridad === 'vip' ||
+        prioridad === 'medium' ||
+        regaloNombre ||
+        likesActuales >= 1000 ||
+        sharesActuales >= 10 ||
+        rosesActuales >= 5
+      );
+
+      const status = estadoForzado || (yaCumple ? 'unlocked' : 'locked');
+
+      const nuevaEntrada = {
+        id: 'song_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        title: titulo.trim(),
+        user: usuario ? usuario.trim() : 'Usuario',
+        handle: handle || '',
+        gift: regaloNombre || null,
+        priority: prioridad,
+        status: status,
+        likes: likesActuales,
+        shares: sharesActuales,
+        roses: rosesActuales,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      // Inserción ordenada según prioridad
+      if (prioridad === 'vip') {
+        const primerNoVipIndex = state.queue.findIndex(item => item.priority !== 'vip');
+        if (primerNoVipIndex === -1) {
+          state.queue.push(nuevaEntrada);
+        } else {
+          state.queue.splice(primerNoVipIndex, 0, nuevaEntrada);
+        }
+        playAlertSound('vip');
+      } else if (prioridad === 'high' || prioridad === 'medium') {
+        const primerNormalIndex = state.queue.findIndex(item => item.priority === 'normal');
+        if (primerNormalIndex === -1) {
+          state.queue.push(nuevaEntrada);
+        } else {
+          state.queue.splice(primerNormalIndex, 0, nuevaEntrada);
+        }
+        playAlertSound('vip');
+      } else {
+        state.queue.push(nuevaEntrada);
+        if (status === 'unlocked') {
+          playAlertSound('normal');
+        }
+      }
+
+      persistirYNotificar();
+      if (status === 'locked') {
+        mostrarToast(`🔒 Canción en lista (Bloqueada): "${nuevaEntrada.title}". Pendiente de 1000 likes, 10 compartidos o 5 rosas.`);
+      } else {
+        mostrarToast(`🎶 Canción lista para escuchar: "${nuevaEntrada.title}"`);
+      }
+    }
+
+    // Marcar canción como reaccionada
+    function marcarComoReaccionada(index = 0) {
+      if (state.queue.length === 0) return;
+      const [reaccionada] = state.queue.splice(index, 1);
+      if (reaccionada) {
+        state.history.unshift({
+          ...reaccionada,
+          reactedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        if (state.history.length > 50) state.history.pop();
+        persistirYNotificar();
+        mostrarToast(`Reaccionada: ${reaccionada.title}`);
+      }
+    }
+
+    // Eliminar canción individual
+    function eliminarCancion(id) {
+      const idx = state.queue.findIndex(item => item.id === id);
+      if (idx !== -1) {
+        state.queue.splice(idx, 1);
+        persistirYNotificar();
+      }
+    }
+
+    // Mover posición arriba o abajo
+    function moverCancion(index, direccion) {
+      const nuevoIndex = index + direccion;
+      if (nuevoIndex < 0 || nuevoIndex >= state.queue.length) return;
+      const elemento = state.queue.splice(index, 1)[0];
+      state.queue.splice(nuevoIndex, 0, elemento);
+      persistirYNotificar();
+    }
+
+    // Copiar canción al portapapeles
+    function copiarCancionAlPortapapeles(texto) {
+      if (!texto || texto === 'No hay canciones en la cola') return;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(texto).then(() => {
+          mostrarToast(`Copiado: "${texto}"`);
+        }).catch(() => fallbackCopiar(texto));
+      } else {
+        fallbackCopiar(texto);
+      }
+    }
+
+    function fallbackCopiar(texto) {
+      const input = document.createElement('textarea');
+      input.value = texto;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      mostrarToast(`Copiado: "${texto}"`);
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById('toast-notification');
+      const text = document.getElementById('toast-text');
+      if (!toast || !text) return;
+      text.textContent = mensaje;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3000);
+    }
+
+    // -------------------------------------------------------------
+    // GESTIÓN DE SEGUIDORES Y REQUISITOS (5 ROSAS, 10 COMPARTIDOS O 1000 LIKES)
+    // -------------------------------------------------------------
+    const userRoses = {};       // canonicalKey -> número de rosas/monedas enviadas
+    const userShares = {};      // canonicalKey -> número de veces compartido
+    const userLikes = {};       // canonicalKey -> número de likes acumulados
+    const knownFollowers = {};  // canonicalKey / handle -> true
+
+    // Mapa de equivalencia de identidades de usuario (asocia handle, nickname y userId)
+    const userAliasMap = {};
+
+    function resolverClaveUsuario(usuario, displayId = '', nickname = '', userId = '') {
+      const posibles = [usuario, displayId, nickname, userId]
+        .filter(Boolean)
+        .map(s => String(s).toLowerCase().replace(/^@/, '').trim())
+        .filter(s => s.length > 0);
+
+      if (posibles.length === 0) return '@usuario';
+
+      // 1. Buscar si alguna variante ya tiene una clave canónica registrada
+      let canonical = null;
+      for (const p of posibles) {
+        if (userAliasMap[p]) {
+          canonical = userAliasMap[p];
+          break;
+        }
+      }
+
+      // 2. Si no existe, crear la clave canónica basada en el mejor identificador disponible
+      if (!canonical) {
+        const preferido = (displayId || usuario || nickname || posibles[0]).replace(/^@/, '');
+        canonical = '@' + preferido.toLowerCase();
+      }
+
+      // 3. Asociar todas las variantes conocidas a la clave canónica
+      for (const p of posibles) {
+        userAliasMap[p] = canonical;
+      }
+
+      return canonical;
+    }
+
+    function normalizarUsuario(usuario) {
+      return resolverClaveUsuario(usuario);
+    }
+
+    function registrarSeguidorUsuario(usuario, displayId = '', nickname = '', userId = '') {
+      const key = resolverClaveUsuario(usuario, displayId, nickname, userId);
+      knownFollowers[key] = true;
+      if (usuario) knownFollowers[usuario.toLowerCase()] = true;
+      if (displayId) knownFollowers[displayId.toLowerCase()] = true;
+      if (userId) knownFollowers[userId] = true;
+    }
+
+    function esSeguidor(userKey, usuario = '', displayId = '') {
+      if (knownFollowers[userKey]) return true;
+      if (usuario && (knownFollowers[usuario.toLowerCase()] || knownFollowers['@' + usuario.replace(/^@/, '').toLowerCase()])) return true;
+      if (displayId && (knownFollowers[displayId.toLowerCase()] || knownFollowers['@' + displayId.replace(/^@/, '').toLowerCase()])) return true;
+      return false;
+    }
+
+    function esRegaloRosa(regaloNombre) {
+      if (!regaloNombre) return false;
+      const r = regaloNombre.toLowerCase();
+      return r.includes('rosa') || r.includes('rose');
+    }
+
+    // Buscar si un usuario ya tiene una canción en la cola
+    function buscarCancionEnCola(userKey) {
+      if (!userKey || !state.queue) return -1;
+      return state.queue.findIndex(song => {
+        const songUserKey = resolverClaveUsuario(song.user, song.handle || '');
+        return songUserKey === userKey;
+      });
+    }
+
+    // Desbloqueo manual por el Streamer
+    function desbloquearCancionManual(id) {
+      const song = state.queue.find(s => s.id === id);
+      if (song) {
+        song.status = 'unlocked';
+        song.unlockedReason = 'Aprobada por streamer';
+        playAlertSound('normal');
+        persistirYNotificar();
+        mostrarToast(`🔓 Canción desbloqueada manualmente: "${song.title}"`);
+      }
+    }
+
+    // Registrar cuando un usuario envía regalos
+    function registrarRegaloUsuario(usuario, regaloNombre, cantidad = 1, comentario = '', displayId = '', nickname = '', userId = '', diamondCount = 0) {
+      const chatName = (nickname || usuario || displayId || 'Usuario').trim();
+      const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
+      const userDisplay = chatName;
+      const prioridadRegalo = calcularPrioridad(regaloNombre);
+      const esRosa = esRegaloRosa(regaloNombre);
+      const valorMonedas = Number(diamondCount) || (esRosa ? cantidad : (prioridadRegalo === 'vip' ? 100 : 5));
+
+      if (esRosa) {
+        userRoses[userKey] = (userRoses[userKey] || 0) + cantidad;
+      }
+
+      const indiceEnCola = buscarCancionEnCola(userKey);
+      if (indiceEnCola !== -1) {
+        const song = state.queue[indiceEnCola];
+        if (comentario && comentario.trim().length > 1) {
+          song.title = comentario.trim();
+        }
+        if (esRosa) {
+          song.roses = (song.roses || 0) + cantidad;
+        }
+        song.gift = regaloNombre + (cantidad > 1 ? ` x${cantidad}` : '');
+
+        const desbloquear = (prioridadRegalo === 'vip' || prioridadRegalo === 'medium' || (song.roses || 0) >= 5 || valorMonedas >= 5);
+
+        if (desbloquear && song.status === 'locked') {
+          song.status = 'unlocked';
+          song.unlockedReason = regaloNombre;
+        }
+
+        // Regalo VIP (Rosquilla 🍩, Sombrero 🎩) -> Sube a puestos VIP
+        if (prioridadRegalo === 'vip') {
+          song.status = 'unlocked';
+          song.priority = 'vip';
+          state.queue.splice(indiceEnCola, 1);
+          let targetIndex = 1;
+          while (targetIndex < state.queue.length && state.queue[targetIndex].priority === 'vip') {
+            targetIndex++;
+          }
+          if (targetIndex >= state.queue.length) state.queue.push(song);
+          else state.queue.splice(targetIndex, 0, song);
+
+          playAlertSound('vip');
+          persistirYNotificar();
+          mostrarToast(`👑 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA y subida a VIP`);
+          mostrarActividadEnVivo(`👑 ¡${userDisplay} subió a VIP con ${regaloNombre}!`);
+          return;
+        }
+
+        // Regalo Prioridad Media
+        if (prioridadRegalo === 'medium') {
+          if (song.priority !== 'vip') song.priority = 'medium';
+          playAlertSound('vip');
+          persistirYNotificar();
+          mostrarToast(`⚡ ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA.`);
+          return;
+        }
+
+        // 5 Rosas o regalo de 5+ monedas
+        if (desbloquear) {
+          playAlertSound('normal');
+          persistirYNotificar();
+          mostrarToast(`🌹 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🌹 ¡${userDisplay} desbloqueó su canción con ${regaloNombre}!`);
+          return;
+        }
+
+        persistirYNotificar();
+        return;
+      }
+
+      // Si no tenía canción en cola aún, verificar si escribió "Escucha..." en el mensaje del regalo
+      let cancionExtraida = '';
+      const escuchaMatch = comentario.match(/^\s*(!|\/)?escucha\s*:?\s+(.+)$/i);
+      if (escuchaMatch && escuchaMatch[2].trim().length > 1) {
+        cancionExtraida = escuchaMatch[2].trim();
+      } else if (comentario.trim().length > 1) {
+        cancionExtraida = comentario.trim();
+      }
+
+      if (cancionExtraida) {
+        agregarCancion(cancionExtraida, userDisplay, regaloNombre, prioridadRegalo, 'unlocked', displayId);
+      } else {
+        mostrarToast(`🎁 ¡${userDisplay} envió ${regaloNombre}! Escribe: Escucha [Canción] para pedirla.`);
+      }
+    }
+
+    // Registrar cuando un usuario comparte el live (10 compartidos desbloquean)
+    function registrarCompartidoUsuario(usuario, displayId = '', nickname = '', userId = '') {
+      const chatName = (nickname || usuario || displayId || 'Usuario').trim();
+      const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
+      const userDisplay = chatName;
+
+      const total = (userShares[userKey] || 0) + 1;
+      userShares[userKey] = total;
+
+      mostrarActividadEnVivo(`🔄 ${userDisplay} compartió el En Vivo [${total}/10]`);
+
+      const indiceEnCola = buscarCancionEnCola(userKey);
+      if (indiceEnCola !== -1) {
+        const song = state.queue[indiceEnCola];
+        song.shares = total;
+        if (song.status === 'locked' && song.shares >= 10) {
+          song.status = 'unlocked';
+          song.unlockedReason = '10 Compartidos 🔄';
+          playAlertSound('normal');
+          mostrarToast(`🎉 ¡${userDisplay} acumuló 10 compartidos! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con 10 compartidos!`);
+        }
+        persistirYNotificar();
+      }
+    }
+
+    // Registrar cuando un usuario da likes a la pantalla (1000 likes acumulables desbloquean)
+    function registrarLikesUsuario(usuario, cantidad = 1, displayId = '', nickname = '', userId = '') {
+      const chatName = (nickname || usuario || displayId || 'Usuario').trim();
+      const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
+      const userDisplay = chatName;
+      const count = Number(cantidad) || 1;
+
+      const total = (userLikes[userKey] || 0) + count;
+      userLikes[userKey] = total;
+
+      mostrarActividadEnVivo(`❤️ ${userDisplay} dio likes [${total}/1000]`);
+
+      const indiceEnCola = buscarCancionEnCola(userKey);
+      if (indiceEnCola !== -1) {
+        const song = state.queue[indiceEnCola];
+        song.likes = total;
+        if (song.status === 'locked' && song.likes >= 1000) {
+          song.status = 'unlocked';
+          song.unlockedReason = '1000 Likes ❤️';
+          playAlertSound('normal');
+          mostrarToast(`🎉 ¡${userDisplay} acumuló 1000 likes! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con 1000 likes!`);
+        }
+        persistirYNotificar();
+      }
+    }
+
+    // Procesar comentarios de TikTok Live con el comando "Escucha [canción]"
+    function procesarMensajeTikTok(mensajeTexto, usuario, regaloNombre = '', repeatCount = 1, displayId = '', nickname = '', userId = '', isFollower = false, diamondCount = 0) {
+      // Priorizar el nombre visible en el chat (nickname)
+      const chatName = (nickname || usuario || displayId || 'Usuario').trim();
+      const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
+      const userDisplay = chatName;
+      const text = (mensajeTexto || '').trim();
+
+      // Si viene con marca de seguidor, registrarlo
+      if (isFollower) {
+        registrarSeguidorUsuario(userDisplay, displayId, nickname, userId);
+      }
+
+      // Si viene con un regalo, procesar a través del gestor de regalos
+      if (regaloNombre) {
+        registrarRegaloUsuario(userDisplay, regaloNombre, repeatCount, text, displayId, nickname, userId, diamondCount);
+        return;
+      }
+
+      // 1. Detección flexible del comando: Escucha [canción], (canción), etc.
+      let cancionDetectada = '';
+
+      // Formato principal: Escucha [canción], escucha: [canción], !escucha [canción]
+      const escuchaMatch = text.match(/^\s*(?:[!/]?escucha(?:te)?|puedes\s+escuchar)\s*:?\s+(.+)$/i);
+      if (escuchaMatch && escuchaMatch[1].trim().length > 1) {
+        cancionDetectada = escuchaMatch[1].trim();
+      }
+
+      // Compatibilidad si escriben con formato de paréntesis: (canción)
+      if (!cancionDetectada) {
+        const parenMatch = text.match(/^\s*\((.+?)\)\s*$/);
+        if (parenMatch && parenMatch[1].trim().length > 1) {
+          cancionDetectada = parenMatch[1].trim();
+        }
+      }
+
+      // Compatibilidad si escriben cancion - artista
+      if (!cancionDetectada && text.includes(' - ') && text.length > 3 && !text.includes('?')) {
+        cancionDetectada = text;
+      }
+
+      if (!cancionDetectada) return;
+
+      // Limpiar comillas o paréntesis exteriores: "(Aquella vez </3)" -> "Aquella vez </3"
+      cancionDetectada = cancionDetectada.replace(/^["'(\[]+|["')\]]+$/g, '').trim();
+      if (!cancionDetectada || cancionDetectada.length < 2) return;
+
+      // 2. Verificar si el usuario YA tiene una canción en la cola
+      const indiceEnCola = buscarCancionEnCola(userKey);
+      if (indiceEnCola !== -1) {
+        const cancionExistente = state.queue[indiceEnCola];
+        if (cancionExistente.status === 'locked') {
+          cancionExistente.title = cancionDetectada;
+          persistirYNotificar();
+          mostrarToast(`ℹ️ ${userDisplay} actualizó el nombre de su canción pendiente a: "${cancionDetectada}"`);
+        } else {
+          mostrarToast(`ℹ️ ${userDisplay} ya tienes tu canción en la lista (#${indiceEnCola + 1})`);
+        }
+        return;
+      }
+
+      // 3. Agregar canción a la lista con el nombre visible del chat
+      agregarCancion(cancionDetectada, userDisplay, '', null, null, displayId);
+    }
+
+    // -------------------------------------------------------------
+    // CONEXIÓN EN TIEMPO REAL CON EL SERVIDOR DE TIKTOK LIVE (WEBSOCKET)
+    // -------------------------------------------------------------
+    let liveSocket = null;
+    let wsReconnectTimer = null;
+    let currentTiktokStatus = 'disconnected';
+
+    function actualizarIndicadorEstado(status, username = '', extraInfo = '') {
+      currentTiktokStatus = status;
+      const dot = document.getElementById('tiktok-status-dot');
+      const label = document.getElementById('tiktok-status-label');
+      const btnConnect = document.getElementById('btn-tiktok-connect');
+      const btnDisconnect = document.getElementById('btn-tiktok-disconnect');
+      const userInput = document.getElementById('tiktok-username-input');
+
+      if (!dot || !label) return;
+
+      dot.className = 'status-dot ' + (status || 'disconnected');
+
+      if (status === 'connected') {
+        label.textContent = `🟢 EN VIVO: @${username.replace(/^@/, '')}`;
+        label.style.color = '#4ade80';
+        if (btnConnect) btnConnect.style.display = 'none';
+        if (btnDisconnect) btnDisconnect.style.display = 'inline-flex';
+        if (userInput && username) userInput.value = username.replace(/^@/, '');
+      } else if (status === 'connecting') {
+        label.textContent = `🟡 CONECTANDO A @${username.replace(/^@/, '')}...`;
+        label.style.color = '#fde047';
+        if (btnConnect) {
+          btnConnect.disabled = true;
+          btnConnect.innerHTML = '<span>⏳</span> Conectando...';
+        }
+      } else if (status === 'error') {
+        label.textContent = `🔴 ERROR: ${extraInfo || 'No se pudo conectar'}`;
+        label.style.color = '#f87171';
+        if (btnConnect) {
+          btnConnect.style.display = 'inline-flex';
+          btnConnect.disabled = false;
+          btnConnect.innerHTML = '<span>⚡</span> REINTENTAR CONEXIÓN';
+        }
+        if (btnDisconnect) btnDisconnect.style.display = 'none';
+      } else {
+        label.textContent = '🔴 TIKTOK: DESCONECTADO';
+        label.style.color = '#cbd5e1';
+        if (btnConnect) {
+          btnConnect.style.display = 'inline-flex';
+          btnConnect.disabled = false;
+          btnConnect.innerHTML = '<span>⚡</span> CONECTAR AL EN VIVO';
+        }
+        if (btnDisconnect) btnDisconnect.style.display = 'none';
+      }
+    }
+
+    function mostrarActividadEnVivo(texto) {
+      const actEl = document.getElementById('tiktok-last-activity');
+      if (actEl) {
+        actEl.textContent = texto;
+        actEl.style.color = '#38bdf8';
+        setTimeout(() => {
+          if (actEl) actEl.style.color = '#f1f5f9';
+        }, 1200);
+      }
+    }
+
+    function inicializarWebSocket() {
+      if (liveSocket && (liveSocket.readyState === WebSocket.OPEN || liveSocket.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
+      // Si está abierto como file://, conectar a localhost:3000 por defecto
+      let wsUrl = 'ws://localhost:3000';
+      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsUrl = `${proto}//${window.location.host}`;
+      }
+
+      try {
+        liveSocket = new WebSocket(wsUrl);
+
+        liveSocket.onopen = () => {
+          console.log('[LiveSocket] Conectado al servidor local de TikTok');
+          liveSocket.send(JSON.stringify({ action: 'getStatus' }));
+          liveSocket.send(JSON.stringify({ action: 'getQueue' }));
+        };
+
+        liveSocket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'QUEUE_UPDATE') {
+              state.queue = data.queue || [];
+              state.history = data.history || [];
+              try {
+                localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(state.queue));
+                localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
+              } catch (e) {}
+              renderizarTodo();
+              if (data.sound) {
+                playAlertSound(data.sound);
+              }
+            } else if (data.type === 'STATUS') {
+              actualizarIndicadorEstado(data.status, data.username, data.error);
+              if (data.status === 'connected') {
+                mostrarActividadEnVivo(`¡Conectado al En Vivo de @${data.username}! Escuchando canciones...`);
+              }
+            } else if (data.type === 'FOLLOW') {
+              registrarSeguidorUsuario(data.user, data.displayId, data.nickname, data.userId);
+              mostrarActividadEnVivo(`🌟 ¡Nuevo seguidor! ${data.user || data.nickname}`);
+            } else if (data.type === 'SHARE') {
+              registrarCompartidoUsuario(data.user, data.displayId, data.nickname, data.userId);
+            } else if (data.type === 'LIKE') {
+              registrarLikesUsuario(data.user, data.count, data.displayId, data.nickname, data.userId);
+            } else if (data.type === 'CHAT') {
+              mostrarActividadEnVivo(`💬 ${data.user}: ${data.comment}`);
+              procesarMensajeTikTok(data.comment, data.user, '', 1, data.displayId, data.nickname, data.userId, data.isFollower);
+            } else if (data.type === 'GIFT') {
+              mostrarActividadEnVivo(`🎁 ${data.user} envió ${data.giftName} (x${data.repeatCount || 1})`);
+              procesarMensajeTikTok(data.comment || '', data.user, data.giftName, data.repeatCount || 1, data.displayId, data.nickname, data.userId, data.isFollower, data.diamondCount || 0);
+            } else if (data.type === 'LOG') {
+              if (data.level === 'error') {
+                mostrarToast(`⚠️ ${data.text}`);
+              }
+            }
+          } catch (err) {
+            console.error('[LiveSocket] Error procesando evento:', err);
+          }
+        };
+
+        liveSocket.onclose = () => {
+          actualizarIndicadorEstado('disconnected', '', 'Servidor local no detectado');
+          clearTimeout(wsReconnectTimer);
+          wsReconnectTimer = setTimeout(inicializarWebSocket, 2500);
+        };
+
+        liveSocket.onerror = () => {
+          // Fallback silencioso esperando reconexión
+        };
+      } catch (e) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = setTimeout(inicializarWebSocket, 3000);
+      }
+    }
+
+    function conectarStreamerTikTok(username) {
+      const cleanUser = (username || '').replace(/^@/, '').trim();
+      if (!cleanUser) {
+        mostrarToast('Por favor escribe tu usuario de TikTok');
+        return;
+      }
+      localStorage.setItem('slow_md_tiktok_user', cleanUser);
+      actualizarIndicadorEstado('connecting', cleanUser);
+      if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+        liveSocket.send(JSON.stringify({ action: 'connect', username: cleanUser }));
+      } else {
+        mostrarToast('Conectando al servidor local...');
+        inicializarWebSocket();
+        setTimeout(() => {
+          if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+            liveSocket.send(JSON.stringify({ action: 'connect', username: cleanUser }));
+          }
+        }, 1200);
+      }
+    }
+
+    function desconectarStreamerTikTok() {
+      if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+        liveSocket.send(JSON.stringify({ action: 'disconnect' }));
+      }
+      actualizarIndicadorEstado('disconnected');
+    }
+
+    // -------------------------------------------------------------
+    // INTEGRACIÓN CON MELD STUDIO (EVENT LISTENERS)
+    // -------------------------------------------------------------
+    function inicializarIntegracionMeld() {
+      // Conectar WebSocket con backend TikTok Live
+      inicializarWebSocket();
+
+      // Compatibilidad con eventos de capas Browser de Meld si se usan
+      window.addEventListener('message', (event) => {
+        try {
+          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (!data) return;
+
+          if (data.type === 'gift' || data.event === 'gift' || data.giftName) {
+            const user = data.user || data.nickname || data.uniqueId || '@TikTokUser';
+            const gift = data.giftName || data.gift || 'Regalo';
+            const comment = data.comment || data.message || '';
+            procesarMensajeTikTok(comment, user, gift);
+          } else if (data.type === 'chat' || data.event === 'chat' || data.comment) {
+            const user = data.user || data.nickname || data.uniqueId || '@TikTokUser';
+            const comment = data.comment || data.message || '';
+            procesarMensajeTikTok(comment, user, '');
+          }
+        } catch (e) {}
+      });
+
+      window.addEventListener('meldGift', (e) => {
+        if (e.detail) {
+          procesarMensajeTikTok(e.detail.comment || '', e.detail.user || '@User', e.detail.giftName || 'Regalo');
+        }
+      });
+
+      window.addEventListener('meldChat', (e) => {
+        if (e.detail) {
+          procesarMensajeTikTok(e.detail.comment || e.detail.message || '', e.detail.user || '@User', '');
+        }
+      });
+
+      if (window.Meld && typeof window.Meld.on === 'function') {
+        window.Meld.on('gift', (data) => {
+          procesarMensajeTikTok(data.comment || '', data.user || '@TikTokUser', data.giftName || 'Regalo');
+        });
+        window.Meld.on('chat', (data) => {
+          procesarMensajeTikTok(data.message || data.comment || '', data.user || '@TikTokUser', '');
+        });
+      }
+
+      console.log('Slow MD: Integración con TikTok Live & Meld Studio inicializada.');
+    }
+
+    // Función del Simulador para pruebas
+    function simularEventoTikTok(tipo) {
+      const userPrueba = 'Espectador Test';
+      const handlePrueba = '@espectador_test';
+      if (tipo === 'chat_no_seguidor') {
+        mostrarActividadEnVivo(`💬 ${userPrueba} (No seguidor): Escucha Bad Bunny - Monaco`);
+        procesarMensajeTikTok('Escucha Bad Bunny - Monaco', userPrueba, '', 1, handlePrueba, userPrueba, '9991', false);
+      } else if (tipo === 'follow_nuevo') {
+        registrarSeguidorUsuario(userPrueba, handlePrueba, userPrueba, '9991');
+        mostrarActividadEnVivo(`🌟 ¡Nuevo seguidor! ${userPrueba}`);
+        mostrarToast(`🌟 ¡${userPrueba} comenzó a seguirte! Ahora puede pedir canciones.`);
+      } else if (tipo === 'chat_seguidor') {
+        registrarSeguidorUsuario(userPrueba, handlePrueba, userPrueba, '9991');
+        mostrarActividadEnVivo(`💬 ${userPrueba} (Seguidor): Escucha Duki - Givenchy`);
+        procesarMensajeTikTok('Escucha Duki - Givenchy', userPrueba, '', 1, handlePrueba, userPrueba, '9991', true);
+      } else if (tipo === 'rosa_1') {
+        registrarRegaloUsuario(userPrueba, 'Rosa', 1, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'rosas_5') {
+        registrarRegaloUsuario(userPrueba, 'Rosa', 5, 'Escucha Bad Bunny - Ojitos Lindos', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'share_1') {
+        registrarCompartidoUsuario(userPrueba, handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'shares_10') {
+        for (let i = 0; i < 10; i++) {
+          registrarCompartidoUsuario(userPrueba, handlePrueba, userPrueba, '9991');
+        }
+      } else if (tipo === 'likes_100') {
+        registrarLikesUsuario(userPrueba, 100, handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'likes_1000' || tipo === 'likes_500') {
+        registrarLikesUsuario(userPrueba, 1000, handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'gift_vip_donut') {
+        procesarMensajeTikTok('Escucha Feid - Luna', 'Donador VIP', 'Rosquilla', 1, '@donador_vip', 'Donador VIP', '9992', true, 30);
+      } else if (tipo === 'gift_vip_sombrero') {
+        procesarMensajeTikTok('Escucha Bizarrap ft. Quevedo', 'Super VIP', 'Sombrero y bigote', 1, '@super_vip', 'Super VIP', '9993', true, 99);
+      } else if (tipo === 'gift_corazon') {
+        procesarMensajeTikTok('Escucha Anuel AA - Más Rica Que Ayer', 'Fan Corazón', 'Corazón con los dedos', 1, '@fan_corazon', 'Fan Corazón', '9994', true, 10);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // RENDERIZADO VISUAL
+    // -------------------------------------------------------------
+    function renderizarTodo() {
+      renderizarOverlay();
+      renderizarPanel();
+    }
+
+    function renderizarOverlay() {
+      const container = document.getElementById('overlay-song-container');
+      const countBadge = document.getElementById('overlay-count-badge');
+      const nowSection = document.getElementById('now-playing-section');
+      const nowTitle = document.getElementById('now-playing-title');
+      const nowUser = document.getElementById('now-user-name');
+
+      if (!container || !countBadge) return;
+
+      countBadge.textContent = `${state.queue.length} EN LISTA`;
+
+      // Primer elemento: Sonando ahora (Banner superior)
+      // Solo mostramos en el banner superior si la primera canción está DESBLOQUEADA
+      if (state.queue.length > 0) {
+        const actual = state.queue[0];
+        if (actual.status === 'unlocked') {
+          if (nowSection) nowSection.style.display = 'flex';
+          if (nowTitle) nowTitle.textContent = (actual.title || '').toUpperCase();
+          if (nowUser) nowUser.textContent = `${(actual.user || '').toUpperCase()} ${actual.gift ? `• 🎁 ${(actual.gift || '').toUpperCase()}` : ''}`;
+        } else {
+          if (nowSection) nowSection.style.display = 'none';
+        }
+      } else {
+        if (nowSection) nowSection.style.display = 'none';
+      }
+
+      // Si la cola está vacía
+      if (state.queue.length === 0) {
+        container.innerHTML = `
+          <div class="empty-queue-message">
+            <div class="empty-queue-icon">🎵</div>
+            <div><strong>LA COLA ESTÁ VACÍA</strong></div>
+            <div style="font-size: 11px; opacity: 0.85;">SÍGUEME Y COMENTA: ESCUCHA [CANCIÓN]</div>
+            <div style="font-size: 10px; opacity: 0.7;">DESBLOQUEA: 5 ROSAS 🌹 | 1000 LIKES ❤️ | 10 COMPARTIDOS 🔄</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Renderizar TODAS las canciones en la lista del overlay
+      container.innerHTML = state.queue.map((song, i) => {
+        const pos = i + 1;
+        const isCurrent = (i === 0 && song.status === 'unlocked');
+        const isLocked = (song.status === 'locked');
+        
+        const likes = song.likes || 0;
+        const shares = song.shares || 0;
+        const roses = song.roses || 0;
+
+        // Porcentajes para barra de progreso
+        const pctLikes = Math.min(100, Math.round((likes / 1000) * 100));
+        const pctShares = Math.min(100, Math.round((shares / 10) * 100));
+        const pctRoses = Math.min(100, Math.round((roses / 5) * 100));
+        const maxPct = isLocked ? Math.max(pctLikes, pctShares, pctRoses) : 100;
+
+        let statusBadgeHtml = '';
+        if (isLocked) {
+          statusBadgeHtml = `<span class="badge-status badge-locked">🔒 BLOQUEADA</span>`;
+        } else if (song.priority === 'vip') {
+          statusBadgeHtml = `<span class="badge-status badge-vip">👑 DESBLOQUEADA VIP</span>`;
+        } else {
+          statusBadgeHtml = `<span class="badge-status badge-unlocked">🔓 LISTA PARA ESCUCHAR</span>`;
+        }
+
+        return `
+          <div class="song-card priority-${song.priority} ${isCurrent ? 'is-current-song' : ''} ${isLocked ? 'song-is-locked' : ''}">
+            <div class="song-card-main-row">
+              <div class="song-pos">#${pos}</div>
+              <div class="song-info">
+                <div class="song-title-text">${escapeHtml((song.title || '').toUpperCase())}</div>
+                <div class="song-meta-row">
+                  <span class="song-user">${escapeHtml((song.user || '').toUpperCase())}</span>
+                  ${statusBadgeHtml}
+                  ${song.gift ? `<span class="gift-indicator">🎁 ${escapeHtml((song.gift || '').toUpperCase())}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            ${isLocked ? `
+              <div class="song-progress-container">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width: ${maxPct}%;"></div>
+                </div>
+                <div class="progress-labels-row">
+                  <span>❤️ LIKES: ${likes}/1000</span>
+                  <span>🔄 SHARES: ${shares}/10</span>
+                  <span>🌹 ROSAS: ${roses}/5</span>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderizarPanel() {
+      // Contador
+      const countEl = document.getElementById('panel-queue-count');
+      if (countEl) countEl.textContent = state.queue.length;
+
+      // Tarjeta Destacada (#1)
+      const featuredTitle = document.getElementById('featured-title');
+      const featuredUser = document.getElementById('featured-user');
+      const featuredGift = document.getElementById('featured-gift-info');
+      const featuredBadge = document.getElementById('featured-priority-badge');
+      const linkYt = document.getElementById('link-search-youtube');
+      const linkSp = document.getElementById('link-search-spotify');
+      const btnUnlockFeatured = document.getElementById('btn-unlock-featured');
+
+      if (state.queue.length > 0) {
+        const topSong = state.queue[0];
+        const isLocked = (topSong.status === 'locked');
+        if (featuredTitle) featuredTitle.textContent = topSong.title;
+        if (featuredUser) featuredUser.textContent = topSong.user;
+        
+        let giftText = topSong.gift ? `Regalo: ${topSong.gift}` : 'Sin regalo';
+        if (isLocked) {
+          giftText += ` • 🔒 BLOQUEADA (Likes: ${topSong.likes || 0}/1000 | Shares: ${topSong.shares || 0}/10 | Rosas: ${topSong.roses || 0}/5)`;
+        } else {
+          giftText += ` • 🔓 LISTA PARA ESCUCHAR`;
+        }
+        if (featuredGift) featuredGift.textContent = giftText;
+        
+        if (featuredBadge) {
+          if (isLocked) {
+            featuredBadge.textContent = '🔒 BLOQUEADA • ESPERANDO REQUISITOS';
+            featuredBadge.style.background = '#ef4444';
+            featuredBadge.style.color = '#fff';
+          } else if (topSong.priority === 'vip') {
+            featuredBadge.textContent = 'EN TURNO ACTUAL • VIP 🔥';
+            featuredBadge.style.background = 'var(--gold-vip)';
+            featuredBadge.style.color = '#000';
+          } else {
+            featuredBadge.textContent = 'EN TURNO ACTUAL (#1) • 🔓 DESBLOQUEADA';
+            featuredBadge.style.background = 'var(--blood-red)';
+            featuredBadge.style.color = '#fff';
+          }
+        }
+
+        if (btnUnlockFeatured) {
+          if (isLocked) {
+            btnUnlockFeatured.style.display = 'inline-flex';
+            btnUnlockFeatured.onclick = () => desbloquearCancionManual(topSong.id);
+          } else {
+            btnUnlockFeatured.style.display = 'none';
+          }
+        }
+
+        const encodedQuery = encodeURIComponent(topSong.title);
+        if (linkYt) linkYt.href = `https://www.youtube.com/results?search_query=${encodedQuery}`;
+        if (linkSp) linkSp.href = `https://open.spotify.com/search/${encodedQuery}`;
+      } else {
+        if (featuredTitle) featuredTitle.textContent = 'No hay canciones en la cola';
+        if (featuredUser) featuredUser.textContent = '---';
+        if (featuredGift) featuredGift.textContent = 'Esperando peticiones...';
+        if (featuredBadge) {
+          featuredBadge.textContent = 'COLA VACÍA';
+          featuredBadge.style.background = '#475569';
+          featuredBadge.style.color = '#fff';
+        }
+        if (btnUnlockFeatured) btnUnlockFeatured.style.display = 'none';
+        if (linkYt) linkYt.href = '#';
+        if (linkSp) linkSp.href = '#';
+      }
+
+      // Lista de la cola en panel
+      const listContainer = document.getElementById('panel-queue-container');
+      if (listContainer) {
+        if (state.queue.length === 0) {
+          listContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones pendientes. Usa el formulario de abajo o el simulador.</div>`;
+        } else {
+          listContainer.innerHTML = state.queue.map((song, idx) => {
+            const isLocked = (song.status === 'locked');
+            return `
+              <div class="panel-song-row ${idx === 0 ? 'is-next' : ''}">
+                <div style="font-weight: 800; min-width: 24px; color: ${idx === 0 ? 'var(--blood-red)' : 'var(--text-muted)'}; font-size: 13px;">
+                  #${idx + 1}
+                </div>
+                <div class="panel-song-details">
+                  <div class="panel-song-title">${escapeHtml(song.title)}</div>
+                  <div class="panel-song-meta">
+                    <span style="color: #fff;">${escapeHtml(song.user)}</span>
+                    ${isLocked 
+                      ? `<span style="color: #f87171; font-weight: 700; font-size: 11px;">🔒 Bloqueada (${song.likes || 0}/1000❤️ ${song.shares || 0}/10🔄 ${song.roses || 0}/5🌹)</span>`
+                      : `<span style="color: #4ade80; font-weight: 700; font-size: 11px;">🔓 Desbloqueada</span>`
+                    }
+                    <span style="font-size: 11px;">${song.priority.toUpperCase()}</span>
+                    ${song.gift ? `<span style="color: var(--gold-vip);">🎁 ${escapeHtml(song.gift)}</span>` : ''}
+                  </div>
+                </div>
+                <div class="panel-item-actions">
+                  ${isLocked ? `<button class="action-icon-btn btn-unlock" title="Desbloquear manualmente" onclick="desbloquearCancionManual('${song.id}')">🔓</button>` : ''}
+                  <button class="action-icon-btn" title="Copiar canción" onclick="copiarCancionAlPortapapeles('${escapeJs(song.title)}')">📋</button>
+                  <button class="action-icon-btn" title="Subir prioridad" onclick="moverCancion(${idx}, -1)">▲</button>
+                  <button class="action-icon-btn" title="Bajar prioridad" onclick="moverCancion(${idx}, 1)">▼</button>
+                  <button class="action-icon-btn btn-del" title="Eliminar de la cola" onclick="eliminarCancion('${song.id}')">✕</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Historial en panel
+      const historyContainer = document.getElementById('history-container');
+      const historyCountEl = document.getElementById('history-count');
+      if (historyCountEl) historyCountEl.textContent = state.history.length;
+
+      if (historyContainer) {
+        if (state.history.length === 0) {
+          historyContainer.innerHTML = `<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Sin historial reciente</div>`;
+        } else {
+          historyContainer.innerHTML = state.history.map(item => `
+            <div class="history-row">
+              <span class="history-song">${escapeHtml(item.title)}</span>
+              <span>${escapeHtml(item.user)} • ${item.reactedAt || ''}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    // Utilidades
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      })[m]);
+    }
+
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // Sincronizar cola directamente desde el archivo queue-data.json
+    async function sincronizarConServidor() {
+      const endpoints = ['/queue-data.json', 'http://localhost:3000/queue-data.json'];
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint + '?t=' + Date.now());
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.queue)) {
+              state.queue = data.queue;
+              if (Array.isArray(data.history)) state.history = data.history;
+              try {
+                localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(state.queue));
+                localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
+              } catch (e) {}
+              renderizarTodo();
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Alternar entre Vista Overlay y Vista Panel
+    function cambiarVista(vista) {
+      state.currentView = vista;
+      document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById(vista === 'panel' ? 'panel-view' : 'overlay-view');
+      if (target) target.classList.add('active');
+
+      const btnOverlay = document.getElementById('switch-to-overlay');
+      const btnPanel = document.getElementById('switch-to-panel');
+      if (btnOverlay) btnOverlay.classList.toggle('active-btn', vista === 'overlay');
+      if (btnPanel) btnPanel.classList.toggle('active-btn', vista === 'panel');
+    }
+
+    // -------------------------------------------------------------
+    // EVENT LISTENERS DE BOTONES DEL PANEL
+    // -------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarDatos();
+      sincronizarConServidor();
+      inicializarIntegracionMeld();
+
+      // Cargar usuario de TikTok guardado en input
+      const savedUser = localStorage.getItem('slow_md_tiktok_user');
+      const userInputEl = document.getElementById('tiktok-username-input');
+      if (userInputEl && savedUser) {
+        userInputEl.value = savedUser;
+      }
+
+      // Conectar / Desconectar TikTok Live
+      const btnTiktokConn = document.getElementById('btn-tiktok-connect');
+      if (btnTiktokConn) {
+        btnTiktokConn.addEventListener('click', () => {
+          const val = (userInputEl ? userInputEl.value : '').trim();
+          conectarStreamerTikTok(val);
+        });
+      }
+
+      const btnTiktokDisconn = document.getElementById('btn-tiktok-disconnect');
+      if (btnTiktokDisconn) {
+        btnTiktokDisconn.addEventListener('click', () => {
+          desconectarStreamerTikTok();
+        });
+      }
+
+      if (userInputEl) {
+        userInputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            conectarStreamerTikTok(userInputEl.value.trim());
+          }
+        });
+      }
+
+      // Detectar vista por parámetro URL: ?view=panel o ?view=overlay
+      const urlParams = new URLSearchParams(window.location.search);
+      const viewParam = urlParams.get('view') || urlParams.get('mode');
+      if (viewParam === 'panel' || viewParam === 'admin') {
+        cambiarVista('panel');
+      } else {
+        cambiarVista('overlay');
+      }
+
+      // Botón Copiar Canción #1
+      const btnCopy = document.getElementById('btn-copy-song');
+      if (btnCopy) {
+        btnCopy.addEventListener('click', () => {
+          if (state.queue.length > 0) {
+            const topSong = state.queue[0];
+            if (topSong.status === 'locked') {
+              mostrarToast(`⚠️ Atención: Canción BLOQUEADA (faltan 1000 likes, 10 compartidos o 5 rosas).`);
+            }
+            copiarCancionAlPortapapeles(topSong.title);
+          } else {
+            mostrarToast('No hay ninguna canción en cola');
+          }
+        });
+      }
+
+      // Botón Marcar Como Reaccionada
+      const btnReacted = document.getElementById('btn-mark-reacted');
+      if (btnReacted) {
+        btnReacted.addEventListener('click', () => {
+          if (state.queue.length > 0) {
+            marcarComoReaccionada(0);
+          } else {
+            mostrarToast('La cola ya está vacía');
+          }
+        });
+      }
+
+      // Formulario Agregar Canción Manual
+      const formManual = document.getElementById('form-manual-add');
+      if (formManual) {
+        formManual.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const songInput = document.getElementById('manual-song-input');
+          const userInput = document.getElementById('manual-user-input');
+          const prioInput = document.getElementById('manual-priority-select');
+
+          if (songInput && songInput.value.trim()) {
+            agregarCancion(songInput.value.trim(), userInput.value.trim() || '@Admin', '', prioInput.value, 'unlocked');
+            songInput.value = '';
+            songInput.focus();
+          }
+        });
+      }
+
+      // Vaciar cola completa
+      const btnClearQueue = document.getElementById('btn-clear-queue');
+      if (btnClearQueue) {
+        btnClearQueue.addEventListener('click', () => {
+          if (confirm('¿Seguro que deseas vaciar toda la cola de canciones?')) {
+            state.queue = [];
+            persistirYNotificar();
+            mostrarToast('Cola vaciada.');
+          }
+        });
+      }
+
+      // Limpiar historial
+      const btnClearHistory = document.getElementById('btn-clear-history');
+      if (btnClearHistory) {
+        btnClearHistory.addEventListener('click', () => {
+          state.history = [];
+          persistirYNotificar();
+          mostrarToast('Historial limpiado.');
+        });
+      }
+
+      // Toggle de Sonido
+      const btnToggleSound = document.getElementById('btn-toggle-sound');
+      if (btnToggleSound) {
+        btnToggleSound.addEventListener('click', () => {
+          state.soundEnabled = !state.soundEnabled;
+          document.getElementById('sound-status-text').textContent = `Sonido Alerta: ${state.soundEnabled ? 'ON' : 'OFF'}`;
+          document.getElementById('sound-icon').textContent = state.soundEnabled ? '🔊' : '🔇';
+          persistirYNotificar();
+        });
+      }
+
+      // Abrir Overlay en ventana emergente para Meld
+      const btnOpenOverlay = document.getElementById('btn-open-overlay-window');
+      if (btnOpenOverlay) {
+        btnOpenOverlay.addEventListener('click', () => {
+          window.open(window.location.pathname + '?view=overlay', 'SlowMD_Overlay', 'width=520,height=920,resizable=yes');
+        });
+      }
+
+      // Renderizar estado inicial
+      renderizarTodo();
+    });
+  </script>
+</body>
+</html>
