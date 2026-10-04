@@ -407,6 +407,122 @@
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+
+    /* BOTÓN HAMBURGUESA Y BACKDROP PARA MÓVIL */
+    .btn-sidebar-toggle {
+      display: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .btn-sidebar-toggle:hover {
+      background: var(--blood-red);
+    }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 998;
+    }
+    .sidebar-backdrop.active {
+      display: block;
+    }
+
+    /* RESPONSIVE PARA SMARTPHONES Y PANTALLAS PEQUEÑAS */
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .btn-sidebar-toggle {
+        display: inline-flex;
+      }
+
+      .studio-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 290px;
+        max-width: 85vw;
+        z-index: 999;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+      }
+
+      .studio-sidebar.open {
+        transform: translateX(0);
+      }
+
+      .studio-main {
+        width: 100vw;
+        min-height: 100vh;
+        height: 100%;
+      }
+
+      .studio-topbar {
+        height: auto;
+        min-height: 56px;
+        padding: 10px 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .topbar-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .topbar-widget-title h2 {
+        font-size: 14.5px;
+      }
+
+      .topbar-actions-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-action {
+        padding: 8px 10px;
+        font-size: 11.5px;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .widget-frame {
+        height: calc(100vh - 120px);
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .toast-popup {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        font-size: 12.5px;
+        padding: 12px 14px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -495,22 +611,28 @@
     </div>
   </aside>
 
+  <!-- BACKDROP PARA SIDEBAR MÓVIL -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+
   <!-- ESCENARIO PRINCIPAL -->
   <main class="studio-main">
     
     <!-- TOP BAR DINÁMICA -->
     <header class="studio-topbar">
-      <div class="topbar-widget-title">
-        <h2 id="topbar-title">🎵 COLA DE CANCIONES</h2>
-        <span class="widget-tag" id="topbar-tag">Widget Activo</span>
+      <div class="topbar-header-row">
+        <div class="topbar-widget-title">
+          <button class="btn-sidebar-toggle" id="btn-toggle-sidebar" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+          <h2 id="topbar-title">🎵 COLA DE CANCIONES</h2>
+          <span class="widget-tag" id="topbar-tag">Widget Activo</span>
+        </div>
       </div>
 
       <div class="topbar-actions-row">
         <button class="btn-action btn-copy-overlay" id="btn-copy-overlay-url" onclick="copiarOverlayUrl()">
-          <span>📋</span> Copiar URL Overlay (Meld / OBS)
+          <span>📋</span> Copiar URL Overlay
         </button>
         <a class="btn-action btn-secondary" id="btn-open-standalone" href="/cola-slow-md.html?view=panel" target="_blank">
-          <span>↗️</span> Abrir Panel en Pestaña Completa
+          <span>↗️</span> Abrir Panel
         </a>
       </div>
     </header>
@@ -618,8 +740,23 @@
       }
     };
 
+    function toggleSidebar(forzar) {
+      const sidebar = document.querySelector('.studio-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (!sidebar || !backdrop) return;
+      const isOpen = forzar !== undefined ? forzar : !sidebar.classList.contains('open');
+      if (isOpen) {
+        sidebar.classList.add('open');
+        backdrop.classList.add('active');
+      } else {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('active');
+      }
+    }
+
     function seleccionarWidget(id) {
       widgetActual = id;
+      toggleSidebar(false);
       const config = WIDGETS_CONFIG[id];
       if (!config) return;
 
