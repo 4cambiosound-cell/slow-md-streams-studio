@@ -26,7 +26,7 @@ let botConfig = {
     volume: 1.0,
     rate: 1.0,
     pitch: 1.0,
-    audioOutput: 'both',
+    audioOutput: 'overlay',
     tiktokVoice: false,
     followersOnly: false,
     antiSpam: true

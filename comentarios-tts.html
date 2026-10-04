@@ -836,25 +836,23 @@
               </div>
 
               <div class="form-group">
-                <label>Voz Viral de TikTok</label>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-                  <label class="switch-toggle">
-                    <input type="checkbox" id="toggle-tiktok-voice" onchange="guardarConfiguracionVoz()">
-                    <span class="slider-toggle"></span>
-                  </label>
-                  <span style="font-size: 12px; color: var(--text-secondary);">Activar estilo robótico viral</span>
+                <label>Voz Genérica / Robótica</label>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                  <span style="font-size: 12px; color: #10b981; font-weight: 600;">🚫 Desactivada por completo</span>
+                  <input type="checkbox" id="toggle-tiktok-voice" style="display:none;" />
                 </div>
+                <span style="font-size: 11px; color: var(--text-muted);">Solo se utilizará la voz clara de Google HD en la nube.</span>
               </div>
 
               <div class="form-group" style="grid-column: 1 / -1; margin-top: 6px;">
                 <label for="select-audio-output">🔊 Dónde Reproducir el Audio y Voz</label>
                 <select id="select-audio-output" class="form-control" onchange="guardarConfiguracionVoz()">
-                  <option value="both">🔊 Reproducir en Ambos (Panel y Overlay de Meld / OBS)</option>
-                  <option value="overlay">📺 Solo en el Overlay (Meld Studio / OBS)</option>
+                  <option value="overlay" selected>📺 Solo en el Overlay (TikTok Studio / OBS) [Recomendado - Sin duplicar]</option>
+                  <option value="both">🔊 Reproducir en Ambos (Panel y TikTok Studio)</option>
                   <option value="panel">🎛️ Solo en este Panel de Control</option>
                 </select>
-                <span style="font-size: 11px; color: var(--text-muted);">
-                  Recomendado "Ambos" para escuchar las voces aquí mientras configuras y transmites.
+                <span style="font-size: 11px; color: #f59e0b;">
+                  ⚠️ Si pusiste el enlace del Overlay en TikTok Studio, déjalo en "Solo en el Overlay" para que TikTok Studio transmita el audio a tu live sin escucharlo doble en tu PC.
                 </span>
               </div>
             </div>
@@ -1086,7 +1084,7 @@
       volume: 1.0,
       rate: 1.0,
       pitch: 1.0,
-      audioOutput: 'both',
+      audioOutput: 'overlay',
       tiktokVoice: false,
       followersOnly: false,
       antiSpam: true
@@ -1307,14 +1305,13 @@
 
       select.innerHTML = '';
 
-      // 1. Grupo Voces HD en la Nube (Google & TikTok)
+      // 1. Grupo Voces HD en la Nube (Google Oficial)
       const grpCloud = document.createElement('optgroup');
-      grpCloud.label = '🌟 Voces HD en la Nube (Google & TikTok)';
+      grpCloud.label = '🌟 Voces Oficiales Google HD (Recomendadas)';
 
       const cloudVoices = [
         { id: 'google_hd_es', name: 'Google Español (Oficial HD)', lang: 'es' },
-        { id: 'google_hd_us', name: 'Google Español Latino (América Latina HD)', lang: 'es-US' },
-        { id: 'tiktok_viral', name: 'TikTok - Voz Robótica Viral (Efecto)', lang: 'es-MX' }
+        { id: 'google_hd_us', name: 'Google Español Latino (América Latina HD)', lang: 'es-US' }
       ];
 
       cloudVoices.forEach(cv => {
@@ -1328,47 +1325,13 @@
       });
       select.appendChild(grpCloud);
 
-      // 2. Voces del Sistema / Navegador (Web Speech API)
+      // Cancelar cualquier síntesis nativa en segundo plano
       if ('speechSynthesis' in window) {
-        voicesList = window.speechSynthesis.getVoices() || [];
-        if (voicesList.length > 0) {
-          const spanishVoices = voicesList.filter(v => v.lang && v.lang.startsWith('es'));
-          const otherVoices = voicesList.filter(v => !v.lang || !v.lang.startsWith('es'));
-
-          if (spanishVoices.length > 0) {
-            const grpEs = document.createElement('optgroup');
-            grpEs.label = '🇪🇸 Voces del Sistema en Español (Web Speech)';
-            spanishVoices.forEach(v => {
-              const opt = document.createElement('option');
-              opt.value = v.voiceURI || v.name;
-              opt.textContent = `${v.name} (${v.lang})`;
-              opt.setAttribute('data-name', v.name);
-              opt.setAttribute('data-lang', v.lang);
-              if (ttsConfig.voiceURI === (v.voiceURI || v.name)) opt.selected = true;
-              grpEs.appendChild(opt);
-            });
-            select.appendChild(grpEs);
-          }
-
-          if (otherVoices.length > 0) {
-            const grpOther = document.createElement('optgroup');
-            grpOther.label = '🌐 Otras Voces del Sistema';
-            otherVoices.forEach(v => {
-              const opt = document.createElement('option');
-              opt.value = v.voiceURI || v.name;
-              opt.textContent = `${v.name} (${v.lang})`;
-              opt.setAttribute('data-name', v.name);
-              opt.setAttribute('data-lang', v.lang);
-              if (ttsConfig.voiceURI === (v.voiceURI || v.name)) opt.selected = true;
-              grpOther.appendChild(opt);
-            });
-            select.appendChild(grpOther);
-          }
-        }
+        try { window.speechSynthesis.cancel(); } catch(e) {}
       }
 
-      // Si no hay voz seleccionada, seleccionar Google Español HD por defecto
-      if (!ttsConfig.voiceURI) {
+      // Si no hay voz seleccionada, fijar Google Español HD por defecto
+      if (!ttsConfig.voiceURI || ttsConfig.voiceURI === 'tiktok_viral') {
         ttsConfig.voiceURI = 'google_hd_es';
         ttsConfig.voiceName = 'Google Español (Oficial HD)';
         ttsConfig.voiceLang = 'es';
@@ -1376,8 +1339,14 @@
       select.value = ttsConfig.voiceURI;
     }
 
+    // Desactivar síntesis nativa por completo para que nunca suene la voz genérica robótica
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = cargarVocesNativas;
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak = function() {
+          try { window.speechSynthesis.cancel(); } catch(e) {}
+        };
+      } catch(e) {}
     }
 
     function hablarTexto(texto, alTerminar) {
@@ -1386,102 +1355,104 @@
         return;
       }
 
-      // Detener audios anteriores
+      // Detener audios anteriores y asegurar silencio en sintetizador genérico
       if (currentTtsAudio) {
-        currentTtsAudio.pause();
+        try { currentTtsAudio.pause(); } catch(e) {}
         currentTtsAudio = null;
       }
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+        try { window.speechSynthesis.cancel(); } catch(e) {}
       }
 
       const waves = document.getElementById('voice-waves');
       const startWaves = () => { if (waves) waves.style.display = 'inline-flex'; };
       const stopWaves = () => { if (waves) waves.style.display = 'none'; };
 
-      // CASO A: Voces HD de Google (vía /api/tts)
-      if (ttsConfig.voiceURI === 'google_hd_es' || ttsConfig.voiceURI === 'google_hd_us' || ttsConfig.voiceURI.includes('google')) {
-        const lang = ttsConfig.voiceURI === 'google_hd_us' ? 'es-us' : 'es';
-        const cleanText = texto.slice(0, 320);
-        const url = `/api/tts?tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(cleanText)}`;
-        
-        currentTtsAudio = new Audio(url);
-        currentTtsAudio.volume = ttsConfig.volume;
-        currentTtsAudio.playbackRate = Math.min(Math.max(ttsConfig.rate, 0.5), 2.0);
-
-        startWaves();
-        currentTtsAudio.onended = () => {
-          stopWaves();
-          currentTtsAudio = null;
-          if (alTerminar) alTerminar();
-        };
-        currentTtsAudio.onerror = (err) => {
-          console.warn('Error en /api/tts de Google, usando fallback nativo:', err);
-          stopWaves();
-          currentTtsAudio = null;
-          hablarNativo(texto, alTerminar);
-        };
-        currentTtsAudio.play().catch(() => {
-          stopWaves();
-          hablarNativo(texto, alTerminar);
-        });
-        return;
-      }
-
-      // CASO B: Síntesis nativa del navegador / sistema
-      hablarNativo(texto, alTerminar);
-    }
-
-    function hablarNativo(texto, alTerminar) {
-      if (!('speechSynthesis' in window)) {
-        if (alTerminar) alTerminar();
-        return;
-      }
-
-      const waves = document.getElementById('voice-waves');
-      const startWaves = () => { if (waves) waves.style.display = 'inline-flex'; };
-      const stopWaves = () => { if (waves) waves.style.display = 'none'; };
-
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(texto);
-      const allVoices = window.speechSynthesis.getVoices() || [];
-      if (allVoices.length > 0) voicesList = allVoices;
-
-      // Buscar voz configurada por voiceURI o nombre
-      let found = voicesList.find(v => (v.voiceURI && v.voiceURI === ttsConfig.voiceURI) || (v.name && v.name === ttsConfig.voiceURI) || (v.name && v.name === ttsConfig.voiceName));
-      if (!found) {
-        // Fallback a primera voz en español
-        found = voicesList.find(v => v.lang && v.lang.startsWith('es'));
-      }
-
-      if (found) {
-        utterance.voice = found;
-        utterance.lang = found.lang || 'es-ES';
-      } else {
-        utterance.lang = 'es-ES';
-      }
-
-      utterance.volume = ttsConfig.volume;
-
-      if (ttsConfig.voiceURI === 'tiktok_viral' || ttsConfig.tiktokVoice) {
-        utterance.pitch = 1.35;
-        utterance.rate = 1.15;
-      } else {
-        utterance.rate = ttsConfig.rate;
-        utterance.pitch = ttsConfig.pitch;
-      }
+      // Siempre utilizar la voz oficial de Google HD vía /api/tts
+      const lang = (ttsConfig.voiceURI === 'google_hd_us') ? 'es-us' : 'es';
+      const cleanText = texto.slice(0, 320);
+      const url = `/api/tts?tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(cleanText)}`;
 
       startWaves();
-      utterance.onend = () => {
+
+      let isFinished = false;
+      const finalizar = () => {
+        if (isFinished) return;
+        isFinished = true;
         stopWaves();
-        if (alTerminar) alTerminar();
-      };
-      utterance.onerror = () => {
-        stopWaves();
+        currentTtsAudio = null;
         if (alTerminar) alTerminar();
       };
 
-      window.speechSynthesis.speak(utterance);
+      try {
+        let audioEl = document.getElementById('tts-audio-element');
+        if (!audioEl) {
+          audioEl = document.createElement('audio');
+          audioEl.id = 'tts-audio-element';
+          audioEl.preload = 'auto';
+          audioEl.crossOrigin = 'anonymous';
+          document.body.appendChild(audioEl);
+        }
+        currentTtsAudio = audioEl;
+        audioEl.volume = Math.max(0, Math.min(1, ttsConfig.volume));
+        audioEl.playbackRate = Math.min(Math.max(ttsConfig.rate || 1, 0.5), 2.0);
+        audioEl.src = url;
+
+        audioEl.onended = finalizar;
+        audioEl.onerror = () => {
+          console.warn('Error en tag de audio, reproduciendo con Web Audio API buffer...');
+          reproducirConWebAudio(url, finalizar);
+        };
+
+        const playPromise = audioEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('Autoplay en TikTok Studio bloqueado, usando Web Audio API directa:', err);
+            reproducirConWebAudio(url, finalizar);
+          });
+        }
+      } catch (err) {
+        reproducirConWebAudio(url, finalizar);
+      }
+    }
+
+    async function reproducirConWebAudio(url, onEnd) {
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const arrayBuf = await resp.arrayBuffer();
+        const audioBuf = await ctx.decodeAudioData(arrayBuf);
+
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuf;
+        source.playbackRate.value = Math.min(Math.max(ttsConfig.rate || 1, 0.5), 2.0);
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = Math.max(0, Math.min(1, ttsConfig.volume));
+
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.onended = () => {
+          if (onEnd) onEnd();
+        };
+        source.start(0);
+      } catch (err) {
+        console.warn('Fallo en reproducción Web Audio:', err);
+        if (onEnd) onEnd();
+      }
+    }
+
+    // La función hablarNativo queda desactivada para evitar la voz robótica
+    function hablarNativo(texto, alTerminar) {
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+      }
+      if (alTerminar) alTerminar();
     }
 
     function procesarColaTTS() {
@@ -1806,34 +1777,57 @@
         ttsText,
         ttsEnabled: rule.ttsEnabled,
         animation: rule.animation,
-        sound: rule.sound
+        sound: rule.sound,
+        id: data.alertId || ('alrt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7))
       };
 
-      // Si debe reproducirse localmente (Overlay o Panel con permiso de salida)
+      // Evitar procesar dos veces la misma alerta
+      if (processedAlertIds.has(item.id)) return;
+      processedAlertIds.add(item.id);
+      if (processedAlertIds.size > 200) {
+        const first = processedAlertIds.values().next().value;
+        processedAlertIds.delete(first);
+      }
+
+      // Determinar si debe sonar aquí:
+      // - Si estamos en el Overlay (TikTok Studio / OBS): suena si el modo es 'overlay' o 'both'.
+      // - Si estamos en el Panel: SOLO suena si es una prueba manual/simulación o si el modo es 'panel' o 'both'.
       const isOverlayActive = document.getElementById('overlay-view').classList.contains('active');
-      const outMode = ttsConfig.audioOutput || 'both';
-      const shouldPlayHere = isOverlayActive || outMode === 'both' || outMode === 'panel';
+      const outMode = ttsConfig.audioOutput || 'overlay';
+      const isSimulation = !!data.isSimulation;
+      const shouldPlayHere = isOverlayActive 
+        ? (outMode === 'both' || outMode === 'overlay')
+        : (isSimulation || outMode === 'both' || outMode === 'panel');
 
       if (shouldPlayHere) {
         ttsQueue.push(item);
         procesarColaTTS();
       }
 
-      // Sincronizar vía BroadcastChannel con otras ventanas abiertas
+      // Sincronizar vía BroadcastChannel con otras pestañas
       syncChannel.postMessage({
         type: 'TRIGGER_ALERT',
         item
       });
     }
 
+    const processedAlertIds = new Set();
+
     syncChannel.onmessage = (e) => {
       if (!e.data) return;
       if (e.data.type === 'TRIGGER_ALERT') {
+        const item = e.data.item;
+        if (!item || (item.id && processedAlertIds.has(item.id))) return;
+        if (item.id) processedAlertIds.add(item.id);
+
         const isOverlayActive = document.getElementById('overlay-view').classList.contains('active');
-        const outMode = ttsConfig.audioOutput || 'both';
-        // El overlay siempre procesa alertas visuales; el panel solo si no hay overlay o si outMode es 'panel'
-        if (isOverlayActive || outMode === 'panel') {
-          ttsQueue.push(e.data.item);
+        const outMode = ttsConfig.audioOutput || 'overlay';
+        const shouldPlayHere = isOverlayActive 
+          ? (outMode === 'both' || outMode === 'overlay')
+          : (outMode === 'both' || outMode === 'panel');
+
+        if (shouldPlayHere) {
+          ttsQueue.push(item);
           procesarColaTTS();
         }
       } else if (e.data.type === 'CONFIG_UPDATE') {
@@ -1851,6 +1845,13 @@
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${proto}//${window.location.host}`;
       liveSocket = new WebSocket(wsUrl);
+
+      liveSocket.onopen = () => {
+        // Al conectar en TikTok Studio o navegador, pedir de inmediato la configuración de voz
+        try {
+          liveSocket.send(JSON.stringify({ action: 'getTTSConfig' }));
+        } catch (e) {}
+      };
 
       liveSocket.onmessage = (event) => {
         try {
@@ -2066,24 +2067,24 @@
       const demoUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
 
       if (tipo === 'follow') {
-        despacharEventoAlerta('follow', { user: demoUser, isFollower: true });
+        despacharEventoAlerta('follow', { user: demoUser, isFollower: true, isSimulation: true });
       } else if (tipo === 'share') {
-        despacharEventoAlerta('share', { user: demoUser });
+        despacharEventoAlerta('share', { user: demoUser, isSimulation: true });
       } else if (tipo === 'chat') {
         const comments = ['¡Me encanta este tema!', 'Slow MD rompiéndola en vivo 🔥', 'Saludos desde Colombia ✌️', '¿Qué canción sigue bro?'];
         const c = comments[Math.floor(Math.random() * comments.length)];
-        despacharEventoAlerta('chat', { user: demoUser, comment: c, isFollower: true });
+        despacharEventoAlerta('chat', { user: demoUser, comment: c, isFollower: true, isSimulation: true });
       } else if (tipo === 'mvp_gift') {
-        despacharEventoAlerta('mvp_gift', { user: demoUser, giftName: 'Sombrero & Bigote (VIP)' });
+        despacharEventoAlerta('mvp_gift', { user: demoUser, giftName: 'Sombrero & Bigote (VIP)', isSimulation: true });
       } else if (tipo === 'milestone_likes') {
-        despacharEventoAlerta('milestone_likes', { user: '@TodosLosEspectadores' });
+        despacharEventoAlerta('milestone_likes', { user: '@TodosLosEspectadores', isSimulation: true });
       }
     }
 
     function probarTTSDemo() {
       guardarConfiguracionVoz();
-      const voiceLabel = ttsConfig.voiceName || 'seleccionada';
-      hablarTexto(`¡Hola! Esta es una prueba de la voz ${voiceLabel} para tu directo de TikTok.`);
+      const voiceLabel = ttsConfig.voiceName || 'Google Español (Oficial HD)';
+      hablarTexto(`¡Hola! Esta es una prueba de la voz ${voiceLabel} con la pronunciación de Google sin voz robótica.`);
     }
 
     function actualizarValoresSliders() {
@@ -2137,7 +2138,7 @@
       if (vol) ttsConfig.volume = Number(vol.value);
       if (rate) ttsConfig.rate = Number(rate.value);
       if (pitch) ttsConfig.pitch = Number(pitch.value);
-      if (tk) ttsConfig.tiktokVoice = tk.checked;
+      ttsConfig.tiktokVoice = false;
       if (fo) ttsConfig.followersOnly = fo.checked;
       if (as) ttsConfig.antiSpam = as.checked;
       if (out) ttsConfig.audioOutput = out.value;
