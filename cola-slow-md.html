@@ -1054,6 +1054,145 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    /* Modal de Configuración de Reglas y Metas */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      padding: 20px;
+    }
+    .modal-card {
+      background: linear-gradient(145deg, #13151f 0%, #1a1622 100%);
+      border: 1px solid var(--blood-red);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 620px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px var(--blood-red-glow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .modal-close-btn:hover {
+      background: var(--blood-red);
+      color: #fff;
+    }
+    .modal-body {
+      padding: 22px 24px;
+      overflow-y: auto;
+      max-height: 72vh;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .config-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--blood-red);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .config-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .config-grid-3 { grid-template-columns: 1fr; }
+    }
+    .config-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .config-field label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .config-field input {
+      background: rgba(10, 11, 16, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .config-field input:focus {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-red-subtle);
+    }
+    .field-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+    .modal-footer {
+      padding: 18px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .btn-primary-save {
+      background: linear-gradient(135deg, var(--blood-red), #e10030);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 22px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px var(--blood-red-glow);
+      transition: all 0.2s;
+    }
+    .btn-primary-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px var(--blood-red-glow);
+    }
   </style>
 </head>
 <body>
@@ -1069,7 +1208,7 @@
         <div class="formula-main-title">ESCUCHA TU CANCIÓN</div>
         <div class="formula-rules">
           <div class="formula-step">1. SÍGUEME Y ESCRIBE: <strong>ESCUCHA [CANCIÓN]</strong></div>
-          <div class="formula-step">2. DESBLOQUEA CON: <strong>5 ROSAS 🌹</strong> • <strong>1000 LIKES ❤️</strong> • <strong>10 COMPARTIDOS 🔄</strong></div>
+          <div class="formula-step">2. DESBLOQUEA CON: <strong><span id="formula-roses-num">5</span> ROSAS 🌹</strong> • <strong><span id="formula-likes-num">1000</span> LIKES ❤️</strong> • <strong><span id="formula-shares-num">10</span> COMPARTIDOS 🔄</strong></div>
         </div>
       </div>
 
@@ -1115,6 +1254,9 @@
           </div>
         </div>
         <div class="panel-actions-top">
+          <button class="btn-secondary" id="btn-open-rules-modal" style="background: rgba(255, 15, 59, 0.2); border-color: var(--blood-red); color: #fff;">
+            <span>⚙️</span> Configurar Metas y Regalos
+          </button>
           <button class="btn-secondary" id="btn-toggle-sound">
             <span id="sound-icon">🔊</span>
             <span id="sound-status-text">Sonido Alerta: ON</span>
@@ -1319,6 +1461,88 @@
     <button id="switch-to-panel" onclick="cambiarVista('panel')">Panel Streamer</button>
   </div>
 
+  <!-- Modal de Configuración de Metas y Regalos -->
+  <div id="modal-rules-config" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">⚙️</span>
+          <span style="font-weight: 800; font-size: 15px; letter-spacing: 0.5px; color: #fff;">CONFIGURAR METAS Y REGALOS</span>
+        </div>
+        <button class="modal-close-btn" id="btn-close-rules-modal" type="button" title="Cerrar">✕</button>
+      </div>
+
+      <form id="form-rules-config" onsubmit="guardarModalReglas(event)">
+        <div class="modal-body">
+          <!-- SECCIÓN 1: METAS DE DESBLOQUEO -->
+          <div>
+            <div class="config-group-title">🎯 Metas para Desbloquear Canción</div>
+            <p class="field-hint" style="margin-bottom: 10px;">
+              Cualquiera de estas metas alcanzadas desbloqueará la canción para poder reaccionar a ella:
+            </p>
+            <div class="config-grid-3">
+              <div class="config-field">
+                <label for="input-cfg-likes">❤️ Likes</label>
+                <input type="number" id="input-cfg-likes" min="1" step="10" value="1000" required>
+                <span class="field-hint">Likes acumulados del usuario</span>
+              </div>
+              <div class="config-field">
+                <label for="input-cfg-shares">🔄 Compartidos</label>
+                <input type="number" id="input-cfg-shares" min="1" step="1" value="10" required>
+                <span class="field-hint">Veces que compartió el live</span>
+              </div>
+              <div class="config-field">
+                <label for="input-cfg-roses">🌹 Rosas / Regalos</label>
+                <input type="number" id="input-cfg-roses" min="1" step="1" value="5" required>
+                <span class="field-hint">Rosas enviadas para desbloqueo</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 0;"></div>
+
+          <!-- SECCIÓN 2: JERARQUÍA DE REGALOS -->
+          <div>
+            <div class="config-group-title">👑 Jerarquía y Prioridad de Regalos</div>
+            <p class="field-hint" style="margin-bottom: 12px;">
+              Escribe los nombres de los regalos separados por comas (por ejemplo: rosa, dedo, corazon, donut, sombrero):
+            </p>
+
+            <div class="config-field" style="margin-bottom: 14px;">
+              <label for="input-cfg-medium-gifts">🫰 Regalos Prioridad Media (+1 Nivel)</label>
+              <input type="text" id="input-cfg-medium-gifts" placeholder="dedo, corazon, corazón" value="dedo, corazon, corazón">
+              <span class="field-hint">Regalos que suben una canción por encima de las normales.</span>
+            </div>
+
+            <div class="config-field" style="margin-bottom: 14px;">
+              <label for="input-cfg-vip-gifts">👑 Regalos VIP (1er Lugar Directo)</label>
+              <input type="text" id="input-cfg-vip-gifts" placeholder="sombrero, bigote, donut, rosquilla" value="sombrero, bigote, donut, rosquilla">
+              <span class="field-hint">Cualquier regalo en esta lista catapulta la canción a la cima de la cola.</span>
+            </div>
+
+            <div class="config-field">
+              <label for="input-cfg-vip-diamonds">💎 Diamantes mínimos para VIP Automático</label>
+              <input type="number" id="input-cfg-vip-diamonds" min="1" step="5" value="30">
+              <span class="field-hint">Cualquier regalo que cueste igual o más que esta cantidad de monedas/diamantes será VIP automáticamente.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btn-reset-rules-modal" style="margin-right: auto;">
+            ↺ Restaurar Predeterminados
+          </button>
+          <button type="button" class="btn-secondary" id="btn-cancel-rules-modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary-save" id="btn-save-rules-modal">
+            💾 Guardar y Aplicar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- ============================================================= -->
   <!-- LÓGICA DE SINCRONIZACIÓN, PRIORIDADES Y EVENTOS DE MELD       -->
@@ -1456,16 +1680,105 @@
       }
     });
 
-    // Determinar la prioridad según regalo o tipo
+    // Configuración dinámica de reglas y requisitos de desbloqueo
+    const STORAGE_KEY_RULES = 'slow_md_rules_config';
+    let rulesConfig = {
+      likesReq: 1000,
+      sharesReq: 10,
+      rosesReq: 5,
+      mediumGifts: 'dedo, corazon, corazón',
+      vipGifts: 'sombrero, bigote, donut, rosquilla',
+      vipMinDiamonds: 30
+    };
+    try {
+      const savedRules = localStorage.getItem(STORAGE_KEY_RULES);
+      if (savedRules) rulesConfig = { ...rulesConfig, ...JSON.parse(savedRules) };
+    } catch(e) {}
+
+    function actualizarTextosReglas() {
+      const rosesEl = document.getElementById('formula-roses-num');
+      const likesEl = document.getElementById('formula-likes-num');
+      const sharesEl = document.getElementById('formula-shares-num');
+      if (rosesEl) rosesEl.textContent = rulesConfig.rosesReq;
+      if (likesEl) likesEl.textContent = rulesConfig.likesReq;
+      if (sharesEl) sharesEl.textContent = rulesConfig.sharesReq;
+    }
+
+    function abrirModalReglas() {
+      const elLikes = document.getElementById('input-cfg-likes');
+      const elShares = document.getElementById('input-cfg-shares');
+      const elRoses = document.getElementById('input-cfg-roses');
+      const elMed = document.getElementById('input-cfg-medium-gifts');
+      const elVip = document.getElementById('input-cfg-vip-gifts');
+      const elDia = document.getElementById('input-cfg-vip-diamonds');
+      const modal = document.getElementById('modal-rules-config');
+
+      if (elLikes) elLikes.value = rulesConfig.likesReq;
+      if (elShares) elShares.value = rulesConfig.sharesReq;
+      if (elRoses) elRoses.value = rulesConfig.rosesReq;
+      if (elMed) elMed.value = rulesConfig.mediumGifts;
+      if (elVip) elVip.value = rulesConfig.vipGifts;
+      if (elDia) elDia.value = rulesConfig.vipMinDiamonds;
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function cerrarModalReglas() {
+      const modal = document.getElementById('modal-rules-config');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function guardarModalReglas(e) {
+      if (e) e.preventDefault();
+      rulesConfig.likesReq = Number(document.getElementById('input-cfg-likes').value) || 1000;
+      rulesConfig.sharesReq = Number(document.getElementById('input-cfg-shares').value) || 10;
+      rulesConfig.rosesReq = Number(document.getElementById('input-cfg-roses').value) || 5;
+      rulesConfig.mediumGifts = String(document.getElementById('input-cfg-medium-gifts').value || 'dedo, corazon, corazón').trim();
+      rulesConfig.vipGifts = String(document.getElementById('input-cfg-vip-gifts').value || 'sombrero, bigote, donut, rosquilla').trim();
+      rulesConfig.vipMinDiamonds = Number(document.getElementById('input-cfg-vip-diamonds').value) || 30;
+
+      try {
+        localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(rulesConfig));
+      } catch(err) {}
+
+      // Sincronizar vía WebSocket al backend en Render
+      if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
+        liveSocket.send(JSON.stringify({
+          action: 'updateRules',
+          rules: rulesConfig
+        }));
+      }
+
+      channel.postMessage({
+        type: 'RULES_UPDATE',
+        rules: rulesConfig
+      });
+
+      actualizarTextosReglas();
+      renderizarTodo();
+      cerrarModalReglas();
+      mostrarToast('✅ ¡Metas y reglas de regalos guardadas!');
+    }
+
+    function restablecerReglasDefault() {
+      document.getElementById('input-cfg-likes').value = 1000;
+      document.getElementById('input-cfg-shares').value = 10;
+      document.getElementById('input-cfg-roses').value = 5;
+      document.getElementById('input-cfg-medium-gifts').value = 'dedo, corazon, corazón';
+      document.getElementById('input-cfg-vip-gifts').value = 'sombrero, bigote, donut, rosquilla';
+      document.getElementById('input-cfg-vip-diamonds').value = 30;
+    }
+
+    // Determinar la prioridad según regalo o tipo (dinámico)
     function calcularPrioridad(regaloNombre) {
       if (!regaloNombre) return 'normal';
       const r = regaloNombre.toLowerCase();
-      if (r.includes('sombrero') || r.includes('bigote') || r.includes('donut') || r.includes('rosquilla')) {
-        return 'vip';
-      }
-      if (r.includes('dedo') || r.includes('corazon') || r.includes('corazón')) {
-        return 'medium';
-      }
+      const vipKeywords = String(rulesConfig.vipGifts || 'sombrero, bigote, donut, rosquilla')
+        .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+      const mediumKeywords = String(rulesConfig.mediumGifts || 'dedo, corazon, corazón')
+        .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+
+      if (vipKeywords.some(kw => r.includes(kw))) return 'vip';
+      if (mediumKeywords.some(kw => r.includes(kw))) return 'medium';
       return 'normal';
     }
 
@@ -1479,13 +1792,17 @@
       const sharesActuales = userShares[userKey] || 0;
       const rosesActuales = userRoses[userKey] || 0;
 
+      const likesReq = Number(rulesConfig.likesReq) || 1000;
+      const sharesReq = Number(rulesConfig.sharesReq) || 10;
+      const rosesReq = Number(rulesConfig.rosesReq) || 5;
+
       const yaCumple = Boolean(
         prioridad === 'vip' ||
         prioridad === 'medium' ||
         regaloNombre ||
-        likesActuales >= 1000 ||
-        sharesActuales >= 10 ||
-        rosesActuales >= 5
+        likesActuales >= likesReq ||
+        sharesActuales >= sharesReq ||
+        rosesActuales >= rosesReq
       );
 
       const status = estadoForzado || (yaCumple ? 'unlocked' : 'locked');
@@ -1714,7 +2031,8 @@
         }
         song.gift = regaloNombre + (cantidad > 1 ? ` x${cantidad}` : '');
 
-        const desbloquear = (prioridadRegalo === 'vip' || prioridadRegalo === 'medium' || (song.roses || 0) >= 5 || valorMonedas >= 5);
+        const rosesReq = Number(rulesConfig.rosesReq) || 5;
+        const desbloquear = (prioridadRegalo === 'vip' || prioridadRegalo === 'medium' || (song.roses || 0) >= rosesReq || valorMonedas >= 5);
 
         if (desbloquear && song.status === 'locked') {
           song.status = 'unlocked';
@@ -1749,7 +2067,7 @@
           return;
         }
 
-        // 5 Rosas o regalo de 5+ monedas
+        // Rosas o regalo de monedas configurado
         if (desbloquear) {
           playAlertSound('normal');
           persistirYNotificar();
@@ -1778,7 +2096,7 @@
       }
     }
 
-    // Registrar cuando un usuario comparte el live (10 compartidos desbloquean)
+    // Registrar cuando un usuario comparte el live (meta dinámica de compartidos)
     function registrarCompartidoUsuario(usuario, displayId = '', nickname = '', userId = '') {
       const chatName = (nickname || usuario || displayId || 'Usuario').trim();
       const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
@@ -1787,24 +2105,25 @@
       const total = (userShares[userKey] || 0) + 1;
       userShares[userKey] = total;
 
-      mostrarActividadEnVivo(`🔄 ${userDisplay} compartió el En Vivo [${total}/10]`);
+      const sharesReq = Number(rulesConfig.sharesReq) || 10;
+      mostrarActividadEnVivo(`🔄 ${userDisplay} compartió el En Vivo [${total}/${sharesReq}]`);
 
       const indiceEnCola = buscarCancionEnCola(userKey);
       if (indiceEnCola !== -1) {
         const song = state.queue[indiceEnCola];
         song.shares = total;
-        if (song.status === 'locked' && song.shares >= 10) {
+        if (song.status === 'locked' && song.shares >= sharesReq) {
           song.status = 'unlocked';
-          song.unlockedReason = '10 Compartidos 🔄';
+          song.unlockedReason = `${sharesReq} Compartidos 🔄`;
           playAlertSound('normal');
-          mostrarToast(`🎉 ¡${userDisplay} acumuló 10 compartidos! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
-          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con 10 compartidos!`);
+          mostrarToast(`🎉 ¡${userDisplay} acumuló ${sharesReq} compartidos! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con ${sharesReq} compartidos!`);
         }
         persistirYNotificar();
       }
     }
 
-    // Registrar cuando un usuario da likes a la pantalla (1000 likes acumulables desbloquean)
+    // Registrar cuando un usuario da likes a la pantalla (meta dinámica de likes)
     function registrarLikesUsuario(usuario, cantidad = 1, displayId = '', nickname = '', userId = '') {
       const chatName = (nickname || usuario || displayId || 'Usuario').trim();
       const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
@@ -1814,18 +2133,19 @@
       const total = (userLikes[userKey] || 0) + count;
       userLikes[userKey] = total;
 
-      mostrarActividadEnVivo(`❤️ ${userDisplay} dio likes [${total}/1000]`);
+      const likesReq = Number(rulesConfig.likesReq) || 1000;
+      mostrarActividadEnVivo(`❤️ ${userDisplay} dio likes [${total}/${likesReq}]`);
 
       const indiceEnCola = buscarCancionEnCola(userKey);
       if (indiceEnCola !== -1) {
         const song = state.queue[indiceEnCola];
         song.likes = total;
-        if (song.status === 'locked' && song.likes >= 1000) {
+        if (song.status === 'locked' && song.likes >= likesReq) {
           song.status = 'unlocked';
-          song.unlockedReason = '1000 Likes ❤️';
+          song.unlockedReason = `${likesReq} Likes ❤️`;
           playAlertSound('normal');
-          mostrarToast(`🎉 ¡${userDisplay} acumuló 1000 likes! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
-          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con 1000 likes!`);
+          mostrarToast(`🎉 ¡${userDisplay} acumuló ${likesReq} likes! Su canción "${song.title}" ha sido DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🎉 ¡${userDisplay} DESBLOQUEÓ su canción con ${likesReq} likes!`);
         }
         persistirYNotificar();
       }
@@ -1979,6 +2299,7 @@
           console.log('[LiveSocket] Conectado al servidor local de TikTok');
           liveSocket.send(JSON.stringify({ action: 'getStatus' }));
           liveSocket.send(JSON.stringify({ action: 'getQueue' }));
+          liveSocket.send(JSON.stringify({ action: 'getRules' }));
         };
 
         liveSocket.onmessage = (event) => {
@@ -1994,6 +2315,22 @@
               renderizarTodo();
               if (data.sound) {
                 playAlertSound(data.sound);
+              }
+            } else if (data.type === 'RULES_UPDATE') {
+              if (data.rules) {
+                rulesConfig = {
+                  likesReq: Number(data.rules.likesReq) || rulesConfig.likesReq,
+                  sharesReq: Number(data.rules.sharesReq) || rulesConfig.sharesReq,
+                  rosesReq: Number(data.rules.rosesReq) || rulesConfig.rosesReq,
+                  mediumGifts: data.rules.mediumGifts || rulesConfig.mediumGifts,
+                  vipGifts: data.rules.vipGifts || rulesConfig.vipGifts,
+                  vipMinDiamonds: Number(data.rules.vipMinDiamonds) || rulesConfig.vipMinDiamonds
+                };
+                try {
+                  localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(rulesConfig));
+                } catch(e) {}
+                actualizarTextosReglas();
+                renderizarTodo();
               }
             } else if (data.type === 'STATUS') {
               actualizarIndicadorEstado(data.status, data.username, data.error);
@@ -2195,7 +2532,7 @@
             <div class="empty-queue-icon">🎵</div>
             <div><strong>LA COLA ESTÁ VACÍA</strong></div>
             <div style="font-size: 11px; opacity: 0.85;">SÍGUEME Y COMENTA: ESCUCHA [CANCIÓN]</div>
-            <div style="font-size: 10px; opacity: 0.7;">DESBLOQUEA: 5 ROSAS 🌹 | 1000 LIKES ❤️ | 10 COMPARTIDOS 🔄</div>
+            <div style="font-size: 10px; opacity: 0.7;">DESBLOQUEA: ${rulesConfig.rosesReq} ROSAS 🌹 | ${rulesConfig.likesReq} LIKES ❤️ | ${rulesConfig.sharesReq} COMPARTIDOS 🔄</div>
           </div>
         `;
         return;
@@ -2211,10 +2548,14 @@
         const shares = song.shares || 0;
         const roses = song.roses || 0;
 
-        // Porcentajes para barra de progreso
-        const pctLikes = Math.min(100, Math.round((likes / 1000) * 100));
-        const pctShares = Math.min(100, Math.round((shares / 10) * 100));
-        const pctRoses = Math.min(100, Math.round((roses / 5) * 100));
+        const likesReq = Number(rulesConfig.likesReq) || 1000;
+        const sharesReq = Number(rulesConfig.sharesReq) || 10;
+        const rosesReq = Number(rulesConfig.rosesReq) || 5;
+
+        // Porcentajes para barra de progreso dinámicos
+        const pctLikes = Math.min(100, Math.round((likes / likesReq) * 100));
+        const pctShares = Math.min(100, Math.round((shares / sharesReq) * 100));
+        const pctRoses = Math.min(100, Math.round((roses / rosesReq) * 100));
         const maxPct = isLocked ? Math.max(pctLikes, pctShares, pctRoses) : 100;
 
         let statusBadgeHtml = '';
@@ -2245,9 +2586,9 @@
                   <div class="progress-bar-fill" style="width: ${maxPct}%;"></div>
                 </div>
                 <div class="progress-labels-row">
-                  <span>❤️ LIKES: ${likes}/1000</span>
-                  <span>🔄 SHARES: ${shares}/10</span>
-                  <span>🌹 ROSAS: ${roses}/5</span>
+                  <span>❤️ LIKES: ${likes}/${likesReq}</span>
+                  <span>🔄 SHARES: ${shares}/${sharesReq}</span>
+                  <span>🌹 ROSAS: ${roses}/${rosesReq}</span>
                 </div>
               </div>
             ` : ''}
@@ -2270,6 +2611,10 @@
       const linkSp = document.getElementById('link-search-spotify');
       const btnUnlockFeatured = document.getElementById('btn-unlock-featured');
 
+      const likesReq = Number(rulesConfig.likesReq) || 1000;
+      const sharesReq = Number(rulesConfig.sharesReq) || 10;
+      const rosesReq = Number(rulesConfig.rosesReq) || 5;
+
       if (state.queue.length > 0) {
         const topSong = state.queue[0];
         const isLocked = (topSong.status === 'locked');
@@ -2278,7 +2623,7 @@
         
         let giftText = topSong.gift ? `Regalo: ${topSong.gift}` : 'Sin regalo';
         if (isLocked) {
-          giftText += ` • 🔒 BLOQUEADA (Likes: ${topSong.likes || 0}/1000 | Shares: ${topSong.shares || 0}/10 | Rosas: ${topSong.roses || 0}/5)`;
+          giftText += ` • 🔒 BLOQUEADA (Likes: ${topSong.likes || 0}/${likesReq} | Shares: ${topSong.shares || 0}/${sharesReq} | Rosas: ${topSong.roses || 0}/${rosesReq})`;
         } else {
           giftText += ` • 🔓 LISTA PARA ESCUCHAR`;
         }
@@ -2344,7 +2689,7 @@
                   <div class="panel-song-meta">
                     <span style="color: #fff;">${escapeHtml(song.user)}</span>
                     ${isLocked 
-                      ? `<span style="color: #f87171; font-weight: 700; font-size: 11px;">🔒 Bloqueada (${song.likes || 0}/1000❤️ ${song.shares || 0}/10🔄 ${song.roses || 0}/5🌹)</span>`
+                      ? `<span style="color: #f87171; font-weight: 700; font-size: 11px;">🔒 Bloqueada (${song.likes || 0}/${likesReq}❤️ ${song.shares || 0}/${sharesReq}🔄 ${song.roses || 0}/${rosesReq}🌹)</span>`
                       : `<span style="color: #4ade80; font-weight: 700; font-size: 11px;">🔓 Desbloqueada</span>`
                     }
                     <span style="font-size: 11px;">${song.priority.toUpperCase()}</span>
@@ -2567,6 +2912,29 @@
           window.open(window.location.pathname + '?view=overlay', 'SlowMD_Overlay', 'width=520,height=920,resizable=yes');
         });
       }
+
+      // Modal de configuración de reglas y regalos
+      const btnOpenRules = document.getElementById('btn-open-rules-modal');
+      if (btnOpenRules) btnOpenRules.addEventListener('click', abrirModalReglas);
+
+      const btnCloseRules = document.getElementById('btn-close-rules-modal');
+      if (btnCloseRules) btnCloseRules.addEventListener('click', cerrarModalReglas);
+
+      const btnCancelRules = document.getElementById('btn-cancel-rules-modal');
+      if (btnCancelRules) btnCancelRules.addEventListener('click', cerrarModalReglas);
+
+      const btnResetRules = document.getElementById('btn-reset-rules-modal');
+      if (btnResetRules) btnResetRules.addEventListener('click', restablecerReglasDefault);
+
+      const modalRulesOverlay = document.getElementById('modal-rules-config');
+      if (modalRulesOverlay) {
+        modalRulesOverlay.addEventListener('click', (e) => {
+          if (e.target === modalRulesOverlay) cerrarModalReglas();
+        });
+      }
+
+      // Actualizar textos dinámicos de reglas
+      actualizarTextosReglas();
 
       // Renderizar estado inicial
       renderizarTodo();

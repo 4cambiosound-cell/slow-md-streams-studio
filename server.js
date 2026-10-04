@@ -8,10 +8,25 @@ const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 
 // Cargar configuración guardada
-let botConfig = { lastUsername: '' };
+let botConfig = {
+  lastUsername: '',
+  rules: {
+    likesReq: 1000,
+    sharesReq: 10,
+    rosesReq: 5,
+    mediumGifts: 'dedo, corazon, corazón',
+    vipGifts: 'sombrero, bigote, donut, rosquilla',
+    vipMinDiamonds: 30
+  }
+};
 try {
   if (fs.existsSync(CONFIG_FILE)) {
-    botConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const loaded = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    botConfig = {
+      ...botConfig,
+      ...loaded,
+      rules: { ...botConfig.rules, ...(loaded.rules || {}) }
+    };
   }
 } catch (e) {
   console.error('[Config] Error leyendo bot-config.json:', e.message);
@@ -268,7 +283,11 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
     return true;
   }
 
-  const yaCumple = (likesActuales >= 1000 || sharesActuales >= 10 || rosesActuales >= 5);
+  const likesReq = Number(botConfig.rules?.likesReq) || 1000;
+  const sharesReq = Number(botConfig.rules?.sharesReq) || 10;
+  const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
+
+  const yaCumple = (likesActuales >= likesReq || sharesActuales >= sharesReq || rosesActuales >= rosesReq);
   const status = yaCumple ? 'unlocked' : 'locked';
 
   const nuevaCancion = {
@@ -313,12 +332,13 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
   if (idx !== -1) {
     const s = queueState.queue[idx];
     s.likes = total;
-    if (s.status === 'locked' && s.likes >= 1000) {
+    const likesReq = Number(botConfig.rules?.likesReq) || 1000;
+    if (s.status === 'locked' && s.likes >= likesReq) {
       s.status = 'unlocked';
-      s.unlockedReason = '1000 Likes ❤️';
+      s.unlockedReason = `${likesReq} Likes ❤️`;
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal' });
-      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con 1000 likes!`, 'like');
+      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${likesReq} likes!`, 'like');
     } else {
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
@@ -342,12 +362,13 @@ function processServerShare(userIdentifier, extraInfo = {}) {
   if (idx !== -1) {
     const s = queueState.queue[idx];
     s.shares = total;
-    if (s.status === 'locked' && s.shares >= 10) {
+    const sharesReq = Number(botConfig.rules?.sharesReq) || 10;
+    if (s.status === 'locked' && s.shares >= sharesReq) {
       s.status = 'unlocked';
-      s.unlockedReason = '10 Compartidos 🔄';
+      s.unlockedReason = `${sharesReq} Compartidos 🔄`;
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal' });
-      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con 10 compartidos!`, 'share');
+      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${sharesReq} compartidos!`, 'share');
     } else {
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
@@ -365,8 +386,15 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   const totalRoses = (serverUserRoses.get(userKey) || 0) + (isRosa ? repeatCount : 0);
   if (isRosa) serverUserRoses.set(userKey, totalRoses);
 
-  const isVip = r.includes('sombrero') || r.includes('bigote') || r.includes('donut') || r.includes('rosquilla') || diamondCount >= 30;
-  const isMedium = r.includes('dedo') || r.includes('corazon') || r.includes('corazón');
+  const vipKeywords = String(botConfig.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla')
+    .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const mediumKeywords = String(botConfig.rules?.mediumGifts || 'dedo, corazon, corazón')
+    .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const vipMinDiamonds = Number(botConfig.rules?.vipMinDiamonds) || 30;
+  const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
+
+  const isVip = vipKeywords.some(kw => r.includes(kw)) || diamondCount >= vipMinDiamonds;
+  const isMedium = mediumKeywords.some(kw => r.includes(kw));
 
   if (comment) {
     processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
@@ -383,7 +411,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     s.gift = giftName + (repeatCount > 1 ? ` x${repeatCount}` : '');
     if (isVip) s.priority = 'vip';
 
-    const desbloquear = (isVip || isMedium || s.roses >= 5 || diamondCount >= 5);
+    const desbloquear = (isVip || isMedium || s.roses >= rosesReq || diamondCount >= 5);
     if (desbloquear && s.status === 'locked') {
       s.status = 'unlocked';
       s.unlockedReason = `Regalo: ${giftName}`;
@@ -664,8 +692,9 @@ function disconnectTikTok() {
 
 // Manejador de conexiones WebSocket
 wss.on('connection', (ws) => {
-  // Enviar estado actual, cola de canciones y logs iniciales al nuevo cliente
+  // Enviar estado actual, cola de canciones, reglas y logs iniciales al nuevo cliente
   ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
+  ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
   ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
   ws.send(JSON.stringify({ type: 'RECENT_LOGS', logs: recentLogs }));
 
@@ -678,6 +707,20 @@ wss.on('connection', (ws) => {
         disconnectTikTok();
       } else if (payload.action === 'getStatus') {
         ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
+      } else if (payload.action === 'getRules') {
+        ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
+      } else if (payload.action === 'updateRules') {
+        botConfig.rules = {
+          likesReq: Number(payload.rules?.likesReq) || 1000,
+          sharesReq: Number(payload.rules?.sharesReq) || 10,
+          rosesReq: Number(payload.rules?.rosesReq) || 5,
+          mediumGifts: String(payload.rules?.mediumGifts || 'dedo, corazon, corazón').trim(),
+          vipGifts: String(payload.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla').trim(),
+          vipMinDiamonds: Number(payload.rules?.vipMinDiamonds) || 30
+        };
+        saveConfig();
+        broadcast({ type: 'RULES_UPDATE', rules: botConfig.rules });
+        addLog(`⚙️ Reglas de desbloqueo actualizadas: ${botConfig.rules.likesReq} Likes, ${botConfig.rules.sharesReq} Shares, ${botConfig.rules.rosesReq} Rosas`, 'info');
       } else if (payload.action === 'getQueue') {
         ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
       } else if (payload.action === 'syncQueue') {
