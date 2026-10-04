@@ -102,6 +102,8 @@ const server = http.createServer((req, res) => {
     reqUrl = '/dashboard.html';
   } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
     reqUrl = '/cola-slow-md.html';
+  } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
+    reqUrl = '/comentarios-tts.html';
   }
 
   const filePath = path.join(__dirname, decodeURIComponent(reqUrl));
@@ -460,6 +462,8 @@ async function connectToTikTok(rawUsername) {
 
 // Seguidores conocidos en memoria durante el stream
 const knownFollowers = new Set();
+let globalLiveLikes = 0;
+let lastLikesMilestone = 0;
 
     const extractUserInfo = (data) => {
       const u = data.user || {};
@@ -502,6 +506,11 @@ const knownFollowers = new Set();
         if (displayId) knownFollowers.add(normalizarUserKey(displayId));
       }
 
+      let avatarUrl = u.profilePictureUrl || u.avatarThumb?.urlList?.[0] || u.avatarMedium?.urlList?.[0] || data.profilePictureUrl || '';
+      if (!avatarUrl) {
+        avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(chatName)}`;
+      }
+
       return {
         user: chatName,          // Nombre visible en el chat
         chatName: chatName,
@@ -509,6 +518,7 @@ const knownFollowers = new Set();
         handle: userHandle,
         nickname: nickname || '',
         userId: userId || '',
+        avatarUrl,
         isFollower
       };
     };
@@ -528,6 +538,7 @@ const knownFollowers = new Set();
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
+        avatarUrl: info.avatarUrl,
         comment,
         isFollower: info.isFollower,
         timestamp: Date.now()
@@ -548,6 +559,7 @@ const knownFollowers = new Set();
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
+        avatarUrl: info.avatarUrl,
         timestamp: Date.now()
       });
     });
@@ -576,6 +588,7 @@ const knownFollowers = new Set();
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
+        avatarUrl: info.avatarUrl,
         giftName,
         repeatCount,
         diamondCount,
@@ -601,6 +614,7 @@ const knownFollowers = new Set();
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
+        avatarUrl: info.avatarUrl,
         timestamp: Date.now()
       });
     };
@@ -622,6 +636,20 @@ const knownFollowers = new Set();
       const count = Number(data.count) || Number(data.likeCount) || 1;
       const total = data.total || null;
 
+      // Rastrear hitos acumulativos de 10,000 likes
+      globalLiveLikes += count;
+      const currentMilestone = Math.floor(globalLiveLikes / 10000) * 10000;
+      if (currentMilestone >= 10000 && currentMilestone > lastLikesMilestone) {
+        lastLikesMilestone = currentMilestone;
+        addLog(`🎉 ¡HITO ALCANZADO! ${currentMilestone.toLocaleString()} likes acumulados`, 'success');
+        broadcast({
+          type: 'LIKES_MILESTONE',
+          milestone: currentMilestone,
+          totalLikes: globalLiveLikes,
+          timestamp: Date.now()
+        });
+      }
+
       addLog(`❤️ ${info.chatName} dio ${count} likes ${total ? `(Total Live: ${total})` : ''}`, 'like');
       processServerLike(info.chatName, count, {
         displayId: info.displayId,
@@ -636,6 +664,7 @@ const knownFollowers = new Set();
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
+        avatarUrl: info.avatarUrl,
         count,
         total,
         timestamp: Date.now()

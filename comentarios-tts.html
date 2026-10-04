@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD - Caja de Comentarios TTS & Alertas 3D</title>
+  <!-- Three.js para animación 3D de esferas y confeti volumétrico -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0a0b10;
+      --bg-card: rgba(18, 20, 29, 0.88);
+      --bg-card-hover: rgba(28, 32, 46, 0.95);
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.45);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.4);
+      --cyan-accent: #00e5ff;
+      --purple-accent: #b347eb;
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: rgba(255, 15, 59, 0.28);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .view-container {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .view-container.active {
+      display: flex;
+    }
+
+    /* ============================================================= */
+    /* VISTA 1: OVERLAY TRANSPARENTE (PARA MELD STUDIO / OBS)        */
+    /* ============================================================= */
+    #overlay-view {
+      position: relative;
+      background: transparent !important;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 30px 20px;
+      pointer-events: none;
+    }
+
+    /* Lienzo 3D Three.js */
+    #three-canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Bordes de pantalla iluminados (Efectos de Alarma y Hitos) */
+    .screen-edge-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.4s ease-in-out;
+      box-shadow: inset 0 0 60px 20px var(--blood-red);
+    }
+    .screen-edge-glow.glow-red {
+      opacity: 1;
+      box-shadow: inset 0 0 80px 30px #ff0f3b, inset 0 0 140px rgba(255, 15, 59, 0.6);
+      animation: pulseBorder 1.2s infinite alternate;
+    }
+    .screen-edge-glow.glow-gold {
+      opacity: 1;
+      box-shadow: inset 0 0 80px 30px #ffb800, inset 0 0 140px rgba(255, 184, 0, 0.6);
+      animation: pulseBorder 1s infinite alternate;
+    }
+    .screen-edge-glow.glow-rgb {
+      opacity: 1;
+      animation: rgbBorderCycle 2s infinite linear;
+    }
+
+    @keyframes pulseBorder {
+      0% { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.002); }
+    }
+    @keyframes rgbBorderCycle {
+      0% { box-shadow: inset 0 0 80px 25px #ff0f3b; }
+      33% { box-shadow: inset 0 0 80px 25px #00e5ff; }
+      66% { box-shadow: inset 0 0 80px 25px #ffb800; }
+      100% { box-shadow: inset 0 0 80px 25px #ff0f3b; }
+    }
+
+    /* Burbuja de Alerta y Comentario */
+    .alert-card-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 580px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .alert-bubble {
+      background: rgba(10, 12, 18, 0.88);
+      border: 2px solid var(--blood-red);
+      border-radius: 20px;
+      padding: 16px 22px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px var(--blood-red-glow);
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      opacity: 0;
+      transform: translateY(35px) scale(0.92);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      color: #fff;
+    }
+
+    .alert-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .alert-bubble.theme-gold {
+      border-color: var(--gold-vip);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 35px var(--gold-vip-glow);
+    }
+
+    .alert-bubble.theme-cyan {
+      border-color: var(--cyan-accent);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 229, 255, 0.4);
+    }
+
+    .alert-bubble.theme-purple {
+      border-color: var(--purple-accent);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(179, 71, 235, 0.4);
+    }
+
+    .alert-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .alert-content-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .alert-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-badge {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--blood-red);
+      color: #fff;
+    }
+
+    .alert-user {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-message {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    /* Animación de Ondas de Voz */
+    .voice-waves {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      height: 16px;
+      margin-left: auto;
+    }
+    .voice-bar {
+      width: 3px;
+      height: 100%;
+      background: var(--blood-red);
+      border-radius: 3px;
+      animation: voiceBounce 0.8s infinite ease-in-out;
+    }
+    .voice-bar:nth-child(2) { animation-delay: 0.15s; }
+    .voice-bar:nth-child(3) { animation-delay: 0.3s; }
+    .voice-bar:nth-child(4) { animation-delay: 0.45s; }
+
+    @keyframes voiceBounce {
+      0%, 100% { height: 4px; }
+      50% { height: 16px; }
+    }
+
+    /* ============================================================= */
+    /* VISTA 2: PANEL DE CONTROL DEL STREAMER                        */
+    /* ============================================================= */
+    #panel-view {
+      flex-direction: column;
+      background: #090a0f;
+      padding: 24px;
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    .panel-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Top Nav */
+    .panel-top-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(14px);
+    }
+
+    .panel-brand-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      font-size: 28px;
+    }
+
+    .panel-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .panel-tagline {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .panel-actions-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action-panel {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-action-panel:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .btn-panic-stop {
+      background: rgba(255, 15, 59, 0.2);
+      border-color: var(--blood-red);
+      color: #ff3b5c;
+    }
+    .btn-panic-stop:hover {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 20px var(--blood-red-glow);
+    }
+
+    /* Grilla de 2 Columnas */
+    .tts-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+    }
+
+    .panel-card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .box-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      padding-bottom: 12px;
+    }
+
+    .box-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Controles de Voz TTS */
+    .controls-grid-tts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-control {
+      background: rgba(10, 12, 18, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--blood-red);
+      box-shadow: 0 0 10px rgba(255, 15, 59, 0.3);
+    }
+
+    .range-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-slider-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--blood-red);
+      cursor: pointer;
+    }
+
+    .range-val-badge {
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: 4px;
+      min-width: 44px;
+      text-align: center;
+    }
+
+    /* Lista de Reglas y Acciones */
+    .rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rule-item-card {
+      background: rgba(12, 14, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all 0.2s;
+    }
+    .rule-item-card:hover {
+      border-color: rgba(255, 15, 59, 0.3);
+      background: rgba(20, 24, 36, 0.85);
+    }
+
+    .rule-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .rule-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 15, 59, 0.15);
+      color: var(--blood-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .rule-texts {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .rule-name-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .rule-desc-meta {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rule-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-rule-test {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #4ade80;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-rule-test:hover {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .btn-rule-edit {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+
+    .btn-rule-delete {
+      background: rgba(255, 15, 59, 0.12);
+      border: 1px solid rgba(255, 15, 59, 0.25);
+      color: #ff3b5c;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+
+    /* Switch de toggle */
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+    .switch-toggle input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s;
+      border-radius: 22px;
+    }
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-toggle {
+      background-color: var(--blood-red);
+    }
+    input:checked + .slider-toggle:before {
+      transform: translateX(18px);
+    }
+
+    /* Gestor de Audios y Canción de 10k */
+    .audio-manager-card {
+      background: rgba(12, 14, 22, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .audio-dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .audio-dropzone:hover {
+      border-color: var(--blood-red);
+      background: rgba(255, 15, 59, 0.05);
+    }
+
+    /* Botón flotante para alternar vista */
+    .floating-mode-switch {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 9999;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
+      opacity: 0.3;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+    .floating-mode-switch:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+    .floating-mode-switch button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    .floating-mode-switch button.active-btn {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+
+    /* Modal Editor de Regla */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+    .modal-card {
+      background: linear-gradient(145deg, #131520 0%, #1a1725 100%);
+      border: 1px solid var(--blood-red);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px var(--blood-red-glow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Responsivo para celular */
+    @media (max-width: 860px) {
+      #panel-view {
+        padding: 12px 10px 80px 10px;
+      }
+      .panel-top-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+      }
+      .panel-actions-top {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .btn-panic-stop {
+        grid-column: 1 / -1;
+        justify-content: center;
+      }
+      .tts-grid {
+        grid-template-columns: 1fr;
+      }
+      .controls-grid-tts {
+        grid-template-columns: 1fr;
+      }
+      .form-control {
+        font-size: 16px; /* Evita auto-zoom en iOS */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================= -->
+  <!-- VISTA 1: OVERLAY (PARA OBS / MELD STUDIO)                     -->
+  <!-- ============================================================= -->
+  <div id="overlay-view" class="view-container">
+    
+    <!-- Lienzo Three.js para esferas 3D y confeti -->
+    <div id="three-canvas-container"></div>
+
+    <!-- Bordes Iluminados de Pantalla -->
+    <div id="screen-edge-glow" class="screen-edge-glow"></div>
+
+    <!-- Burbuja Dinámica de Comentarios y Alertas -->
+    <div class="alert-card-container">
+      <div id="alert-bubble" class="alert-bubble">
+        <img id="alert-avatar" class="alert-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD" alt="Avatar">
+        <div class="alert-content-col">
+          <div class="alert-badge-row">
+            <span id="alert-badge" class="alert-badge">ALERTA</span>
+            <span id="alert-user" class="alert-user">Usuario</span>
+            <div id="voice-waves" class="voice-waves">
+              <span class="voice-bar"></span>
+              <span class="voice-bar"></span>
+              <span class="voice-bar"></span>
+              <span class="voice-bar"></span>
+            </div>
+          </div>
+          <div id="alert-message" class="alert-message">¡Bienvenido a la transmisión!</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- VISTA 2: PANEL DE CONTROL DEL STREAMER                        -->
+  <!-- ============================================================= -->
+  <div id="panel-view" class="view-container">
+    <div class="panel-container">
+      
+      <!-- Barra Superior -->
+      <header class="panel-top-nav">
+        <div class="panel-brand-area">
+          <span class="brand-icon">🗣️</span>
+          <div>
+            <h1 class="panel-title">CAJA DE COMENTARIOS TTS & ALERTAS 3D</h1>
+            <p class="panel-tagline">Voz artificial para comentarios, lluvia de esferas 3D y celebraciones interactivas</p>
+          </div>
+        </div>
+        <div class="panel-actions-top">
+          <button class="btn-action-panel btn-panic-stop" id="btn-panic-mute" onclick="silenciarTodo()">
+            <span>🛑</span> SILENCIAR AUDIO AHORA
+          </button>
+          <button class="btn-action-panel" onclick="probarTTSDemo()">
+            <span>🎧</span> Probar Voz
+          </button>
+          <a class="btn-action-panel" href="/dashboard.html">
+            <span>🏠</span> Studio Hub
+          </a>
+        </div>
+      </header>
+
+      <!-- Grilla Principal -->
+      <div class="tts-grid">
+        
+        <!-- Columna Izquierda: Configuración de Voz y Reglas -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- Caja de Ajustes de Voz (TTS) -->
+          <div class="panel-card-box">
+            <div class="box-title-row">
+              <div class="box-title">
+                <span>🎙️</span> Motor de Voz Artificial (TTS)
+              </div>
+              <span style="font-size: 11px; background: rgba(34,197,94,0.15); color: #4ade80; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+                100% GRATIS & SIN LÍMITES
+              </span>
+            </div>
+
+            <div class="controls-grid-tts">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="select-voice">Voz del Sistema o Navegador</label>
+                <select id="select-voice" class="form-control" onchange="guardarConfiguracionVoz()">
+                  <option value="">Cargando modelos de voz disponibles...</option>
+                </select>
+                <span style="font-size: 11px; color: var(--text-muted);">
+                  Detecta automáticamente voces en español (Google, Microsoft, Apple, Android) y modo de voz TikTok.
+                </span>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <span>Volumen</span>
+                  <span id="label-volume" class="range-val-badge">100%</span>
+                </label>
+                <div class="range-slider-row">
+                  <input type="range" id="slider-volume" min="0" max="1" step="0.05" value="1" oninput="actualizarValoresSliders(); guardarConfiguracionVoz();">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <span>Velocidad de Lectura</span>
+                  <span id="label-rate" class="range-val-badge">1.0x</span>
+                </label>
+                <div class="range-slider-row">
+                  <input type="range" id="slider-rate" min="0.6" max="1.8" step="0.1" value="1" oninput="actualizarValoresSliders(); guardarConfiguracionVoz();">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <span>Tono / Pitch</span>
+                  <span id="label-pitch" class="range-val-badge">1.0</span>
+                </label>
+                <div class="range-slider-row">
+                  <input type="range" id="slider-pitch" min="0.5" max="1.6" step="0.1" value="1" oninput="actualizarValoresSliders(); guardarConfiguracionVoz();">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Voz Viral de TikTok</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="toggle-tiktok-voice" onchange="guardarConfiguracionVoz()">
+                    <span class="slider-toggle"></span>
+                  </label>
+                  <span style="font-size: 12px; color: var(--text-secondary);">Activar estilo robótico viral</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filtros de Chat & Spam -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label class="switch-toggle">
+                  <input type="checkbox" id="filter-followers-only" onchange="guardarConfiguracionVoz()">
+                  <span class="slider-toggle"></span>
+                </label>
+                <span style="font-size: 12px; font-weight: 600;">Solo seguidores</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label class="switch-toggle">
+                  <input type="checkbox" id="filter-anti-spam" checked onchange="guardarConfiguracionVoz()">
+                  <span class="slider-toggle"></span>
+                </label>
+                <span style="font-size: 12px; font-weight: 600;">Filtro anti-spam emojis</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gestor de Reglas y Acciones Personalizables -->
+          <div class="panel-card-box">
+            <div class="box-title-row">
+              <div class="box-title">
+                <span>⚡</span> Acciones, Sonidos y Animaciones 3D
+              </div>
+              <button class="btn-action-panel" style="padding: 6px 12px; font-size: 12px;" onclick="abrirModalNuevaRegla()">
+                + Agregar Regla
+              </button>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+              Personaliza qué animación 3D, sonido y mensaje de voz se reproducen cuando ocurre cada evento en tu directo:
+            </p>
+
+            <div class="rules-list" id="rules-container">
+              <!-- Renderizado dinámico de reglas -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Columna Derecha: Canción de 10k Likes, Audios y Simulador -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- Hito Especial 10,000 Likes (Canción de 20s + Confeti 3D) -->
+          <div class="panel-card-box" style="border-color: rgba(255, 15, 59, 0.4);">
+            <div class="box-title-row">
+              <div class="box-title" style="color: #ff3b5c;">
+                <span>❤️</span> Hito de 10,000 Likes (Canción 20s)
+              </div>
+              <span id="status-song-loaded" style="font-size: 11px; color: #4ade80; font-weight: 700;">Activo</span>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4;">
+              Cada vez que la transmisión alcance 10,000 likes (10k, 20k, 30k...), sonará tu canción de fondo durante <strong>20 segundos</strong> con bajada gradual (fade-out) y una explosión de corazoncitos 3D en pantalla.
+            </p>
+
+            <div class="audio-manager-card">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 13px; font-weight: 700;" id="milestone-song-name">🎵 Canción de Celebración (Predeterminada)</span>
+                <button class="btn-rule-test" onclick="simularEvento('milestone_likes')">▶️ Probar 20s</button>
+              </div>
+
+              <div class="audio-dropzone" onclick="document.getElementById('input-upload-song').click()">
+                <div style="font-size: 20px; margin-bottom: 4px;">📂</div>
+                <div style="font-size: 12.5px; font-weight: 700;">Subir tu propia canción (MP3 / WAV)</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Guardada en tu navegador sin límite</div>
+                <input type="file" id="input-upload-song" accept="audio/*" style="display: none;" onchange="manejarSubidaCancion(event)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Gestor de Efectos de Sonido Subidos (IndexedDB) -->
+          <div class="panel-card-box">
+            <div class="box-title-row">
+              <div class="box-title">
+                <span>🔊</span> Biblioteca de Sonidos Personalizados
+              </div>
+              <button class="btn-action-panel" style="padding: 4px 10px; font-size: 11px;" onclick="document.getElementById('input-upload-sfx').click()">
+                + Subir Sonido
+              </button>
+              <input type="file" id="input-upload-sfx" accept="audio/*" style="display: none;" onchange="manejarSubidaSonido(event)">
+            </div>
+            
+            <div id="custom-sounds-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+              <!-- Sonidos disponibles -->
+            </div>
+          </div>
+
+          <!-- Simulador de Pruebas TikTok Live -->
+          <div class="panel-card-box">
+            <div class="box-title-row">
+              <div class="box-title">
+                <span>🎮</span> Simulador de Eventos en Vivo
+              </div>
+              <span style="font-size: 11px; background: rgba(255,15,59,0.2); color: var(--blood-red); padding: 2px 6px; border-radius: 4px;">
+                MELD / OBS TEST
+              </span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary);">
+              Prueba cómo reacciona el overlay en vivo al instante:
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button class="btn-action-panel" style="justify-content: center;" onclick="simularEvento('follow')">
+                <span>➕</span> Nuevo Seguidor
+              </button>
+              <button class="btn-action-panel" style="justify-content: center;" onclick="simularEvento('share')">
+                <span>🔄</span> Compartió Live
+              </button>
+              <button class="btn-action-panel" style="justify-content: center;" onclick="simularEvento('chat')">
+                <span>💬</span> Comentario Chat
+              </button>
+              <button class="btn-action-panel" style="justify-content: center; border-color: var(--gold-vip); color: var(--gold-vip);" onclick="simularEvento('mvp_gift')">
+                <span>👑</span> Donador MVP (+99)
+              </button>
+              <button class="btn-action-panel" style="justify-content: center; grid-column: 1 / -1; border-color: var(--blood-red); color: var(--blood-red);" onclick="simularEvento('milestone_likes')">
+                <span>❤️</span> Hito 10,000 Likes (Canción 20s)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Regla -->
+  <div id="modal-rule-editor" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-rule-title" style="font-size: 16px; font-weight: 800;">Editar Regla de Alerta</h3>
+        <button style="background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="cerrarModalRegla()">✕</button>
+      </div>
+      <form id="form-rule-edit" onsubmit="guardarModalRegla(event)">
+        <div class="modal-body">
+          <input type="hidden" id="edit-rule-id">
+
+          <div class="form-group">
+            <label for="rule-input-name">Nombre de la Acción</label>
+            <input type="text" id="rule-input-name" class="form-control" required placeholder="Ej. Nuevo Seguidor">
+          </div>
+
+          <div class="form-group">
+            <label for="rule-select-event">Tipo de Evento TikTok</label>
+            <select id="rule-select-event" class="form-control">
+              <option value="follow">Nuevo Seguidor</option>
+              <option value="share">Compartió la Transmisión</option>
+              <option value="chat">Comentario de Chat</option>
+              <option value="mvp_gift">Regalo MVP (> 99 Diamantes)</option>
+              <option value="gift">Cualquier Regalo</option>
+              <option value="milestone_likes">Hito de Likes (10,000)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="rule-select-anim">Efecto / Animación 3D en Pantalla</label>
+            <select id="rule-select-anim" class="form-control">
+              <option value="spheres_avatar">Bolitas 3D con Foto de Perfil Cayendo (Físicas)</option>
+              <option value="confetti_hearts">Confeti 3D de Corazones Rojos Giratorios</option>
+              <option value="glow_gold">Bordes de Pantalla Dorados Neón (VIP)</option>
+              <option value="glow_red">Bordes de Pantalla Rojos Neón</option>
+              <option value="glow_rgb">Bordes de Pantalla RGB Multicolores</option>
+              <option value="none">Sin animación 3D (Solo tarjeta)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="rule-select-sound">Efecto de Sonido</label>
+            <select id="rule-select-sound" class="form-control">
+              <option value="bell">Campana Suave</option>
+              <option value="triumph">Alarma Triunfal / Fanfarria</option>
+              <option value="pop">Burbuja / Pop</option>
+              <option value="applause">Aplausos</option>
+              <option value="custom_milestone">Canción Personalizada (20s)</option>
+              <option value="none">Sin Sonido</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="rule-input-template">Mensaje Leído por Voz (TTS)</label>
+            <input type="text" id="rule-input-template" class="form-control" placeholder="¡{user} te empezó a seguir!">
+            <span style="font-size: 11px; color: var(--text-muted);">Variables disponibles: {user}, {comment}, {gift}</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label class="switch-toggle">
+              <input type="checkbox" id="rule-input-tts-enabled" checked>
+              <span class="slider-toggle"></span>
+            </label>
+            <span style="font-size: 13px; font-weight: 700;">Reproducir Voz (TTS)</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-action-panel" onclick="cerrarModalRegla()">Cancelar</button>
+          <button type="submit" class="btn-action-panel" style="background: var(--blood-red); border-color: var(--blood-red);">
+            Guardar Regla
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Switch flotante para cambiar entre Overlay y Panel -->
+  <div class="floating-mode-switch">
+    <span style="font-size: 11px; color: var(--text-muted);">VISTA:</span>
+    <button id="switch-to-overlay" onclick="cambiarVista('overlay')">Overlay (Meld)</button>
+    <button id="switch-to-panel" onclick="cambiarVista('panel')">Panel Streamer</button>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- LÓGICA DE SINCRONIZACIÓN, THREE.JS 3D, TTS E INDEXEDDB        -->
+  <!-- ============================================================= -->
+  <script>
+    const STORAGE_KEY_TTS_CFG = 'slow_md_tts_config_v1';
+    const STORAGE_KEY_RULES = 'slow_md_tts_rules_v1';
+    const CHANNEL_NAME = 'slow_md_tts_channel';
+    const syncChannel = new BroadcastChannel(CHANNEL_NAME);
+
+    // Estado principal
+    let ttsConfig = {
+      voiceURI: '',
+      volume: 1.0,
+      rate: 1.0,
+      pitch: 1.0,
+      tiktokVoice: false,
+      followersOnly: false,
+      antiSpam: true
+    };
+
+    let ttsRules = [
+      {
+        id: 'rule_follow',
+        name: 'Nuevo Seguidor',
+        event: 'follow',
+        animation: 'spheres_avatar',
+        sound: 'bell',
+        ttsTemplate: '¡{user} comenzó a seguirte!',
+        ttsEnabled: true,
+        enabled: true
+      },
+      {
+        id: 'rule_share',
+        name: 'Compartió el En Vivo',
+        event: 'share',
+        animation: 'glow_red',
+        sound: 'pop',
+        ttsTemplate: '¡{user} compartió la transmisión!',
+        ttsEnabled: true,
+        enabled: true
+      },
+      {
+        id: 'rule_chat',
+        name: 'Comentarios del Chat',
+        event: 'chat',
+        animation: 'none',
+        sound: 'none',
+        ttsTemplate: '{user} dice: {comment}',
+        ttsEnabled: true,
+        enabled: true
+      },
+      {
+        id: 'rule_mvp',
+        name: 'Donador MVP (+99 Diamantes)',
+        event: 'mvp_gift',
+        animation: 'glow_gold',
+        sound: 'triumph',
+        ttsTemplate: '¡Atención! {user} es donador MVP con {gift}!',
+        ttsEnabled: true,
+        enabled: true
+      },
+      {
+        id: 'rule_milestone',
+        name: 'Hito 10,000 Likes',
+        event: 'milestone_likes',
+        animation: 'confetti_hearts',
+        sound: 'custom_milestone',
+        ttsTemplate: '¡Llegamos a la meta de diez mil likes!',
+        ttsEnabled: true,
+        enabled: true
+      }
+    ];
+
+    // IndexedDB para audios personalizados sin límite de tamaño
+    const DB_NAME = 'SlowMDSoundStudioDB';
+    const DB_VERSION = 1;
+    let dbInstance = null;
+
+    function abrirIndexedDB() {
+      return new Promise((resolve, reject) => {
+        if (dbInstance) return resolve(dbInstance);
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('sounds')) {
+            db.createObjectStore('sounds', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    async function guardarAudioIndexedDB(id, name, blob) {
+      const db = await abrirIndexedDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('sounds', 'readwrite');
+        const store = tx.objectStore('sounds');
+        store.put({ id, name, blob, date: Date.now() });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = (err) => reject(err);
+      });
+    }
+
+    async function obtenerAudioIndexedDB(id) {
+      const db = await abrirIndexedDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('sounds', 'readonly');
+        const store = tx.objectStore('sounds');
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    // =============================================================
+    // SINTETIZADOR WEB AUDIO API (SONIDOS DE SERIE DE ALTA FIDELIDAD)
+    // =============================================================
+    const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    let localAudioCtx = null;
+
+    function getAudioContext() {
+      if (!localAudioCtx) localAudioCtx = new AudioCtxClass();
+      if (localAudioCtx.state === 'suspended') localAudioCtx.resume();
+      return localAudioCtx;
+    }
+
+    function reproducirSonidoPredeterminado(tipo) {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(ttsConfig.volume * 0.7, now);
+
+        if (tipo === 'bell') {
+          // Campana suave armónica
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          osc1.type = 'sine'; osc2.type = 'triangle';
+          osc1.frequency.setValueAtTime(880, now);
+          osc2.frequency.setValueAtTime(1760, now);
+          osc1.connect(gain); osc2.connect(gain);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+          osc1.start(now); osc2.start(now);
+          osc1.stop(now + 1.2); osc2.stop(now + 1.2);
+        } else if (tipo === 'pop') {
+          // Burbuja pop aguda
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(1100, now + 0.12);
+          osc.connect(gain);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.start(now); osc.stop(now + 0.22);
+        } else if (tipo === 'triumph') {
+          // Fanfarria triunfal para MVP
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const noteGain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+            noteGain.gain.setValueAtTime(ttsConfig.volume * 0.4, now + idx * 0.11);
+            noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.45);
+            osc.connect(noteGain);
+            noteGain.connect(ctx.destination);
+            osc.start(now + idx * 0.11);
+            osc.stop(now + idx * 0.11 + 0.45);
+          });
+        }
+      } catch (err) {
+        console.warn('Error en sintetizador de sonido:', err);
+      }
+    }
+
+    // Reproductor de canción de los 10k Likes (20 segundos con fade-out gradual)
+    let audioMilestoneElement = null;
+    let fadeOutInterval = null;
+
+    async function reproducirCancion10kLikes() {
+      detenerCancion10kLikes();
+      const customBlob = await obtenerAudioIndexedDB('milestone_song');
+      
+      if (customBlob) {
+        const url = URL.createObjectURL(customBlob);
+        audioMilestoneElement = new Audio(url);
+        audioMilestoneElement.volume = ttsConfig.volume;
+        audioMilestoneElement.play().catch(e => console.warn(e));
+
+        // Programar fade-out gradual en los últimos 6 segundos
+        setTimeout(() => {
+          if (!audioMilestoneElement) return;
+          let vol = audioMilestoneElement.volume;
+          fadeOutInterval = setInterval(() => {
+            vol -= 0.05;
+            if (vol <= 0.02 || !audioMilestoneElement) {
+              clearInterval(fadeOutInterval);
+              detenerCancion10kLikes();
+            } else {
+              audioMilestoneElement.volume = Math.max(0, vol);
+            }
+          }, 200);
+        }, 14000); // Empieza a bajar a los 14s hasta los 20s
+      } else {
+        // Sonido de celebración sintetizado de 10k likes
+        reproducirSonidoPredeterminado('triumph');
+      }
+    }
+
+    function detenerCancion10kLikes() {
+      if (fadeOutInterval) clearInterval(fadeOutInterval);
+      if (audioMilestoneElement) {
+        audioMilestoneElement.pause();
+        audioMilestoneElement.currentTime = 0;
+        audioMilestoneElement = null;
+      }
+    }
+
+    // =============================================================
+    // MOTOR DE VOZ ARTIFICIAL (TTS) SECUENCIAL CON FILTROS
+    // =============================================================
+    const ttsQueue = [];
+    let isSpeaking = false;
+    let voicesList = [];
+
+    function cargarVocesNativas() {
+      if (!('speechSynthesis' in window)) return;
+      voicesList = window.speechSynthesis.getVoices();
+      const select = document.getElementById('select-voice');
+      if (!select) return;
+
+      select.innerHTML = '';
+      if (voicesList.length === 0) {
+        select.innerHTML = '<option value="">Cargando voces...</option>';
+        return;
+      }
+
+      // Priorizar voces en español
+      const spanishVoices = voicesList.filter(v => v.lang.startsWith('es'));
+      const otherVoices = voicesList.filter(v => !v.lang.startsWith('es'));
+
+      const grpEs = document.createElement('optgroup');
+      grpEs.label = '🇪🇸 Voces en Español';
+      spanishVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voiceURI;
+        opt.textContent = `${v.name} (${v.lang})`;
+        if (v.voiceURI === ttsConfig.voiceURI) opt.selected = true;
+        grpEs.appendChild(opt);
+      });
+      select.appendChild(grpEs);
+
+      const grpOther = document.createElement('optgroup');
+      grpOther.label = '🌐 Otras Voces';
+      otherVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voiceURI;
+        opt.textContent = `${v.name} (${v.lang})`;
+        if (v.voiceURI === ttsConfig.voiceURI) opt.selected = true;
+        grpOther.appendChild(opt);
+      });
+      select.appendChild(grpOther);
+
+      // Si no hay voz elegida, elegir la primera en español por defecto
+      if (!ttsConfig.voiceURI && spanishVoices.length > 0) {
+        ttsConfig.voiceURI = spanishVoices[0].voiceURI;
+        select.value = ttsConfig.voiceURI;
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = cargarVocesNativas;
+    }
+
+    function hablarTexto(texto, alTerminar) {
+      if (!('speechSynthesis' in window) || !texto) {
+        if (alTerminar) alTerminar();
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(texto);
+      
+      if (ttsConfig.voiceURI) {
+        const found = voicesList.find(v => v.voiceURI === ttsConfig.voiceURI);
+        if (found) utterance.voice = found;
+      }
+
+      utterance.volume = ttsConfig.volume;
+      utterance.rate = ttsConfig.rate;
+      utterance.pitch = ttsConfig.pitch;
+
+      utterance.onstart = () => {
+        const waves = document.getElementById('voice-waves');
+        if (waves) waves.style.display = 'inline-flex';
+      };
+
+      utterance.onend = () => {
+        const waves = document.getElementById('voice-waves');
+        if (waves) waves.style.display = 'none';
+        if (alTerminar) alTerminar();
+      };
+
+      utterance.onerror = () => {
+        const waves = document.getElementById('voice-waves');
+        if (waves) waves.style.display = 'none';
+        if (alTerminar) alTerminar();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function procesarColaTTS() {
+      if (isSpeaking || ttsQueue.length === 0) return;
+      isSpeaking = true;
+      const item = ttsQueue.shift();
+
+      // Mostrar en pantalla la tarjeta de alerta
+      mostrarAlertaEnOverlay(item);
+
+      // Reproducir sonido si la regla lo especifica
+      if (item.sound === 'custom_milestone') {
+        reproducirCancion10kLikes();
+      } else if (item.sound && item.sound !== 'none') {
+        reproducirSonidoPredeterminado(item.sound);
+      }
+
+      // Disparar animación 3D
+      dispararAnimacion3D(item.animation, item.avatarUrl);
+
+      // Disparar lectura de voz
+      if (item.ttsText && item.ttsEnabled) {
+        hablarTexto(item.ttsText, () => {
+          setTimeout(() => {
+            ocultarAlertaOverlay();
+            isSpeaking = false;
+            procesarColaTTS();
+          }, 1200);
+        });
+      } else {
+        setTimeout(() => {
+          ocultarAlertaOverlay();
+          isSpeaking = false;
+          procesarColaTTS();
+        }, 4000);
+      }
+    }
+
+    function silenciarTodo() {
+      ttsQueue.length = 0;
+      isSpeaking = false;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      detenerCancion10kLikes();
+      ocultarAlertaOverlay();
+      detenerAnimaciones3D();
+    }
+
+    // =============================================================
+    // MOTOR GRÁFICO 3D (THREE.JS): ESFERAS CON AVATAR & CONFETI
+    // =============================================================
+    let scene, camera, renderer;
+    let sphereMeshes = [];
+    let confettiParticles = null;
+    let animationFrameId = null;
+
+    function initThree3D() {
+      const container = document.getElementById('three-canvas-container');
+      if (!container || !window.THREE) return;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 25;
+      camera.position.y = 0;
+
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Luces para reflejo realista en las esferas
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirLight.position.set(10, 20, 15);
+      scene.add(dirLight);
+
+      window.addEventListener('resize', onWindowResize);
+      animate3D();
+    }
+
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate3D() {
+      animationFrameId = requestAnimationFrame(animate3D);
+
+      // Actualizar físicas de las esferas
+      const gravity = -0.35;
+      const floorY = -12;
+
+      for (let i = sphereMeshes.length - 1; i >= 0; i--) {
+        const s = sphereMeshes[i];
+        s.vy += gravity;
+        s.position.x += s.vx;
+        s.position.y += s.vy;
+        s.position.z += s.vz;
+        s.rotation.x += s.rx;
+        s.rotation.y += s.ry;
+
+        // Rebote en el piso
+        if (s.position.y <= floorY) {
+          s.position.y = floorY;
+          s.vy = -s.vy * 0.65; // Elasticidad
+          s.vx *= 0.85;
+          s.bounces = (s.bounces || 0) + 1;
+        }
+
+        // Desvanecimiento suave tras varios rebotes
+        if (s.bounces > 4) {
+          s.material.opacity -= 0.02;
+          if (s.material.opacity <= 0) {
+            scene.remove(s);
+            sphereMeshes.splice(i, 1);
+          }
+        }
+      }
+
+      // Animar confeti de corazones
+      if (confettiParticles) {
+        confettiParticles.rotation.y += 0.008;
+        const positions = confettiParticles.geometry.attributes.position.array;
+        for (let i = 1; i < positions.length; i += 3) {
+          positions[i] -= 0.12; // Caída
+          if (positions[i] < -20) positions[i] = 20;
+        }
+        confettiParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // Lluvia de esferas 3D con foto de perfil del usuario
+    function lanzarEsferasAvatar3D(avatarUrl) {
+      if (!scene) return;
+      const textureLoader = new THREE.TextureLoader();
+      const safeUrl = avatarUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD';
+
+      textureLoader.load(safeUrl, (texture) => {
+        const count = 18; // Cantidad de esferas
+        for (let i = 0; i < count; i++) {
+          const radius = 1.1 + Math.random() * 0.6;
+          const geom = new THREE.SphereGeometry(radius, 24, 24);
+          const mat = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.25,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 1
+          });
+
+          const mesh = new THREE.Mesh(geom, mat);
+          mesh.position.x = (Math.random() - 0.5) * 18;
+          mesh.position.y = 15 + Math.random() * 10;
+          mesh.position.z = (Math.random() - 0.5) * 8;
+
+          mesh.vx = (Math.random() - 0.5) * 0.4;
+          mesh.vy = -0.1 - Math.random() * 0.4;
+          mesh.vz = (Math.random() - 0.5) * 0.3;
+          mesh.rx = (Math.random() - 0.5) * 0.1;
+          mesh.ry = (Math.random() - 0.5) * 0.1;
+
+          scene.add(mesh);
+          sphereMeshes.push(mesh);
+        }
+      });
+    }
+
+    // Explosión de confeti de corazones 3D para 10,000 Likes
+    function lanzarConfetiCorazones3D() {
+      if (!scene) return;
+      if (confettiParticles) scene.remove(confettiParticles);
+
+      const particleCount = 200;
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+      const colors = [];
+
+      for (let i = 0; i < particleCount; i++) {
+        positions.push((Math.random() - 0.5) * 35);
+        positions.push(Math.random() * 30 - 5);
+        positions.push((Math.random() - 0.5) * 20);
+
+        // Rojos y dorados brillantes
+        colors.push(1, 0.05 + Math.random() * 0.2, 0.2 + Math.random() * 0.2);
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.9,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9
+      });
+
+      confettiParticles = new THREE.Points(geometry, material);
+      scene.add(confettiParticles);
+
+      // Quitar tras 20 segundos
+      setTimeout(() => {
+        if (confettiParticles && scene) {
+          scene.remove(confettiParticles);
+          confettiParticles = null;
+        }
+      }, 20000);
+    }
+
+    function dispararAnimacion3D(tipoAnim, avatarUrl) {
+      const glow = document.getElementById('screen-edge-glow');
+      if (glow) glow.className = 'screen-edge-glow';
+
+      if (tipoAnim === 'spheres_avatar') {
+        lanzarEsferasAvatar3D(avatarUrl);
+      } else if (tipoAnim === 'confetti_hearts') {
+        lanzarConfetiCorazones3D();
+        if (glow) glow.classList.add('glow-red');
+      } else if (tipoAnim === 'glow_gold') {
+        if (glow) glow.classList.add('glow-gold');
+      } else if (tipoAnim === 'glow_red') {
+        if (glow) glow.classList.add('glow-red');
+      } else if (tipoAnim === 'glow_rgb') {
+        if (glow) glow.classList.add('glow-rgb');
+      }
+
+      if (glow && tipoAnim !== 'confetti_hearts') {
+        setTimeout(() => {
+          if (glow) glow.className = 'screen-edge-glow';
+        }, 5000);
+      }
+    }
+
+    function detenerAnimaciones3D() {
+      if (scene) {
+        sphereMeshes.forEach(s => scene.remove(s));
+        sphereMeshes = [];
+        if (confettiParticles) {
+          scene.remove(confettiParticles);
+          confettiParticles = null;
+        }
+      }
+      const glow = document.getElementById('screen-edge-glow');
+      if (glow) glow.className = 'screen-edge-glow';
+    }
+
+    // =============================================================
+    // CONTROL DEL OVERLAY VISUAL
+    // =============================================================
+    function mostrarAlertaEnOverlay(item) {
+      const bubble = document.getElementById('alert-bubble');
+      const avatar = document.getElementById('alert-avatar');
+      const badge = document.getElementById('alert-badge');
+      const user = document.getElementById('alert-user');
+      const msg = document.getElementById('alert-message');
+
+      if (!bubble) return;
+
+      bubble.className = 'alert-bubble show';
+      if (item.theme) bubble.classList.add(`theme-${item.theme}`);
+
+      if (avatar) avatar.src = item.avatarUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD';
+      if (badge) badge.textContent = item.badgeText || 'ALERTA';
+      if (user) user.textContent = item.user || 'Usuario';
+      if (msg) msg.textContent = item.messageText || '';
+    }
+
+    function ocultarAlertaOverlay() {
+      const bubble = document.getElementById('alert-bubble');
+      if (bubble) bubble.classList.remove('show');
+    }
+
+    // =============================================================
+    // DISPATCHER DE EVENTOS (ENLACE ENTRE TIKTOK Y REGLAS)
+    // =============================================================
+    function despacharEventoAlerta(eventType, data) {
+      const rule = ttsRules.find(r => r.enabled && r.event === eventType);
+      if (!rule) return;
+
+      // Filtro anti-spam si es chat
+      if (eventType === 'chat') {
+        if (ttsConfig.followersOnly && !data.isFollower) return;
+        if (ttsConfig.antiSpam) {
+          const cleanComment = (data.comment || '').trim();
+          if (cleanComment.length < 2) return;
+          if (/^(\p{Emoji}|\s)+$/u.test(cleanComment)) return; // Solo emojis repetidos
+        }
+      }
+
+      // Preparar texto TTS
+      let ttsText = rule.ttsTemplate || '';
+      ttsText = ttsText.replace(/{user}/g, data.user || 'Usuario');
+      ttsText = ttsText.replace(/{comment}/g, data.comment || '');
+      ttsText = ttsText.replace(/{gift}/g, data.giftName || 'Regalo');
+
+      // Preparar badge
+      let badgeText = 'ALERTA';
+      let theme = 'red';
+      if (eventType === 'follow') { badgeText = 'NUEVO SEGUIDOR'; theme = 'red'; }
+      else if (eventType === 'share') { badgeText = 'COMPARTIÓ'; theme = 'cyan'; }
+      else if (eventType === 'chat') { badgeText = 'COMENTARIO'; theme = 'purple'; }
+      else if (eventType === 'mvp_gift') { badgeText = 'DONADOR MVP 👑'; theme = 'gold'; }
+      else if (eventType === 'milestone_likes') { badgeText = 'HITO 10K LIKES ❤️'; theme = 'red'; }
+
+      const item = {
+        user: data.user || 'Usuario',
+        avatarUrl: data.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(data.user || 'User')}`,
+        badgeText,
+        theme,
+        messageText: data.comment || ttsText,
+        ttsText,
+        ttsEnabled: rule.ttsEnabled,
+        animation: rule.animation,
+        sound: rule.sound
+      };
+
+      // Si es la vista Overlay, lo añade a la cola directamente
+      if (document.getElementById('overlay-view').classList.contains('active')) {
+        ttsQueue.push(item);
+        procesarColaTTS();
+      }
+
+      // Sincronizar vía BroadcastChannel
+      syncChannel.postMessage({
+        type: 'TRIGGER_ALERT',
+        item
+      });
+    }
+
+    syncChannel.onmessage = (e) => {
+      if (!e.data) return;
+      if (e.data.type === 'TRIGGER_ALERT') {
+        if (document.getElementById('overlay-view').classList.contains('active')) {
+          ttsQueue.push(e.data.item);
+          procesarColaTTS();
+        }
+      } else if (e.data.type === 'CONFIG_UPDATE') {
+        ttsConfig = e.data.config;
+        ttsRules = e.data.rules;
+        actualizarUI();
+      } else if (e.data.type === 'PANIC_STOP') {
+        silenciarTodo();
+      }
+    };
+
+    // WebSocket al Backend de Node.js
+    let liveSocket = null;
+    function conectarWebSocket() {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${proto}//${window.location.host}`;
+      liveSocket = new WebSocket(wsUrl);
+
+      liveSocket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'FOLLOW') {
+            despacharEventoAlerta('follow', msg);
+          } else if (msg.type === 'SHARE') {
+            despacharEventoAlerta('share', msg);
+          } else if (msg.type === 'CHAT') {
+            despacharEventoAlerta('chat', msg);
+          } else if (msg.type === 'GIFT') {
+            const isMVP = (msg.diamondCount * (msg.repeatCount || 1)) >= 99;
+            despacharEventoAlerta(isMVP ? 'mvp_gift' : 'gift', msg);
+          } else if (msg.type === 'LIKES_MILESTONE') {
+            despacharEventoAlerta('milestone_likes', msg);
+          }
+        } catch (err) {}
+      };
+
+      liveSocket.onclose = () => {
+        setTimeout(conectarWebSocket, 3000);
+      };
+    }
+
+    // =============================================================
+    // UI DEL PANEL DE STREAMER & GESTIÓN DE REGLAS
+    // =============================================================
+    function renderizarReglas() {
+      const container = document.getElementById('rules-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      ttsRules.forEach(rule => {
+        const card = document.createElement('div');
+        card.className = 'rule-item-card';
+
+        let icon = '⚡';
+        if (rule.event === 'follow') icon = '➕';
+        else if (rule.event === 'share') icon = '🔄';
+        else if (rule.event === 'chat') icon = '💬';
+        else if (rule.event === 'mvp_gift') icon = '👑';
+        else if (rule.event === 'milestone_likes') icon = '❤️';
+
+        card.innerHTML = `
+          <div class="rule-info-left">
+            <div class="rule-icon-box">${icon}</div>
+            <div class="rule-texts">
+              <span class="rule-name-title">${rule.name}</span>
+              <span class="rule-desc-meta">
+                Animación: <strong>${rule.animation}</strong> • Sonido: <strong>${rule.sound}</strong> • TTS: <strong>${rule.ttsEnabled ? 'Activado' : 'Mudo'}</strong>
+              </span>
+            </div>
+          </div>
+          <div class="rule-actions-right">
+            <button class="btn-rule-test" onclick="probarRegla('${rule.id}')">▶ Probar</button>
+            <button class="btn-rule-edit" onclick="abrirModalEditarRegla('${rule.id}')">✏️</button>
+            <label class="switch-toggle">
+              <input type="checkbox" ${rule.enabled ? 'checked' : ''} onchange="toggleRegla('${rule.id}', this.checked)">
+              <span class="slider-toggle"></span>
+            </label>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleRegla(id, checked) {
+      const r = ttsRules.find(x => x.id === id);
+      if (r) {
+        r.enabled = checked;
+        guardarTodo();
+      }
+    }
+
+    function probarRegla(id) {
+      const r = ttsRules.find(x => x.id === id);
+      if (!r) return;
+      simularEvento(r.event);
+    }
+
+    function abrirModalEditarRegla(id) {
+      const r = ttsRules.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('modal-rule-title').textContent = 'Editar Regla de Alerta';
+      document.getElementById('edit-rule-id').value = r.id;
+      document.getElementById('rule-input-name').value = r.name;
+      document.getElementById('rule-select-event').value = r.event;
+      document.getElementById('rule-select-anim').value = r.animation;
+      document.getElementById('rule-select-sound').value = r.sound;
+      document.getElementById('rule-input-template').value = r.ttsTemplate;
+      document.getElementById('rule-input-tts-enabled').checked = r.ttsEnabled;
+      document.getElementById('modal-rule-editor').style.display = 'flex';
+    }
+
+    function abrirModalNuevaRegla() {
+      document.getElementById('modal-rule-title').textContent = 'Crear Nueva Regla de Alerta';
+      document.getElementById('edit-rule-id').value = '';
+      document.getElementById('rule-input-name').value = '';
+      document.getElementById('rule-input-template').value = '¡Alerta de {user}!';
+      document.getElementById('rule-input-tts-enabled').checked = true;
+      document.getElementById('modal-rule-editor').style.display = 'flex';
+    }
+
+    function cerrarModalRegla() {
+      document.getElementById('modal-rule-editor').style.display = 'none';
+    }
+
+    function guardarModalRegla(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-rule-id').value;
+      const name = document.getElementById('rule-input-name').value.trim();
+      const event = document.getElementById('rule-select-event').value;
+      const animation = document.getElementById('rule-select-anim').value;
+      const sound = document.getElementById('rule-select-sound').value;
+      const ttsTemplate = document.getElementById('rule-input-template').value.trim();
+      const ttsEnabled = document.getElementById('rule-input-tts-enabled').checked;
+
+      if (id) {
+        const existing = ttsRules.find(r => r.id === id);
+        if (existing) {
+          existing.name = name;
+          existing.event = event;
+          existing.animation = animation;
+          existing.sound = sound;
+          existing.ttsTemplate = ttsTemplate;
+          existing.ttsEnabled = ttsEnabled;
+        }
+      } else {
+        ttsRules.push({
+          id: 'rule_' + Date.now(),
+          name,
+          event,
+          animation,
+          sound,
+          ttsTemplate,
+          ttsEnabled,
+          enabled: true
+        });
+      }
+
+      guardarTodo();
+      renderizarReglas();
+      cerrarModalRegla();
+    }
+
+    // Subida de Canción Personalizada de 20s
+    async function manejarSubidaCancion(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      await guardarAudioIndexedDB('milestone_song', file.name, file);
+      document.getElementById('milestone-song-name').textContent = `🎵 ${file.name}`;
+      alert('¡Canción de celebración guardada con éxito en tu navegador!');
+    }
+
+    async function manejarSubidaSonido(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const id = 'sfx_' + Date.now();
+      await guardarAudioIndexedDB(id, file.name, file);
+      actualizarListaAudios();
+      alert(`Sonido "${file.name}" agregado a tu biblioteca.`);
+    }
+
+    async function actualizarListaAudios() {
+      const container = document.getElementById('custom-sounds-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const db = await abrirIndexedDB();
+      const tx = db.transaction('sounds', 'readonly');
+      const store = tx.objectStore('sounds');
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = req.result || [];
+        if (list.length === 0) {
+          container.innerHTML = '<span style="font-size: 11px; color: var(--text-muted);">No has subido sonidos aún.</span>';
+          return;
+        }
+        list.forEach(item => {
+          const div = document.createElement('div');
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.justifyContent = 'space-between';
+          div.style.padding = '6px 10px';
+          div.style.background = 'rgba(255,255,255,0.04)';
+          div.style.borderRadius = '6px';
+          div.style.fontSize = '12px';
+          div.innerHTML = `
+            <span>🎵 ${item.name}</span>
+            <button class="btn-rule-test" style="padding: 2px 8px; font-size: 10px;" onclick="reproducirAudioSubido('${item.id}')">▶ Probar</button>
+          `;
+          container.appendChild(div);
+        });
+      };
+    }
+
+    async function reproducirAudioSubido(id) {
+      const blob = await obtenerAudioIndexedDB(id);
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      a.volume = ttsConfig.volume;
+      a.play().catch(e => console.warn(e));
+    }
+
+    function simularEvento(tipo) {
+      const demoUsers = ['@Carlos_Gamer', '@Elena_Music', '@DJ_TikToker', '@SlowMD_Fan', '@BeatMaster'];
+      const demoUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+
+      if (tipo === 'follow') {
+        despacharEventoAlerta('follow', { user: demoUser, isFollower: true });
+      } else if (tipo === 'share') {
+        despacharEventoAlerta('share', { user: demoUser });
+      } else if (tipo === 'chat') {
+        const comments = ['¡Me encanta este tema!', 'Slow MD rompiéndola en vivo 🔥', 'Saludos desde Colombia ✌️', '¿Qué canción sigue bro?'];
+        const c = comments[Math.floor(Math.random() * comments.length)];
+        despacharEventoAlerta('chat', { user: demoUser, comment: c, isFollower: true });
+      } else if (tipo === 'mvp_gift') {
+        despacharEventoAlerta('mvp_gift', { user: demoUser, giftName: 'Sombrero & Bigote (VIP)' });
+      } else if (tipo === 'milestone_likes') {
+        despacharEventoAlerta('milestone_likes', { user: '@TodosLosEspectadores' });
+      }
+    }
+
+    function probarTTSDemo() {
+      hablarTexto('Prueba de voz artificial para la transmisión de Slow MD.');
+    }
+
+    function actualizarValoresSliders() {
+      const vol = document.getElementById('slider-volume');
+      const rate = document.getElementById('slider-rate');
+      const pitch = document.getElementById('slider-pitch');
+      if (vol) document.getElementById('label-volume').textContent = `${Math.round(vol.value * 100)}%`;
+      if (rate) document.getElementById('label-rate').textContent = `${rate.value}x`;
+      if (pitch) document.getElementById('label-pitch').textContent = pitch.value;
+    }
+
+    function guardarConfiguracionVoz() {
+      ttsConfig.voiceURI = document.getElementById('select-voice').value;
+      ttsConfig.volume = Number(document.getElementById('slider-volume').value);
+      ttsConfig.rate = Number(document.getElementById('slider-rate').value);
+      ttsConfig.pitch = Number(document.getElementById('slider-pitch').value);
+      ttsConfig.tiktokVoice = document.getElementById('toggle-tiktok-voice').checked;
+      ttsConfig.followersOnly = document.getElementById('filter-followers-only').checked;
+      ttsConfig.antiSpam = document.getElementById('filter-anti-spam').checked;
+      guardarTodo();
+    }
+
+    function guardarTodo() {
+      localStorage.setItem(STORAGE_KEY_TTS_CFG, JSON.stringify(ttsConfig));
+      localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(ttsRules));
+      syncChannel.postMessage({
+        type: 'CONFIG_UPDATE',
+        config: ttsConfig,
+        rules: ttsRules
+      });
+    }
+
+    function cargarTodo() {
+      try {
+        const savedCfg = localStorage.getItem(STORAGE_KEY_TTS_CFG);
+        const savedRules = localStorage.getItem(STORAGE_KEY_RULES);
+        if (savedCfg) ttsConfig = JSON.parse(savedCfg);
+        if (savedRules) ttsRules = JSON.parse(savedRules);
+      } catch (e) {}
+
+      // Restaurar controles del formulario
+      const vol = document.getElementById('slider-volume');
+      const rate = document.getElementById('slider-rate');
+      const pitch = document.getElementById('slider-pitch');
+      const tk = document.getElementById('toggle-tiktok-voice');
+      const fo = document.getElementById('filter-followers-only');
+      const as = document.getElementById('filter-anti-spam');
+
+      if (vol) vol.value = ttsConfig.volume;
+      if (rate) rate.value = ttsConfig.rate;
+      if (pitch) pitch.value = ttsConfig.pitch;
+      if (tk) tk.checked = ttsConfig.tiktokVoice;
+      if (fo) fo.checked = ttsConfig.followersOnly;
+      if (as) as.checked = ttsConfig.antiSpam;
+
+      actualizarValoresSliders();
+      renderizarReglas();
+      actualizarListaAudios();
+    }
+
+    // Alternar entre Overlay y Panel
+    function cambiarVista(vista) {
+      const ov = document.getElementById('overlay-view');
+      const pv = document.getElementById('panel-view');
+      const btnO = document.getElementById('switch-to-overlay');
+      const btnP = document.getElementById('switch-to-panel');
+
+      if (vista === 'overlay') {
+        pv.classList.remove('active');
+        ov.classList.add('active');
+        btnP.classList.remove('active-btn');
+        btnO.classList.add('active-btn');
+        document.body.style.backgroundColor = 'transparent';
+      } else {
+        ov.classList.remove('active');
+        pv.classList.add('active');
+        btnO.classList.remove('active-btn');
+        btnP.classList.add('active-btn');
+        document.body.style.backgroundColor = '#0a0b10';
+      }
+    }
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarTodo();
+      cargarVocesNativas();
+      initThree3D();
+      conectarWebSocket();
+
+      const params = new URLSearchParams(window.location.search);
+      const requestedView = params.get('view') || 'overlay';
+      cambiarVista(requestedView);
+    });
+  </script>
+</body>
+</html>

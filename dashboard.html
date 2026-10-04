@@ -550,6 +550,13 @@
             </div>
             <span class="badge-status badge-active">ACTIVO</span>
           </li>
+          <li class="nav-item" onclick="seleccionarWidget('comentarios-tts')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">🗣️</span>
+              <span>Comentarios TTS & 3D</span>
+            </div>
+            <span class="badge-status badge-active">ACTIVO</span>
+          </li>
         </ul>
       </div>
 
@@ -643,6 +650,9 @@
       <!-- WIDGET 1: COLA DE CANCIONES (IFRAME EN VIVO) -->
       <iframe id="frame-cola-canciones" class="widget-frame active" src="/cola-slow-md.html?view=panel"></iframe>
 
+      <!-- WIDGET 2: CAJA DE COMENTARIOS TTS & ALERTAS 3D (IFRAME EN VIVO) -->
+      <iframe id="frame-comentarios-tts" class="widget-frame" src="/comentarios-tts.html?view=panel"></iframe>
+
       <!-- VISTA PLACEHOLDER: RULETA DE RETOS -->
       <div id="view-ruleta" class="soon-placeholder-view">
         <div class="soon-icon-box">🎡</div>
@@ -710,6 +720,13 @@
         panelPath: '/cola-slow-md.html?view=panel',
         frameId: 'frame-cola-canciones'
       },
+      'comentarios-tts': {
+        title: '🗣️ CAJA DE COMENTARIOS TTS & ALERTAS 3D',
+        tag: 'Widget Activo',
+        overlayPath: '/comentarios-tts.html?view=overlay',
+        panelPath: '/comentarios-tts.html?view=panel',
+        frameId: 'frame-comentarios-tts'
+      },
       'ruleta': {
         title: '🎡 RULETA DE RETOS',
         tag: 'Próximamente',
@@ -772,7 +789,7 @@
       const btnCopy = document.getElementById('btn-copy-overlay-url');
       const btnStandalone = document.getElementById('btn-open-standalone');
 
-      if (id === 'cola-canciones') {
+      if (id === 'cola-canciones' || id === 'comentarios-tts') {
         btnCopy.style.display = 'inline-flex';
         btnStandalone.style.display = 'inline-flex';
         btnStandalone.href = config.panelPath;
