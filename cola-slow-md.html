@@ -404,6 +404,296 @@
       box-shadow: 0 0 15px rgba(234, 179, 8, 0.35);
     }
 
+    /* ------------------------------------------------------------- */
+    /* ANIMACIONES DINÁMICAS DE PUESTOS CRÍTICOS & RETUMBE           */
+    /* ------------------------------------------------------------- */
+
+    /* Puesto #4: Parpadeo de advertencia cuando tiene < 500 likes */
+    @keyframes blink-warning-p4 {
+      0%, 100% {
+        border-color: rgba(245, 158, 11, 0.4);
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+      }
+      50% {
+        border-color: #f59e0b;
+        box-shadow: 0 0 18px rgba(245, 158, 11, 0.8), inset 0 0 8px rgba(245, 158, 11, 0.3);
+      }
+    }
+    .song-card.card-warning-p4 {
+      animation: blink-warning-p4 1.4s infinite ease-in-out !important;
+      background: rgba(26, 18, 5, 0.75) !important;
+    }
+    .badge-warning-p4 {
+      background: rgba(245, 158, 11, 0.25);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      animation: pulse-badge 1s infinite alternate;
+    }
+
+    /* Puesto #3: Parpadeo CRÍTICO MUCHO MÁS NOTABLE (Riesgo inminente de eliminación) */
+    @keyframes blink-critical-p3 {
+      0%, 100% {
+        border-color: rgba(239, 68, 68, 0.5);
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        transform: scale(1);
+      }
+      50% {
+        border-color: #ff0033;
+        box-shadow: 0 0 30px rgba(255, 0, 51, 1), inset 0 0 14px rgba(255, 0, 51, 0.6);
+        transform: scale(1.025);
+      }
+    }
+    .song-card.card-critical-p3 {
+      animation: blink-critical-p3 0.7s infinite cubic-bezier(0.4, 0, 0.2, 1) !important;
+      background: rgba(35, 5, 12, 0.85) !important;
+      z-index: 5;
+    }
+    .badge-critical-p3 {
+      background: rgba(239, 68, 68, 0.35);
+      border: 1px solid #ff0033;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 3px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.6px;
+      text-shadow: 0 0 8px #ff0033;
+      animation: pulse-badge 0.6s infinite alternate;
+    }
+    @keyframes pulse-badge {
+      from { opacity: 0.7; }
+      to { opacity: 1; transform: scale(1.05); }
+    }
+
+    /* Meteor Slam: Caída dura que retumba al agregarse una canción */
+    @keyframes slam-drop-in {
+      0% {
+        transform: translateY(-450px) scale(1.5) rotate(-3deg);
+        opacity: 0;
+        filter: brightness(2.5);
+      }
+      65% {
+        transform: translateY(18px) scale(0.96) rotate(1deg);
+        opacity: 1;
+      }
+      82% {
+        transform: translateY(-8px) scale(1.02);
+      }
+      100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+        opacity: 1;
+        filter: brightness(1);
+      }
+    }
+    .song-card.slam-drop-in {
+      animation: slam-drop-in 0.65s cubic-bezier(0.12, 0.85, 0.25, 1) forwards !important;
+      box-shadow: 0 0 35px #00e5ff, 0 15px 30px rgba(0,0,0,0.8) !important;
+      z-index: 10;
+    }
+
+    /* Retumbe / Temblor del contenedor completo */
+    @keyframes slam-rumble {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-10px, 8px) rotate(-1.2deg); }
+      30% { transform: translate(10px, -8px) rotate(1.4deg); }
+      45% { transform: translate(-8px, -6px) rotate(-0.8deg); }
+      60% { transform: translate(7px, 5px) rotate(0.6deg); }
+      75% { transform: translate(-4px, 3px) rotate(-0.3deg); }
+      90% { transform: translate(2px, -2px) rotate(0.1deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .slam-rumble {
+      animation: slam-rumble 0.65s cubic-bezier(.36,.07,.19,.97) both !important;
+    }
+
+    /* Animación de Subir 1 Posición */
+    @keyframes boost-glide-up {
+      0% { transform: translateY(35px) scale(0.95); opacity: 0.6; box-shadow: 0 0 0 rgba(0, 229, 255, 0); }
+      50% { transform: translateY(-8px) scale(1.04); box-shadow: 0 0 35px #00e5ff; }
+      100% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+    }
+    .song-card.card-boost-up {
+      animation: boost-glide-up 0.55s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* ANIMACIÓN VIP: MANOS DORADAS CARGANDO AL PUESTO #1            */
+    /* ------------------------------------------------------------- */
+    #golden-hands-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #golden-hands-overlay.active {
+      opacity: 1;
+    }
+
+    .golden-aura-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(234, 179, 8, 0.35) 0%, rgba(255, 184, 0, 0.15) 45%, transparent 70%);
+      animation: pulse-aura 1.6s infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes pulse-aura {
+      from { transform: scale(0.85); opacity: 0.6; }
+      to { transform: scale(1.15); opacity: 1; }
+    }
+
+    .golden-rays {
+      position: absolute;
+      width: 800px;
+      height: 800px;
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 215, 0, 0.2) 20deg, transparent 40deg, rgba(255, 215, 0, 0.2) 60deg, transparent 80deg, rgba(255, 215, 0, 0.2) 100deg, transparent 120deg, rgba(255, 215, 0, 0.2) 140deg, transparent 160deg, rgba(255, 215, 0, 0.2) 180deg, transparent 200deg, rgba(255, 215, 0, 0.2) 220deg, transparent 240deg, rgba(255, 215, 0, 0.2) 260deg, transparent 280deg, rgba(255, 215, 0, 0.2) 300deg, transparent 320deg, rgba(255, 215, 0, 0.2) 340deg, transparent 360deg);
+      border-radius: 50%;
+      animation: rotate-rays 14s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rotate-rays {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .hands-lift-stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: lift-flight 2.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+    }
+    @keyframes lift-flight {
+      0% {
+        transform: translateY(220px) scale(0.65);
+        opacity: 0;
+      }
+      30% {
+        transform: translateY(40px) scale(1.1);
+        opacity: 1;
+      }
+      60% {
+        transform: translateY(-30px) scale(1.15);
+        opacity: 1;
+      }
+      85% {
+        transform: translateY(-80px) scale(1.05);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-160px) scale(0.9);
+        opacity: 0;
+      }
+    }
+
+    .hands-crown-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #FFE600;
+      text-shadow: 0 0 20px #FFB800, 0 4px 10px rgba(0, 0, 0, 0.9);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      animation: pulse-crown 0.8s infinite alternate;
+    }
+    @keyframes pulse-crown {
+      from { transform: scale(1); }
+      to { transform: scale(1.08); }
+    }
+
+    .carried-song-pill {
+      background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(40, 30, 10, 0.95));
+      border: 3px solid #FFD700;
+      border-radius: 16px;
+      padding: 16px 28px;
+      box-shadow: 0 0 35px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 215, 0, 0.3);
+      color: #fff;
+      text-align: center;
+      min-width: 320px;
+      max-width: 480px;
+    }
+    .carried-song-pill .pill-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .carried-song-pill .pill-user {
+      font-size: 14px;
+      color: #FFD700;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .golden-hands-svg-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: -24px;
+      pointer-events: none;
+    }
+    .golden-hand-left, .golden-hand-right {
+      width: 110px;
+      height: 110px;
+      filter: drop-shadow(0 0 16px #FFB800) drop-shadow(0 0 30px #FFD700);
+      animation: wave-hand 1.2s infinite ease-in-out alternate;
+    }
+    .golden-hand-right {
+      transform: scaleX(-1);
+    }
+    @keyframes wave-hand {
+      from { transform: translateY(0px) rotate(-4deg); }
+      to { transform: translateY(-8px) rotate(4deg); }
+    }
+    .golden-hand-right {
+      animation-name: wave-hand-right;
+    }
+    @keyframes wave-hand-right {
+      from { transform: scaleX(-1) translateY(0px) rotate(-4deg); }
+      to { transform: scaleX(-1) translateY(-8px) rotate(4deg); }
+    }
+
+    /* Banner / Toast de eliminación por avanzar sin apoyo */
+    #toast-eliminated-banner {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(153, 27, 27, 0.95));
+      border: 2px solid #ff4d4d;
+      border-radius: 12px;
+      padding: 14px 24px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.8), 0 10px 25px rgba(0, 0, 0, 0.7);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+    #toast-eliminated-banner.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
     .empty-queue-message {
       padding: 30px 16px;
       text-align: center;
@@ -1762,6 +2052,52 @@
     <button id="switch-to-panel" onclick="cambiarVista('panel')">Panel Streamer</button>
   </div>
 
+  <!-- Banner / Alerta de eliminación de canción por pasar a #2 sin apoyo -->
+  <div id="toast-eliminated-banner">
+    <span style="font-size: 26px;">⚠️</span>
+    <div>
+      <div id="toast-eliminated-title" style="font-size: 13px; font-weight: 900; letter-spacing: 0.5px;">CANCIÓN ELIMINADA</div>
+      <div id="toast-eliminated-desc" style="font-size: 11px; opacity: 0.9;">Avanzó al 2do puesto sin aumentar likes ni regalos</div>
+    </div>
+  </div>
+
+  <!-- Overlay de Manos Doradas cargando al Puesto #1 -->
+  <div id="golden-hands-overlay">
+    <div class="golden-aura-bg"></div>
+    <div class="golden-rays"></div>
+    <div class="hands-lift-stage">
+      <div class="hands-crown-title">👑 ¡ELEVADO AL 1ER PUESTO! 👑</div>
+      <div class="carried-song-pill">
+        <div class="pill-title" id="carried-song-title">CANCIÓN</div>
+        <div class="pill-user" id="carried-song-user">@Usuario</div>
+      </div>
+      <div class="golden-hands-svg-container">
+        <!-- Mano izquierda -->
+        <svg class="golden-hand-left" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 85 C35 85, 20 70, 20 50 C20 40, 25 25, 30 15 C33 10, 38 12, 38 18 C38 30, 42 35, 42 20 C42 12, 48 10, 50 18 C52 28, 54 32, 56 18 C58 10, 64 12, 64 22 C64 34, 66 38, 70 28 C74 18, 80 22, 78 35 C75 55, 65 85, 50 85 Z" fill="url(#goldGradL)"/>
+          <defs>
+            <linearGradient id="goldGradL" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFF275"/>
+              <stop offset="40%" stop-color="#FFB800"/>
+              <stop offset="100%" stop-color="#D97706"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <!-- Mano derecha -->
+        <svg class="golden-hand-right" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 85 C35 85, 20 70, 20 50 C20 40, 25 25, 30 15 C33 10, 38 12, 38 18 C38 30, 42 35, 42 20 C42 12, 48 10, 50 18 C52 28, 54 32, 56 18 C58 10, 64 12, 64 22 C64 34, 66 38, 70 28 C74 18, 80 22, 78 35 C75 55, 65 85, 50 85 Z" fill="url(#goldGradR)"/>
+          <defs>
+            <linearGradient id="goldGradR" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFF275"/>
+              <stop offset="40%" stop-color="#FFB800"/>
+              <stop offset="100%" stop-color="#D97706"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Configuración de Metas y Regalos -->
   <div id="modal-rules-config" class="modal-overlay" style="display: none;">
     <div class="modal-card">
@@ -1775,11 +2111,11 @@
 
       <form id="form-rules-config" onsubmit="guardarModalReglas(event)">
         <div class="modal-body">
-          <!-- SECCIÓN 1: METAS DE DESBLOQUEO -->
+          <!-- SECCIÓN 1: METAS DE DESBLOQUEO POR INTERACCIÓN -->
           <div>
-            <div class="config-group-title">🎯 Metas para Desbloquear Canción</div>
+            <div class="config-group-title">🎯 Metas de Desbloqueo por Interacción</div>
             <p class="field-hint" style="margin-bottom: 10px;">
-              Cualquiera de estas metas alcanzadas desbloqueará la canción para poder reaccionar a ella:
+              Cualquiera de estas metas alcanzadas desbloqueará la canción automáticamente:
             </p>
             <div class="config-grid-3">
               <div class="config-field">
@@ -1793,7 +2129,7 @@
                 <span class="field-hint">Veces que compartió el live</span>
               </div>
               <div class="config-field">
-                <label for="input-cfg-roses">🌹 Rosas / Regalos</label>
+                <label for="input-cfg-roses">🌹 Rosas</label>
                 <input type="number" id="input-cfg-roses" min="1" step="1" value="5" required>
                 <span class="field-hint">Rosas enviadas para desbloqueo</span>
               </div>
@@ -1802,29 +2138,108 @@
 
           <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 0;"></div>
 
-          <!-- SECCIÓN 2: JERARQUÍA DE REGALOS -->
+          <!-- SECCIÓN 2: 4 CATEGORÍAS FIJAS CON 3 OPCIONES CADA UNA -->
           <div>
-            <div class="config-group-title">👑 Jerarquía y Prioridad de Regalos</div>
+            <div class="config-group-title">👑 Categorías Fijas de Regalos (3 Opciones por Categoría)</div>
             <p class="field-hint" style="margin-bottom: 12px;">
-              Escribe los nombres de los regalos separados por comas (por ejemplo: rosa, dedo, corazon, donut, sombrero):
+              Asigna hasta 3 regalos personalizados a cada una de las 4 acciones de la cola:
             </p>
 
-            <div class="config-field" style="margin-bottom: 14px;">
-              <label for="input-cfg-medium-gifts">🫰 Regalos Prioridad Media (+1 Nivel)</label>
-              <input type="text" id="input-cfg-medium-gifts" placeholder="dedo, corazon, corazón" value="dedo, corazon, corazón">
-              <span class="field-hint">Regalos que suben una canción por encima de las normales.</span>
-            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Cat 1: Reacción Inmediata -->
+              <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #c084fc; font-size: 13px;">⚡ 1. Reacción Inmediata</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Pasa directo al turno actual (#1 sonando ya)</span>
+                </div>
+                <div class="config-grid-3">
+                  <div class="config-field">
+                    <label for="input-cfg-reac-1">Opción 1</label>
+                    <input type="text" id="input-cfg-reac-1" placeholder="ej. leon" value="león">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-reac-2">Opción 2</label>
+                    <input type="text" id="input-cfg-reac-2" placeholder="ej. universo" value="universo">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-reac-3">Opción 3</label>
+                    <input type="text" id="input-cfg-reac-3" placeholder="ej. cohete" value="cohete">
+                  </div>
+                </div>
+              </div>
 
-            <div class="config-field" style="margin-bottom: 14px;">
-              <label for="input-cfg-vip-gifts">👑 Regalos VIP (1er Lugar Directo)</label>
-              <input type="text" id="input-cfg-vip-gifts" placeholder="sombrero, bigote, donut, rosquilla" value="sombrero, bigote, donut, rosquilla">
-              <span class="field-hint">Cualquier regalo en esta lista catapulta la canción a la cima de la cola.</span>
-            </div>
+              <!-- Cat 2: 1er Puesto -->
+              <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #fbbf24; font-size: 13px;">👑 2. 1er Puesto (VIP)</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Catapulta al 1er lugar de espera con manos doradas</span>
+                </div>
+                <div class="config-grid-3">
+                  <div class="config-field">
+                    <label for="input-cfg-top1-1">Opción 1</label>
+                    <input type="text" id="input-cfg-top1-1" placeholder="ej. sombrero" value="sombrero">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-top1-2">Opción 2</label>
+                    <input type="text" id="input-cfg-top1-2" placeholder="ej. donut" value="donut">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-top1-3">Opción 3</label>
+                    <input type="text" id="input-cfg-top1-3" placeholder="ej. bigote" value="bigote">
+                  </div>
+                </div>
+              </div>
 
-            <div class="config-field">
-              <label for="input-cfg-vip-diamonds">💎 Diamantes mínimos para VIP Automático</label>
-              <input type="number" id="input-cfg-vip-diamonds" min="1" step="5" value="30">
-              <span class="field-hint">Cualquier regalo que cueste igual o más que esta cantidad de monedas/diamantes será VIP automáticamente.</span>
+              <!-- Cat 3: Subir 1 Posición -->
+              <div style="background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #38bdf8; font-size: 13px;">🚀 3. Subir 1 Posición</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Avanza un puesto en la fila con impulso sonoro</span>
+                </div>
+                <div class="config-grid-3">
+                  <div class="config-field">
+                    <label for="input-cfg-up1-1">Opción 1</label>
+                    <input type="text" id="input-cfg-up1-1" placeholder="ej. dedo" value="dedo">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-up1-2">Opción 2</label>
+                    <input type="text" id="input-cfg-up1-2" placeholder="ej. corazon" value="corazón">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-up1-3">Opción 3</label>
+                    <input type="text" id="input-cfg-up1-3" placeholder="ej. pesas" value="pesas">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cat 4: Desbloquear la Canción -->
+              <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #34d399; font-size: 13px;">🔓 4. Desbloquear la Canción</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Desbloquea al instante y evita su eliminación</span>
+                </div>
+                <div class="config-grid-3">
+                  <div class="config-field">
+                    <label for="input-cfg-unl-1">Opción 1</label>
+                    <input type="text" id="input-cfg-unl-1" placeholder="ej. rosa" value="rosa">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-unl-2">Opción 2</label>
+                    <input type="text" id="input-cfg-unl-2" placeholder="ej. perfume" value="perfume">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-unl-3">Opción 3</label>
+                    <input type="text" id="input-cfg-unl-3" placeholder="ej. microfono" value="microfono">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Monedas VIP -->
+              <div class="config-field" style="margin-top: 4px;">
+                <label for="input-cfg-vip-diamonds">💎 Monedas/Diamantes mínimos para VIP Automático</label>
+                <input type="number" id="input-cfg-vip-diamonds" min="1" step="5" value="30">
+                <span class="field-hint">Cualquier regalo que cueste igual o más que esta cantidad será VIP automáticamente.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1883,27 +2298,141 @@
         if (!audioCtx) audioCtx = new AudioContextClass();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
         const now = audioCtx.currentTime;
-        if (type === 'vip') {
+
+        if (type === 'slam') {
+          // Impacto contundente con sub-bajo que retumba (Meteor Slam)
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.exponentialRampToValueAtTime(32, now + 0.38);
+          gain.gain.setValueAtTime(0.65, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.55);
+
+          // Golpe de transitorio percusivo
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(320, now);
+          osc2.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+          gain2.gain.setValueAtTime(0.4, now);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now);
+          osc2.stop(now + 0.18);
+
+        } else if (type === 'subir') {
+          // Arpegio brillante y ágil ascendente (+1 Puesto)
+          const freqs = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6
+          freqs.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.065);
+            gain.gain.setValueAtTime(0.28, now + idx * 0.065);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.065);
+            osc.stop(now + idx * 0.065 + 0.25);
+          });
+
+        } else if (type === 'top1') {
+          // Fanfarria triunfal dorada majestuosa (Puesto #1)
+          const chords = [
+            [523.25, 659.25, 783.99], // C mayor
+            [659.25, 783.99, 1046.50], // E - G - C6
+            [783.99, 1046.50, 1318.51, 1567.98] // Clímax brillante
+          ];
+          chords.forEach((chord, step) => {
+            chord.forEach(f => {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(f, now + step * 0.14);
+              gain.gain.setValueAtTime(0.25, now + step * 0.14);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + step * 0.14 + 0.55);
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.start(now + step * 0.14);
+              osc.stop(now + step * 0.14 + 0.55);
+            });
+          });
+
+        } else if (type === 'hands_lift') {
+          // Arpegio celestial etéreo y místico (Manos doradas elevando)
+          const notas = [440, 554.37, 659.25, 880, 1108.73, 1318.51, 1760];
+          notas.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.08);
+            gain.gain.setValueAtTime(0.22, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.6);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.6);
+          });
+
+        } else if (type === 'eliminar') {
+          // Sonido dramático descendente con pulso de advertencia
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.42);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.48);
+
+          // Doble beep grave
+          [0.1, 0.28].forEach(offset => {
+            const bOsc = audioCtx.createOscillator();
+            const bGain = audioCtx.createGain();
+            bOsc.type = 'square';
+            bOsc.frequency.setValueAtTime(180, now + offset);
+            bGain.gain.setValueAtTime(0.2, now + offset);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.12);
+            bOsc.connect(bGain);
+            bGain.connect(audioCtx.destination);
+            bOsc.start(now + offset);
+            bOsc.stop(now + offset + 0.12);
+          });
+
+        } else if (type === 'vip') {
           // Sonido brillante y enérgico para regalos VIP
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, now); // C5
-          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.1); // G5
-          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25); // C6
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.1);
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25);
           gain.gain.setValueAtTime(0.3, now);
           gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
           osc.start(now);
           osc.stop(now + 0.45);
+
         } else {
           // Sonido sutil para canciones normales
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(440, now); // A4
-          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12); // E5
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12);
           gain.gain.setValueAtTime(0.2, now);
           gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
           osc.start(now);
@@ -1935,6 +2464,9 @@
     // Guardar estado y notificar a todas las ventanas/layers abiertas
     function persistirYNotificar(emitirBroadcast = true) {
       try {
+        // Verificar si alguna canción bloqueada pasó de #4/#3 a #2 sin apoyo para eliminarla
+        verificarEliminacionCancionesBloqueadas(state.queue);
+
         localStorage.setItem(STORAGE_KEY_QUEUE, JSON.stringify(state.queue));
         localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
         localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({ soundEnabled: state.soundEnabled }));
@@ -1959,6 +2491,97 @@
         console.error('Error guardando en LocalStorage:', e);
       }
       renderizarTodo();
+    }
+
+    // Regla 1: Las canciones bloqueadas se eliminan al pasar del 4to lugar al 2do lugar sin aumentar likes, shares o regalos
+    function verificarEliminacionCancionesBloqueadas(queue) {
+      if (!Array.isArray(queue)) return false;
+      let huboEliminacion = false;
+      for (let i = 0; i < queue.length; i++) {
+        const s = queue[i];
+        // Cuando esté en puesto 4 o 3 (índices 3 o 2), capturar foto de interacción si aún no la tiene
+        if ((i === 3 || i === 2) && s.status === 'locked') {
+          if (!s.historyAt4th) {
+            s.historyAt4th = {
+              pos: i + 1,
+              likes: s.likes || 0,
+              shares: s.shares || 0,
+              roses: s.roses || 0
+            };
+          }
+        }
+        // Al llegar al puesto 2 (índice 1) estando bloqueada:
+        if (i === 1 && s.status === 'locked' && s.historyAt4th && s.historyAt4th.pos >= 3) {
+          const currentLikes = s.likes || 0;
+          const currentShares = s.shares || 0;
+          const currentRoses = s.roses || 0;
+          const subioInteraccion = (currentLikes > s.historyAt4th.likes) ||
+                                  (currentShares > s.historyAt4th.shares) ||
+                                  (currentRoses > s.historyAt4th.roses);
+          if (!subioInteraccion) {
+            const removed = queue.splice(i, 1)[0];
+            huboEliminacion = true;
+            mostrarAvisoEliminada(removed);
+            playAlertSound('eliminar');
+            i--;
+          }
+        }
+      }
+      return huboEliminacion;
+    }
+
+    function mostrarAvisoEliminada(song) {
+      const banner = document.getElementById('toast-eliminated-banner');
+      const titleEl = document.getElementById('toast-eliminated-title');
+      const descEl = document.getElementById('toast-eliminated-desc');
+      if (!banner) return;
+      if (titleEl) titleEl.textContent = `CANCIÓN ELIMINADA: "${(song.title || '').toUpperCase()}"`;
+      if (descEl) descEl.textContent = `${(song.user || '@Usuario')} pasó al 2do puesto sin aumentar likes ni regalos`;
+      banner.classList.add('show');
+      setTimeout(() => {
+        banner.classList.remove('show');
+      }, 4500);
+      mostrarToast(`❌ "${song.title}" eliminada al pasar a 2do puesto sin apoyo`);
+      mostrarActividadEnVivo(`❌ ¡Canción de ${song.user} eliminada por falta de apoyo al llegar al puesto #2!`);
+    }
+
+    // Animación de impacto que retumba la lista completa
+    function dispararEfectoRetumbeLista() {
+      const overlayList = document.getElementById('overlay-song-container');
+      const panelList = document.getElementById('panel-queue-list');
+      [overlayList, panelList].forEach(el => {
+        if (el) {
+          el.classList.remove('slam-rumble');
+          void el.offsetWidth;
+          el.classList.add('slam-rumble');
+          setTimeout(() => el.classList.remove('slam-rumble'), 700);
+        }
+      });
+      playAlertSound('slam');
+    }
+
+    // Animación de Manos Doradas elevando la canción al Puesto #1
+    let handsAnimTimeout = null;
+    function lanzarAnimacionManosDoradas(song) {
+      const overlay = document.getElementById('golden-hands-overlay');
+      const titleEl = document.getElementById('carried-song-title');
+      const userEl = document.getElementById('carried-song-user');
+      if (!overlay || !song) return;
+
+      if (titleEl) titleEl.textContent = (song.title || '').toUpperCase();
+      if (userEl) userEl.textContent = (song.user || '@Usuario').toUpperCase();
+
+      overlay.classList.add('active');
+      playAlertSound('hands_lift');
+
+      if (handsAnimTimeout) clearTimeout(handsAnimTimeout);
+      setTimeout(() => {
+        playAlertSound('top1');
+      }, 900);
+
+      handsAnimTimeout = setTimeout(() => {
+        overlay.classList.remove('active');
+      }, 2700);
     }
 
     // Escuchar mensajes de otras pestañas o instancias de Meld
@@ -1987,13 +2610,29 @@
       likesReq: 1000,
       sharesReq: 10,
       rosesReq: 5,
+      giftCategories: {
+        reaccionInmediata: ['Gafas', 'Dinero', 'Fuegos artificiales'],
+        primerPuesto: ['Sombrero y bigote', 'Rosquilla', 'Halcón'],
+        subirPosicion: ['Corazón con dedos', 'Pato', 'Rosa x5'],
+        desbloquear: ['Rosa', 'Tik Tok', 'Pesas']
+      },
       mediumGifts: 'dedo, corazon, corazón',
       vipGifts: 'sombrero, bigote, donut, rosquilla',
       vipMinDiamonds: 30
     };
     try {
       const savedRules = localStorage.getItem(STORAGE_KEY_RULES);
-      if (savedRules) rulesConfig = { ...rulesConfig, ...JSON.parse(savedRules) };
+      if (savedRules) {
+        const parsed = JSON.parse(savedRules);
+        rulesConfig = {
+          ...rulesConfig,
+          ...parsed,
+          giftCategories: {
+            ...rulesConfig.giftCategories,
+            ...(parsed.giftCategories || {})
+          }
+        };
+      }
     } catch(e) {}
 
     function actualizarTextosReglas() {
@@ -2009,17 +2648,26 @@
       const elLikes = document.getElementById('input-cfg-likes');
       const elShares = document.getElementById('input-cfg-shares');
       const elRoses = document.getElementById('input-cfg-roses');
-      const elMed = document.getElementById('input-cfg-medium-gifts');
-      const elVip = document.getElementById('input-cfg-vip-gifts');
       const elDia = document.getElementById('input-cfg-vip-diamonds');
       const modal = document.getElementById('modal-rules-config');
 
       if (elLikes) elLikes.value = rulesConfig.likesReq;
       if (elShares) elShares.value = rulesConfig.sharesReq;
       if (elRoses) elRoses.value = rulesConfig.rosesReq;
-      if (elMed) elMed.value = rulesConfig.mediumGifts;
-      if (elVip) elVip.value = rulesConfig.vipGifts;
       if (elDia) elDia.value = rulesConfig.vipMinDiamonds;
+
+      const cats = rulesConfig.giftCategories || {};
+      const r1 = cats.reaccionInmediata || ['Gafas', 'Dinero', 'Fuegos artificiales'];
+      const p1 = cats.primerPuesto || ['Sombrero y bigote', 'Rosquilla', 'Halcón'];
+      const u1 = cats.subirPosicion || ['Corazón con dedos', 'Pato', 'Rosa x5'];
+      const d1 = cats.desbloquear || ['Rosa', 'Tik Tok', 'Pesas'];
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+      setVal('input-cfg-reac-1', r1[0]); setVal('input-cfg-reac-2', r1[1]); setVal('input-cfg-reac-3', r1[2]);
+      setVal('input-cfg-top1-1', p1[0]); setVal('input-cfg-top1-2', p1[1]); setVal('input-cfg-top1-3', p1[2]);
+      setVal('input-cfg-up1-1', u1[0]); setVal('input-cfg-up1-2', u1[1]); setVal('input-cfg-up1-3', u1[2]);
+      setVal('input-cfg-unl-1', d1[0]); setVal('input-cfg-unl-2', d1[1]); setVal('input-cfg-unl-3', d1[2]);
+
       if (modal) modal.style.display = 'flex';
     }
 
@@ -2033,9 +2681,31 @@
       rulesConfig.likesReq = Number(document.getElementById('input-cfg-likes').value) || 1000;
       rulesConfig.sharesReq = Number(document.getElementById('input-cfg-shares').value) || 10;
       rulesConfig.rosesReq = Number(document.getElementById('input-cfg-roses').value) || 5;
-      rulesConfig.mediumGifts = String(document.getElementById('input-cfg-medium-gifts').value || 'dedo, corazon, corazón').trim();
-      rulesConfig.vipGifts = String(document.getElementById('input-cfg-vip-gifts').value || 'sombrero, bigote, donut, rosquilla').trim();
       rulesConfig.vipMinDiamonds = Number(document.getElementById('input-cfg-vip-diamonds').value) || 30;
+
+      const getVal = (id, def) => { const el = document.getElementById(id); return el && el.value.trim() ? el.value.trim() : def; };
+      rulesConfig.giftCategories = {
+        reaccionInmediata: [
+          getVal('input-cfg-reac-1', 'Gafas'),
+          getVal('input-cfg-reac-2', 'Dinero'),
+          getVal('input-cfg-reac-3', 'Fuegos artificiales')
+        ],
+        primerPuesto: [
+          getVal('input-cfg-top1-1', 'Sombrero y bigote'),
+          getVal('input-cfg-top1-2', 'Rosquilla'),
+          getVal('input-cfg-top1-3', 'Halcón')
+        ],
+        subirPosicion: [
+          getVal('input-cfg-up1-1', 'Corazón con dedos'),
+          getVal('input-cfg-up1-2', 'Pato'),
+          getVal('input-cfg-up1-3', 'Rosa x5')
+        ],
+        desbloquear: [
+          getVal('input-cfg-unl-1', 'Rosa'),
+          getVal('input-cfg-unl-2', 'Tik Tok'),
+          getVal('input-cfg-unl-3', 'Pesas')
+        ]
+      };
 
       try {
         localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(rulesConfig));
@@ -2057,29 +2727,55 @@
       actualizarTextosReglas();
       renderizarTodo();
       cerrarModalReglas();
-      mostrarToast('✅ ¡Metas y reglas de regalos guardadas!');
+      mostrarToast('✅ ¡Metas y 4 categorías de regalos guardadas!');
     }
 
     function restablecerReglasDefault() {
       document.getElementById('input-cfg-likes').value = 1000;
       document.getElementById('input-cfg-shares').value = 10;
       document.getElementById('input-cfg-roses').value = 5;
-      document.getElementById('input-cfg-medium-gifts').value = 'dedo, corazon, corazón';
-      document.getElementById('input-cfg-vip-gifts').value = 'sombrero, bigote, donut, rosquilla';
       document.getElementById('input-cfg-vip-diamonds').value = 30;
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+      setVal('input-cfg-reac-1', 'Gafas'); setVal('input-cfg-reac-2', 'Dinero'); setVal('input-cfg-reac-3', 'Fuegos artificiales');
+      setVal('input-cfg-top1-1', 'Sombrero y bigote'); setVal('input-cfg-top1-2', 'Rosquilla'); setVal('input-cfg-top1-3', 'Halcón');
+      setVal('input-cfg-up1-1', 'Corazón con dedos'); setVal('input-cfg-up1-2', 'Pato'); setVal('input-cfg-up1-3', 'Rosa x5');
+      setVal('input-cfg-unl-1', 'Rosa'); setVal('input-cfg-unl-2', 'Tik Tok'); setVal('input-cfg-unl-3', 'Pesas');
+    }
+
+    // Clasificar regalo según las 4 categorías configuradas
+    function clasificarRegalo(regaloNombre, diamondCount = 0) {
+      if (!regaloNombre) return 'normal';
+      const r = regaloNombre.toLowerCase();
+      const cats = rulesConfig.giftCategories || {};
+
+      const matchCat = (lista) => {
+        if (!Array.isArray(lista)) return false;
+        return lista.some(item => {
+          if (!item) return false;
+          const k = item.toLowerCase().trim();
+          return k.length > 0 && r.includes(k);
+        });
+      };
+
+      if (matchCat(cats.reaccionInmediata)) return 'reaccion_inmediata';
+      if (matchCat(cats.primerPuesto) || (diamondCount && diamondCount >= (Number(rulesConfig.vipMinDiamonds) || 30))) return 'primer_puesto';
+      if (matchCat(cats.subirPosicion)) return 'subir_posicion';
+      if (matchCat(cats.desbloquear)) return 'desbloquear';
+
+      // Fallbacks clásicos
+      if (r.includes('sombrero') || r.includes('rosquilla') || r.includes('donut')) return 'primer_puesto';
+      if (r.includes('corazon') || r.includes('corazón') || r.includes('dedo')) return 'subir_posicion';
+      if (r.includes('rosa') || r.includes('rose')) return 'desbloquear';
+
+      return 'normal';
     }
 
     // Determinar la prioridad según regalo o tipo (dinámico)
     function calcularPrioridad(regaloNombre) {
-      if (!regaloNombre) return 'normal';
-      const r = regaloNombre.toLowerCase();
-      const vipKeywords = String(rulesConfig.vipGifts || 'sombrero, bigote, donut, rosquilla')
-        .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-      const mediumKeywords = String(rulesConfig.mediumGifts || 'dedo, corazon, corazón')
-        .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-
-      if (vipKeywords.some(kw => r.includes(kw))) return 'vip';
-      if (mediumKeywords.some(kw => r.includes(kw))) return 'medium';
+      const cat = clasificarRegalo(regaloNombre);
+      if (cat === 'reaccion_inmediata' || cat === 'primer_puesto') return 'vip';
+      if (cat === 'subir_posicion') return 'medium';
       return 'normal';
     }
 
@@ -2119,11 +2815,17 @@
         likes: likesActuales,
         shares: sharesActuales,
         roses: rosesActuales,
+        isNewlyAdded: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      // Inserción ordenada según prioridad
-      if (prioridad === 'vip') {
+      // Si es un regalo de 'reacción inmediata', colocar directamente en turno #1
+      const catRegalo = clasificarRegalo(regaloNombre);
+      if (catRegalo === 'reaccion_inmediata') {
+        state.queue.unshift(nuevaEntrada);
+        nuevaEntrada.status = 'unlocked';
+        lanzarAnimacionManosDoradas(nuevaEntrada);
+      } else if (prioridad === 'vip') {
         const primerNoVipIndex = state.queue.findIndex(item => item.priority !== 'vip');
         if (primerNoVipIndex === -1) {
           state.queue.push(nuevaEntrada);
@@ -2146,9 +2848,15 @@
         }
       }
 
+      // Retumbe de lista al agregar canción
+      dispararEfectoRetumbeLista();
+      setTimeout(() => {
+        nuevaEntrada.isNewlyAdded = false;
+      }, 1200);
+
       persistirYNotificar();
       if (status === 'locked') {
-        mostrarToast(`🔒 Canción en lista (Bloqueada): "${nuevaEntrada.title}". Pendiente de 1000 likes, 10 compartidos o 5 rosas.`);
+        mostrarToast(`🔒 Canción en lista (Bloqueada): "${nuevaEntrada.title}". Pendiente de likes, compartidos o rosas.`);
       } else {
         mostrarToast(`🎶 Canción lista para escuchar: "${nuevaEntrada.title}"`);
       }
@@ -2178,12 +2886,23 @@
       }
     }
 
-    // Mover posición arriba o abajo
+    // Mover posición arriba o abajo con sonidos y animaciones
     function moverCancion(index, direccion) {
       const nuevoIndex = index + direccion;
       if (nuevoIndex < 0 || nuevoIndex >= state.queue.length) return;
       const elemento = state.queue.splice(index, 1)[0];
       state.queue.splice(nuevoIndex, 0, elemento);
+
+      if (direccion < 0) {
+        // Subió posición
+        if (nuevoIndex === 0) {
+          lanzarAnimacionManosDoradas(elemento);
+        } else {
+          elemento.isBoosted = true;
+          playAlertSound('subir');
+          setTimeout(() => { elemento.isBoosted = false; }, 900);
+        }
+      }
       persistirYNotificar();
     }
 
@@ -2313,9 +3032,9 @@
       const chatName = (nickname || usuario || displayId || 'Usuario').trim();
       const userKey = resolverClaveUsuario(chatName, displayId, nickname, userId);
       const userDisplay = chatName;
-      const prioridadRegalo = calcularPrioridad(regaloNombre);
+      const categoriaRegalo = clasificarRegalo(regaloNombre, diamondCount);
       const esRosa = esRegaloRosa(regaloNombre);
-      const valorMonedas = Number(diamondCount) || (esRosa ? cantidad : (prioridadRegalo === 'vip' ? 100 : 5));
+      const valorMonedas = Number(diamondCount) || (esRosa ? cantidad : (categoriaRegalo === 'primer_puesto' ? 100 : 5));
 
       if (esRosa) {
         userRoses[userKey] = (userRoses[userKey] || 0) + cantidad;
@@ -2333,47 +3052,69 @@
         song.gift = regaloNombre + (cantidad > 1 ? ` x${cantidad}` : '');
 
         const rosesReq = Number(rulesConfig.rosesReq) || 5;
-        const desbloquear = (prioridadRegalo === 'vip' || prioridadRegalo === 'medium' || (song.roses || 0) >= rosesReq || valorMonedas >= 5);
+        const desbloquear = (categoriaRegalo !== 'normal' || (song.roses || 0) >= rosesReq || valorMonedas >= 5);
 
         if (desbloquear && song.status === 'locked') {
           song.status = 'unlocked';
           song.unlockedReason = regaloNombre;
         }
 
-        // Regalo VIP (Rosquilla 🍩, Sombrero 🎩) -> Sube a puestos VIP
-        if (prioridadRegalo === 'vip') {
+        // 1. REACCIÓN INMEDIATA: Salta directo al Puesto #1 (Turno actual)
+        if (categoriaRegalo === 'reaccion_inmediata') {
           song.status = 'unlocked';
           song.priority = 'vip';
           state.queue.splice(indiceEnCola, 1);
-          let targetIndex = 1;
-          while (targetIndex < state.queue.length && state.queue[targetIndex].priority === 'vip') {
-            targetIndex++;
+          state.queue.unshift(song);
+          lanzarAnimacionManosDoradas(song);
+          persistirYNotificar();
+          mostrarToast(`⚡ ¡REACCIÓN INMEDIATA! ${userDisplay} envió ${regaloNombre} y saltó al PUESTO #1`);
+          mostrarActividadEnVivo(`⚡ ¡REACCIÓN INMEDIATA! ${userDisplay} saltó al #1 con ${regaloNombre}`);
+          return;
+        }
+
+        // 2. PRIMER PUESTO (Regalos VIP o diamantes altos): Elevado por Manos Doradas al puesto 1
+        if (categoriaRegalo === 'primer_puesto') {
+          song.status = 'unlocked';
+          song.priority = 'vip';
+          state.queue.splice(indiceEnCola, 1);
+          state.queue.unshift(song);
+          lanzarAnimacionManosDoradas(song);
+          persistirYNotificar();
+          mostrarToast(`👑 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" elevada al PRIMER PUESTO`);
+          mostrarActividadEnVivo(`👑 ¡${userDisplay} subió al PRIMER PUESTO con ${regaloNombre}!`);
+          return;
+        }
+
+        // 3. SUBIR 1 POSICIÓN: Sube un escalón en la cola
+        if (categoriaRegalo === 'subir_posicion') {
+          if (indiceEnCola > 0) {
+            const targetPos = indiceEnCola - 1;
+            state.queue.splice(indiceEnCola, 1);
+            state.queue.splice(targetPos, 0, song);
+            if (targetPos === 0) {
+              lanzarAnimacionManosDoradas(song);
+            } else {
+              song.isBoosted = true;
+              playAlertSound('subir');
+              setTimeout(() => { song.isBoosted = false; }, 900);
+            }
+          } else {
+            playAlertSound('subir');
           }
-          if (targetIndex >= state.queue.length) state.queue.push(song);
-          else state.queue.splice(targetIndex, 0, song);
-
-          playAlertSound('vip');
           persistirYNotificar();
-          mostrarToast(`👑 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA y subida a VIP`);
-          mostrarActividadEnVivo(`👑 ¡${userDisplay} subió a VIP con ${regaloNombre}!`);
+          mostrarToast(`🚀 ¡${userDisplay} envió ${regaloNombre}! Subió 1 posición en la lista.`);
+          mostrarActividadEnVivo(`🚀 ¡${userDisplay} subió 1 posición con ${regaloNombre}!`);
           return;
         }
 
-        // Regalo Prioridad Media
-        if (prioridadRegalo === 'medium') {
-          if (song.priority !== 'vip') song.priority = 'medium';
-          playAlertSound('vip');
-          persistirYNotificar();
-          mostrarToast(`⚡ ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA.`);
-          return;
-        }
-
-        // Rosas o regalo de monedas configurado
-        if (desbloquear) {
+        // 4. DESBLOQUEAR LA CANCIÓN
+        if (categoriaRegalo === 'desbloquear' || desbloquear) {
+          song.status = 'unlocked';
+          song.unlockedReason = regaloNombre;
           playAlertSound('normal');
           persistirYNotificar();
-          mostrarToast(`🌹 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA.`);
-          mostrarActividadEnVivo(`🌹 ¡${userDisplay} desbloqueó su canción con ${regaloNombre}!`);
+          mostrarToast(`🔓 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" DESBLOQUEADA.`);
+          mostrarActividadEnVivo(`🔓 ¡${userDisplay} desbloqueó su canción con ${regaloNombre}!`);
           return;
         }
 
@@ -2860,6 +3601,22 @@
         const maxPct = isLocked ? Math.max(pctLikes, pctShares, pctRoses) : 100;
 
         let statusBadgeHtml = '';
+        let warningBadgeHtml = '';
+        let warningClass = '';
+
+        // Regla 1: Advertencia de eliminación
+        // 4to lugar (i === 3) y likes < 500 -> Palpitar advertencia
+        // 3er lugar (i === 2) -> Palpitar crítico más notable antes de llegar a #2 y ser eliminada
+        if (isLocked) {
+          if (i === 3 && likes < 500) {
+            warningClass = 'card-warning-p4';
+            warningBadgeHtml = `<span class="badge-warning-p4">⚠️ EN RIESGO (&lt;500 LIKES)</span>`;
+          } else if (i === 2) {
+            warningClass = 'card-critical-p3';
+            warningBadgeHtml = `<span class="badge-critical-p3">🚨 ¡PELIGRO! SALVA ANTES DE #2</span>`;
+          }
+        }
+
         if (isLocked) {
           statusBadgeHtml = `<span class="badge-status badge-locked">🔒 BLOQUEADA</span>`;
         } else if (song.priority === 'vip') {
@@ -2868,8 +3625,10 @@
           statusBadgeHtml = `<span class="badge-status badge-unlocked">🔓 LISTA PARA ESCUCHAR</span>`;
         }
 
+        const animClass = song.isNewlyAdded ? 'slam-drop-in' : (song.isBoosted ? 'card-boost-up' : '');
+
         return `
-          <div class="song-card priority-${song.priority} ${isCurrent ? 'is-current-song' : ''} ${isLocked ? 'song-is-locked' : ''}">
+          <div class="song-card priority-${song.priority} ${isCurrent ? 'is-current-song' : ''} ${isLocked ? 'song-is-locked' : ''} ${warningClass} ${animClass}">
             <div class="song-card-main-row">
               <div class="song-pos">#${pos}</div>
               <div class="song-info">
@@ -2877,6 +3636,7 @@
                 <div class="song-meta-row">
                   <span class="song-user">${escapeHtml((song.user || '').toUpperCase())}</span>
                   ${statusBadgeHtml}
+                  ${warningBadgeHtml}
                   ${song.gift ? `<span class="gift-indicator">🎁 ${escapeHtml((song.gift || '').toUpperCase())}</span>` : ''}
                 </div>
               </div>
@@ -2980,6 +3740,14 @@
         } else {
           listContainer.innerHTML = state.queue.map((song, idx) => {
             const isLocked = (song.status === 'locked');
+            let panelWarningBadge = '';
+            if (isLocked) {
+              if (idx === 3 && (song.likes || 0) < 500) {
+                panelWarningBadge = `<span style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800;">⚠️ RIESGO (&lt;500 LIKES)</span>`;
+              } else if (idx === 2) {
+                panelWarningBadge = `<span style="background: rgba(239, 68, 68, 0.3); border: 1px solid #ef4444; color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; animation: pulse-glow-red 1s infinite alternate;">🚨 ¡PELIGRO ELIMINACIÓN ANTES DE #2!</span>`;
+              }
+            }
             return `
               <div class="panel-song-row ${idx === 0 ? 'is-next' : ''}">
                 <div style="font-weight: 800; min-width: 24px; color: ${idx === 0 ? 'var(--blood-red)' : 'var(--text-muted)'}; font-size: 13px;">
@@ -2993,6 +3761,7 @@
                       ? `<span style="color: #f87171; font-weight: 700; font-size: 11px;">🔒 Bloqueada (${song.likes || 0}/${likesReq}❤️ ${song.shares || 0}/${sharesReq}🔄 ${song.roses || 0}/${rosesReq}🌹)</span>`
                       : `<span style="color: #4ade80; font-weight: 700; font-size: 11px;">🔓 Desbloqueada</span>`
                     }
+                    ${panelWarningBadge}
                     <span style="font-size: 11px;">${song.priority.toUpperCase()}</span>
                     ${song.gift ? `<span style="color: var(--gold-vip);">🎁 ${escapeHtml(song.gift)}</span>` : ''}
                   </div>

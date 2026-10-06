@@ -15,6 +15,12 @@ let botConfig = {
     likesReq: 1000,
     sharesReq: 10,
     rosesReq: 5,
+    giftCategories: {
+      reaccionInmediata: ['león', 'universo', 'cohete'],
+      primerPuesto: ['sombrero', 'donut', 'bigote'],
+      subirPosicion: ['dedo', 'corazón', 'pesas'],
+      desbloquear: ['rosa', 'perfume', 'microfono']
+    },
     mediumGifts: 'dedo, corazon, corazón',
     vipGifts: 'sombrero, bigote, donut, rosquilla',
     vipMinDiamonds: 30
@@ -426,6 +432,12 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   const totalRoses = (serverUserRoses.get(userKey) || 0) + (isRosa ? repeatCount : 0);
   if (isRosa) serverUserRoses.set(userKey, totalRoses);
 
+  const cats = botConfig.rules?.giftCategories || {};
+  const reaccionKeywords = (cats.reaccionInmediata || ['león', 'universo', 'cohete']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const top1Keywords = (cats.primerPuesto || ['sombrero', 'donut', 'bigote']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const subirKeywords = (cats.subirPosicion || ['dedo', 'corazón', 'pesas']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const desbloquearKeywords = (cats.desbloquear || ['rosa', 'perfume', 'microfono']).map(k => k.toLowerCase().trim()).filter(Boolean);
+
   const vipKeywords = String(botConfig.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla')
     .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
   const mediumKeywords = String(botConfig.rules?.mediumGifts || 'dedo, corazon, corazón')
@@ -433,8 +445,12 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   const vipMinDiamonds = Number(botConfig.rules?.vipMinDiamonds) || 30;
   const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
 
-  const isVip = vipKeywords.some(kw => r.includes(kw)) || diamondCount >= vipMinDiamonds;
-  const isMedium = mediumKeywords.some(kw => r.includes(kw));
+  const isReaccion = reaccionKeywords.some(kw => r.includes(kw));
+  const isTop1 = top1Keywords.some(kw => r.includes(kw)) || vipKeywords.some(kw => r.includes(kw)) || diamondCount >= vipMinDiamonds;
+  const isSubir = subirKeywords.some(kw => r.includes(kw)) || mediumKeywords.some(kw => r.includes(kw));
+  const isDesbloquear = desbloquearKeywords.some(kw => r.includes(kw)) || s_roses_check(totalRoses, rosesReq, isRosa);
+
+  function s_roses_check(roses, req, rosa) { return rosa && roses >= req; }
 
   if (comment) {
     processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
@@ -445,24 +461,98 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     const kh = s.handle ? normalizarUserKey(s.handle) : '';
     return k === userKey || (kh && kh === userKey);
   });
+
   if (idx !== -1) {
     const s = queueState.queue[idx];
     s.roses = totalRoses;
     s.gift = giftName + (repeatCount > 1 ? ` x${repeatCount}` : '');
-    if (isVip) s.priority = 'vip';
 
-    const desbloquear = (isVip || isMedium || s.roses >= rosesReq || diamondCount >= 5);
-    if (desbloquear && s.status === 'locked') {
+    if (isReaccion) {
+      s.status = 'unlocked';
+      s.priority = 'vip';
+      s.unlockedReason = `Reacción Inmediata: ${giftName}`;
+      queueState.queue.splice(idx, 1);
+      queueState.queue.unshift(s);
+      verificarEliminacionServidor(queueState.queue);
+      saveQueueData();
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', eventType: 'hands_top1', songTitle: s.title });
+      addLog(`⚡ ¡${s.user} activó Reacción Inmediata para "${s.title}" con ${giftName}!`, 'gift');
+    } else if (isTop1) {
+      s.status = 'unlocked';
+      s.priority = 'vip';
+      s.unlockedReason = `1er Puesto VIP: ${giftName}`;
+      queueState.queue.splice(idx, 1);
+      let targetPos = 0;
+      if (queueState.queue.length > 0 && queueState.queue[0].status === 'unlocked' && queueState.queue[0].id !== s.id) {
+        targetPos = 1;
+      }
+      queueState.queue.splice(targetPos, 0, s);
+      verificarEliminacionServidor(queueState.queue);
+      saveQueueData();
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', eventType: 'hands_top1', songTitle: s.title });
+      addLog(`👑 ¡${s.user} catapultó "${s.title}" al 1er Puesto con ${giftName}!`, 'gift');
+    } else if (isSubir) {
+      if (s.priority !== 'vip') s.priority = 'medium';
+      if (idx > 0) {
+        queueState.queue.splice(idx, 1);
+        queueState.queue.splice(idx - 1, 0, s);
+      }
+      verificarEliminacionServidor(queueState.queue);
+      saveQueueData();
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'subir', eventType: 'move_up', songTitle: s.title });
+      addLog(`🚀 ¡${s.user} subió una posición con "${s.title}" gracias a ${giftName}!`, 'gift');
+    } else if (isDesbloquear || diamondCount >= 5) {
       s.status = 'unlocked';
       s.unlockedReason = `Regalo: ${giftName}`;
+      verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'vip' });
-      addLog(`👑 ¡${s.user} desbloqueó su canción "${s.title}" con ${giftName}!`, 'gift');
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal', eventType: 'unlock', songTitle: s.title });
+      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${giftName}!`, 'gift');
     } else {
+      verificarEliminacionServidor(queueState.queue);
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
     }
   }
+}
+
+// Verificar eliminación de canciones bloqueadas que avanzan de puesto 4 a puesto 2 sin apoyo
+function verificarEliminacionServidor(queue) {
+  if (!Array.isArray(queue)) return false;
+  let huboEliminacion = false;
+  for (let i = 0; i < queue.length; i++) {
+    const s = queue[i];
+    if ((i === 3 || i === 2) && s.status === 'locked') {
+      if (!s.historyAt4th) {
+        s.historyAt4th = {
+          pos: i + 1,
+          likes: s.likes || 0,
+          shares: s.shares || 0,
+          roses: s.roses || 0
+        };
+      }
+    }
+    if (i === 1 && s.status === 'locked' && s.historyAt4th && s.historyAt4th.pos >= 3) {
+      const currentLikes = s.likes || 0;
+      const currentShares = s.shares || 0;
+      const currentRoses = s.roses || 0;
+      const subio = (currentLikes > s.historyAt4th.likes) ||
+                    (currentShares > s.historyAt4th.shares) ||
+                    (currentRoses > s.historyAt4th.roses);
+      if (!subio) {
+        const removed = queue.splice(i, 1)[0];
+        huboEliminacion = true;
+        addLog(`❌ Canción "${removed.title}" de ${removed.user} eliminada al pasar a 2do lugar sin aumentar likes ni regalos.`, 'warning');
+        broadcast({
+          type: 'SONG_ELIMINATED',
+          song: removed,
+          reason: 'Avanzó al 2do lugar sin aumento de likes, compartidos ni regalos'
+        });
+        i--;
+      }
+    }
+  }
+  return huboEliminacion;
 }
 
 // Función de conexión a TikTok Live
@@ -792,17 +882,21 @@ wss.on('connection', (ws) => {
           likesReq: Number(payload.rules?.likesReq) || 1000,
           sharesReq: Number(payload.rules?.sharesReq) || 10,
           rosesReq: Number(payload.rules?.rosesReq) || 5,
+          giftCategories: payload.rules?.giftCategories || botConfig.rules.giftCategories,
           mediumGifts: String(payload.rules?.mediumGifts || 'dedo, corazon, corazón').trim(),
           vipGifts: String(payload.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla').trim(),
           vipMinDiamonds: Number(payload.rules?.vipMinDiamonds) || 30
         };
         saveConfig();
         broadcast({ type: 'RULES_UPDATE', rules: botConfig.rules });
-        addLog(`⚙️ Reglas de desbloqueo actualizadas: ${botConfig.rules.likesReq} Likes, ${botConfig.rules.sharesReq} Shares, ${botConfig.rules.rosesReq} Rosas`, 'info');
+        addLog(`⚙️ Reglas de regalos y desbloqueo actualizadas.`, 'info');
       } else if (payload.action === 'getQueue') {
         ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
       } else if (payload.action === 'syncQueue') {
-        if (Array.isArray(payload.queue)) queueState.queue = payload.queue;
+        if (Array.isArray(payload.queue)) {
+          queueState.queue = payload.queue;
+          verificarEliminacionServidor(queueState.queue);
+        }
         if (Array.isArray(payload.history)) queueState.history = payload.history;
         saveQueueData();
 
