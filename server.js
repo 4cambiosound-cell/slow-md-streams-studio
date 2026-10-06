@@ -16,14 +16,13 @@ let botConfig = {
     sharesReq: 10,
     rosesReq: 5,
     giftCategories: {
-      reaccionInmediata: ['león', 'universo', 'cohete'],
-      primerPuesto: ['sombrero', 'donut', 'bigote'],
-      subirPosicion: ['dedo', 'corazón', 'pesas'],
-      desbloquear: ['rosa', 'perfume', 'microfono']
+      desbloquear: ['rosa', 'corazón con los dedos', 'tik tok'],
+      subirPosicion: ['rosa x10', 'corazón dedos x2', 'mención x2'],
+      puesto3: ['sombrero y bigote'],
+      puesto2: ['gafas de sol'],
+      puesto1: ['money gun']
     },
-    mediumGifts: 'dedo, corazon, corazón',
-    vipGifts: 'sombrero, bigote, donut, rosquilla',
-    vipMinDiamonds: 30
+    vipMinDiamonds: 100
   },
   tts: {
     voiceURI: 'google_hd_es',
@@ -433,24 +432,20 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   if (isRosa) serverUserRoses.set(userKey, totalRoses);
 
   const cats = botConfig.rules?.giftCategories || {};
-  const reaccionKeywords = (cats.reaccionInmediata || ['león', 'universo', 'cohete']).map(k => k.toLowerCase().trim()).filter(Boolean);
-  const top1Keywords = (cats.primerPuesto || ['sombrero', 'donut', 'bigote']).map(k => k.toLowerCase().trim()).filter(Boolean);
-  const subirKeywords = (cats.subirPosicion || ['dedo', 'corazón', 'pesas']).map(k => k.toLowerCase().trim()).filter(Boolean);
-  const desbloquearKeywords = (cats.desbloquear || ['rosa', 'perfume', 'microfono']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const puesto1Keywords = (cats.puesto1 || ['money gun', 'moneygun']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const puesto2Keywords = (cats.puesto2 || ['gafas', 'lentes']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const puesto3Keywords = (cats.puesto3 || ['sombrero', 'bigote']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const subirKeywords = (cats.subirPosicion || ['rosa x10', 'corazón dedos x2', 'mención x2', 'mencion', 'dedo x2']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const desbloquearKeywords = (cats.desbloquear || ['rosa', 'corazón con los dedos', 'dedo', 'tik tok']).map(k => k.toLowerCase().trim()).filter(Boolean);
 
-  const vipKeywords = String(botConfig.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla')
-    .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-  const mediumKeywords = String(botConfig.rules?.mediumGifts || 'dedo, corazon, corazón')
-    .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
-  const vipMinDiamonds = Number(botConfig.rules?.vipMinDiamonds) || 30;
+  const vipMinDiamonds = Number(botConfig.rules?.vipMinDiamonds) || 100;
   const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
 
-  const isReaccion = reaccionKeywords.some(kw => r.includes(kw));
-  const isTop1 = top1Keywords.some(kw => r.includes(kw)) || vipKeywords.some(kw => r.includes(kw)) || diamondCount >= vipMinDiamonds;
-  const isSubir = subirKeywords.some(kw => r.includes(kw)) || mediumKeywords.some(kw => r.includes(kw));
-  const isDesbloquear = desbloquearKeywords.some(kw => r.includes(kw)) || s_roses_check(totalRoses, rosesReq, isRosa);
-
-  function s_roses_check(roses, req, rosa) { return rosa && roses >= req; }
+  const isPuesto1 = puesto1Keywords.some(kw => r.includes(kw)) || r.includes('money gun') || diamondCount >= vipMinDiamonds;
+  const isPuesto2 = puesto2Keywords.some(kw => r.includes(kw)) || r.includes('gafas') || r.includes('lentes');
+  const isPuesto3 = puesto3Keywords.some(kw => r.includes(kw)) || r.includes('sombrero') || r.includes('bigote');
+  const isSubir = subirKeywords.some(kw => r.includes(kw)) || (isRosa && (repeatCount >= 10 || totalRoses >= 10)) || r.includes('x10') || r.includes('x2');
+  const isDesbloquear = desbloquearKeywords.some(kw => r.includes(kw)) || (isRosa && totalRoses >= rosesReq) || diamondCount >= 5;
 
   if (comment) {
     processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
@@ -467,30 +462,42 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     s.roses = totalRoses;
     s.gift = giftName + (repeatCount > 1 ? ` x${repeatCount}` : '');
 
-    if (isReaccion) {
+    // 1. Desbloquea y pasa a Puesto #1 (Money Gun o VIP alto)
+    if (isPuesto1) {
       s.status = 'unlocked';
       s.priority = 'vip';
-      s.unlockedReason = `Reacción Inmediata: ${giftName}`;
+      s.unlockedReason = `Puesto #1: ${giftName}`;
       queueState.queue.splice(idx, 1);
       queueState.queue.unshift(s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', eventType: 'hands_top1', songTitle: s.title });
-      addLog(`⚡ ¡${s.user} activó Reacción Inmediata para "${s.title}" con ${giftName}!`, 'gift');
-    } else if (isTop1) {
+      addLog(`🥇 ¡${s.user} catapultó "${s.title}" al PUESTO #1 con ${giftName}!`, 'gift');
+    // 2. Desbloquea y pasa a Puesto #2 (Gafas de sol)
+    } else if (isPuesto2) {
       s.status = 'unlocked';
       s.priority = 'vip';
-      s.unlockedReason = `1er Puesto VIP: ${giftName}`;
+      s.unlockedReason = `Puesto #2: ${giftName}`;
       queueState.queue.splice(idx, 1);
-      let targetPos = 0;
-      if (queueState.queue.length > 0 && queueState.queue[0].status === 'unlocked' && queueState.queue[0].id !== s.id) {
-        targetPos = 1;
-      }
+      const targetPos = Math.min(1, queueState.queue.length);
       queueState.queue.splice(targetPos, 0, s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', eventType: 'hands_top1', songTitle: s.title });
-      addLog(`👑 ¡${s.user} catapultó "${s.title}" al 1er Puesto con ${giftName}!`, 'gift');
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', songTitle: s.title });
+      addLog(`🥈 ¡${s.user} pasó "${s.title}" al PUESTO #2 con ${giftName}!`, 'gift');
+    // 3. Desbloquea y pasa a Puesto #3 (Sombrero y bigote)
+    } else if (isPuesto3) {
+      s.status = 'unlocked';
+      s.priority = 'vip';
+      s.unlockedReason = `Puesto #3: ${giftName}`;
+      queueState.queue.splice(idx, 1);
+      const targetPos = Math.min(2, queueState.queue.length);
+      queueState.queue.splice(targetPos, 0, s);
+      verificarEliminacionServidor(queueState.queue);
+      saveQueueData();
+      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', songTitle: s.title });
+      addLog(`🥉 ¡${s.user} pasó "${s.title}" al PUESTO #3 con ${giftName}!`, 'gift');
+    // 4. Subir 1 posición (Rosa x10, Corazón dedos x2, Mención x2)
     } else if (isSubir) {
       if (s.priority !== 'vip') s.priority = 'medium';
       if (idx > 0) {
@@ -501,9 +508,10 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'subir', eventType: 'move_up', songTitle: s.title });
       addLog(`🚀 ¡${s.user} subió una posición con "${s.title}" gracias a ${giftName}!`, 'gift');
-    } else if (isDesbloquear || diamondCount >= 5) {
+    // 5. Desbloquear canción (Rosa x5, Corazón con los dedos x1, etc.)
+    } else if (isDesbloquear) {
       s.status = 'unlocked';
-      s.unlockedReason = `Regalo: ${giftName}`;
+      s.unlockedReason = `Desbloqueo: ${giftName}`;
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal', eventType: 'unlock', songTitle: s.title });

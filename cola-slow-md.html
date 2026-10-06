@@ -1798,8 +1798,9 @@
       <div class="overlay-formula-banner">
         <div class="formula-main-title">ESCUCHA TU CANCIÓN</div>
         <div class="formula-rules">
-          <div class="formula-step">1. SÍGUEME Y ESCRIBE: <strong>ESCUCHA [CANCIÓN]</strong></div>
-          <div class="formula-step">2. DESBLOQUEA CON: <strong><span id="formula-roses-num">5</span> ROSAS 🌹</strong> • <strong><span id="formula-likes-num">1000</span> LIKES ❤️</strong> • <strong><span id="formula-shares-num">10</span> COMPARTIDOS 🔄</strong></div>
+          <div class="formula-step">1. SÍGUEME Y COMENTA: <strong>ESCUCHA [CANCIÓN]</strong></div>
+          <div class="formula-step">2. DESBLOQUEA CON: <strong>5 ROSAS 🌹</strong> • <strong>10 COMPARTIDOS 🔄</strong> • <strong>1000 LIKES ❤️</strong> • <strong>1 CORAZÓN DEDOS 🫰</strong></div>
+          <div class="formula-step" style="opacity: 0.9; font-size: 10px; color: #fde047;">⚡ SUBIR PUESTO: 10 Rosas / 2 Corazones dedos / 2 Menciones • 👑 POSICIONES VIP: Sombrero (#3) | Gafas (#2) | Money Gun (#1)</div>
         </div>
       </div>
 
@@ -1980,43 +1981,53 @@
               </button>
               <button class="sim-gift-btn" onclick="simularEventoTikTok('rosas_5')">
                 <span class="sim-icon">🌹</span>
-                <span>Enviar 5 Rosas</span>
+                <span>Rosa x5</span>
                 <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
-              </button>
-              <button class="sim-gift-btn" onclick="simularEventoTikTok('share_1')">
-                <span class="sim-icon">🔄</span>
-                <span>Compartir x1</span>
-                <span style="font-size: 10px; color: #38bdf8;">Progreso 1/10</span>
               </button>
               <button class="sim-gift-btn" onclick="simularEventoTikTok('shares_10')">
                 <span class="sim-icon">🔄</span>
                 <span>Compartir x10</span>
                 <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
               </button>
-              <button class="sim-gift-btn" onclick="simularEventoTikTok('likes_100')">
-                <span class="sim-icon">❤️</span>
-                <span>Dar 100 Likes</span>
-                <span style="font-size: 10px; color: #f43f5e;">Progreso 100/1000</span>
-              </button>
               <button class="sim-gift-btn" onclick="simularEventoTikTok('likes_1000')">
                 <span class="sim-icon">❤️</span>
-                <span>Dar 1000 Likes</span>
+                <span>Likes x1000</span>
                 <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
               </button>
-              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('gift_vip_donut')">
-                <span class="sim-icon">🍩</span>
-                <span>Rosquilla (VIP)</span>
-                <span style="font-size: 10px; color: var(--gold-vip);">👑 VIP DIRECTO</span>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('corazon_x1')">
+                <span class="sim-icon">🫰</span>
+                <span>Corazón dedos x1</span>
+                <span style="font-size: 10px; color: #22c55e;">🔓 ¡Desbloquea!</span>
               </button>
-              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('gift_vip_sombrero')">
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('rosas_10')">
+                <span class="sim-icon">🌹</span>
+                <span>Rosa x10</span>
+                <span style="font-size: 10px; color: #38bdf8;">🚀 Sube 1 Puesto</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('corazon_x2')">
+                <span class="sim-icon">🫰</span>
+                <span>Corazón dedos x2</span>
+                <span style="font-size: 10px; color: #38bdf8;">🚀 Sube 1 Puesto</span>
+              </button>
+              <button class="sim-gift-btn" onclick="simularEventoTikTok('mencion_x2')">
+                <span class="sim-icon">📢</span>
+                <span>Mención x2</span>
+                <span style="font-size: 10px; color: #38bdf8;">🚀 Sube 1 Puesto</span>
+              </button>
+              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('posicion_3')">
                 <span class="sim-icon">🎩</span>
                 <span>Sombrero & Bigote</span>
-                <span style="font-size: 10px; color: var(--gold-vip);">👑 VIP MÁXIMO</span>
+                <span style="font-size: 10px; color: #f59e0b;">🥉 Pasa a Puesto #3</span>
               </button>
-              <button class="sim-gift-btn" onclick="simularEventoTikTok('gift_corazon')">
-                <span class="sim-icon">🫰</span>
-                <span>Corazón dedos</span>
-                <span style="font-size: 10px; color: #b347eb;">Prioridad Media</span>
+              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('posicion_2')">
+                <span class="sim-icon">🕶️</span>
+                <span>Gafas de sol</span>
+                <span style="font-size: 10px; color: #38bdf8;">🥈 Pasa a Puesto #2</span>
+              </button>
+              <button class="sim-gift-btn vip-sim" onclick="simularEventoTikTok('posicion_1')">
+                <span class="sim-icon">🔫</span>
+                <span>Money Gun</span>
+                <span style="font-size: 10px; color: var(--gold-vip);">🥇 Pasa a Puesto #1</span>
               </button>
             </div>
           </div>
@@ -2138,85 +2149,19 @@
 
           <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 0;"></div>
 
-          <!-- SECCIÓN 2: 4 CATEGORÍAS FIJAS CON 3 OPCIONES CADA UNA -->
+          <!-- SECCIÓN 2: CATEGORÍAS FIJAS DE REGALOS Y ACCIONES -->
           <div>
-            <div class="config-group-title">👑 Categorías Fijas de Regalos (3 Opciones por Categoría)</div>
+            <div class="config-group-title">👑 Regalos Personalizados por Acción</div>
             <p class="field-hint" style="margin-bottom: 12px;">
-              Asigna hasta 3 regalos personalizados a cada una de las 4 acciones de la cola:
+              Configura los nombres de regalos que activan cada acción en la lista (se pueden personalizar):
             </p>
 
             <div style="display: flex; flex-direction: column; gap: 14px;">
-              <!-- Cat 1: Reacción Inmediata -->
-              <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="font-weight: 800; color: #c084fc; font-size: 13px;">⚡ 1. Reacción Inmediata</span>
-                  <span style="font-size: 11px; color: var(--text-muted);">Pasa directo al turno actual (#1 sonando ya)</span>
-                </div>
-                <div class="config-grid-3">
-                  <div class="config-field">
-                    <label for="input-cfg-reac-1">Opción 1</label>
-                    <input type="text" id="input-cfg-reac-1" placeholder="ej. leon" value="león">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-reac-2">Opción 2</label>
-                    <input type="text" id="input-cfg-reac-2" placeholder="ej. universo" value="universo">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-reac-3">Opción 3</label>
-                    <input type="text" id="input-cfg-reac-3" placeholder="ej. cohete" value="cohete">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Cat 2: 1er Puesto -->
-              <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 8px; padding: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="font-weight: 800; color: #fbbf24; font-size: 13px;">👑 2. 1er Puesto (VIP)</span>
-                  <span style="font-size: 11px; color: var(--text-muted);">Catapulta al 1er lugar de espera con manos doradas</span>
-                </div>
-                <div class="config-grid-3">
-                  <div class="config-field">
-                    <label for="input-cfg-top1-1">Opción 1</label>
-                    <input type="text" id="input-cfg-top1-1" placeholder="ej. sombrero" value="sombrero">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-top1-2">Opción 2</label>
-                    <input type="text" id="input-cfg-top1-2" placeholder="ej. donut" value="donut">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-top1-3">Opción 3</label>
-                    <input type="text" id="input-cfg-top1-3" placeholder="ej. bigote" value="bigote">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Cat 3: Subir 1 Posición -->
-              <div style="background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.35); border-radius: 8px; padding: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="font-weight: 800; color: #38bdf8; font-size: 13px;">🚀 3. Subir 1 Posición</span>
-                  <span style="font-size: 11px; color: var(--text-muted);">Avanza un puesto en la fila con impulso sonoro</span>
-                </div>
-                <div class="config-grid-3">
-                  <div class="config-field">
-                    <label for="input-cfg-up1-1">Opción 1</label>
-                    <input type="text" id="input-cfg-up1-1" placeholder="ej. dedo" value="dedo">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-up1-2">Opción 2</label>
-                    <input type="text" id="input-cfg-up1-2" placeholder="ej. corazon" value="corazón">
-                  </div>
-                  <div class="config-field">
-                    <label for="input-cfg-up1-3">Opción 3</label>
-                    <input type="text" id="input-cfg-up1-3" placeholder="ej. pesas" value="pesas">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Cat 4: Desbloquear la Canción -->
+              <!-- Cat 1: Desbloquear Canciones -->
               <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="font-weight: 800; color: #34d399; font-size: 13px;">🔓 4. Desbloquear la Canción</span>
-                  <span style="font-size: 11px; color: var(--text-muted);">Desbloquea al instante y evita su eliminación</span>
+                  <span style="font-weight: 800; color: #34d399; font-size: 13px;">🔓 1. Desbloquear Canción</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Desbloquea de inmediato</span>
                 </div>
                 <div class="config-grid-3">
                   <div class="config-field">
@@ -2225,20 +2170,78 @@
                   </div>
                   <div class="config-field">
                     <label for="input-cfg-unl-2">Opción 2</label>
-                    <input type="text" id="input-cfg-unl-2" placeholder="ej. perfume" value="perfume">
+                    <input type="text" id="input-cfg-unl-2" placeholder="ej. corazon con dedos" value="corazón con los dedos">
                   </div>
                   <div class="config-field">
                     <label for="input-cfg-unl-3">Opción 3</label>
-                    <input type="text" id="input-cfg-unl-3" placeholder="ej. microfono" value="microfono">
+                    <input type="text" id="input-cfg-unl-3" placeholder="ej. tik tok" value="tik tok">
                   </div>
+                </div>
+              </div>
+
+              <!-- Cat 2: Subir una Posición -->
+              <div style="background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #38bdf8; font-size: 13px;">🚀 2. Subir una Posición</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Avanza 1 lugar hacia arriba</span>
+                </div>
+                <div class="config-grid-3">
+                  <div class="config-field">
+                    <label for="input-cfg-up1-1">Opción 1</label>
+                    <input type="text" id="input-cfg-up1-1" placeholder="ej. rosa x10" value="rosa x10">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-up1-2">Opción 2</label>
+                    <input type="text" id="input-cfg-up1-2" placeholder="ej. corazon con dedos x2" value="corazón dedos x2">
+                  </div>
+                  <div class="config-field">
+                    <label for="input-cfg-up1-3">Opción 3</label>
+                    <input type="text" id="input-cfg-up1-3" placeholder="ej. mencion x2" value="mención x2">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cat 3: Desbloquea y pasa a Posición #3 -->
+              <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #fbbf24; font-size: 13px;">🥉 3. Desbloquea y Pasa a Posición #3</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Puesto 3 de inmediato</span>
+                </div>
+                <div class="config-field">
+                  <label for="input-cfg-pos3">Regalo para Posición #3</label>
+                  <input type="text" id="input-cfg-pos3" placeholder="ej. sombrero y bigote" value="sombrero y bigote">
+                </div>
+              </div>
+
+              <!-- Cat 4: Desbloquea y pasa a Posición #2 -->
+              <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #60a5fa; font-size: 13px;">🥈 4. Desbloquea y Pasa a Posición #2</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Puesto 2 de inmediato</span>
+                </div>
+                <div class="config-field">
+                  <label for="input-cfg-pos2">Regalo para Posición #2</label>
+                  <input type="text" id="input-cfg-pos2" placeholder="ej. gafas de sol" value="gafas de sol">
+                </div>
+              </div>
+
+              <!-- Cat 5: Desbloquea y pasa a Posición #1 -->
+              <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="font-weight: 800; color: #fde047; font-size: 13px;">🥇 5. Desbloquea y Pasa a Posición #1 (Turno Actual)</span>
+                  <span style="font-size: 11px; color: var(--text-muted);">Puesto 1 con Manos Doradas</span>
+                </div>
+                <div class="config-field">
+                  <label for="input-cfg-pos1">Regalo para Posición #1</label>
+                  <input type="text" id="input-cfg-pos1" placeholder="ej. money gun" value="money gun">
                 </div>
               </div>
 
               <!-- Monedas VIP -->
               <div class="config-field" style="margin-top: 4px;">
-                <label for="input-cfg-vip-diamonds">💎 Monedas/Diamantes mínimos para VIP Automático</label>
-                <input type="number" id="input-cfg-vip-diamonds" min="1" step="5" value="30">
-                <span class="field-hint">Cualquier regalo que cueste igual o más que esta cantidad será VIP automáticamente.</span>
+                <label for="input-cfg-vip-diamonds">💎 Monedas/Diamantes mínimos para Puesto #1 Automático</label>
+                <input type="number" id="input-cfg-vip-diamonds" min="1" step="5" value="100">
+                <span class="field-hint">Cualquier regalo que cueste igual o más que esta cantidad colocará en Posición #1.</span>
               </div>
             </div>
           </div>
@@ -2611,14 +2614,13 @@
       sharesReq: 10,
       rosesReq: 5,
       giftCategories: {
-        reaccionInmediata: ['Gafas', 'Dinero', 'Fuegos artificiales'],
-        primerPuesto: ['Sombrero y bigote', 'Rosquilla', 'Halcón'],
-        subirPosicion: ['Corazón con dedos', 'Pato', 'Rosa x5'],
-        desbloquear: ['Rosa', 'Tik Tok', 'Pesas']
+        desbloquear: ['rosa', 'corazón con los dedos', 'tik tok'],
+        subirPosicion: ['rosa x10', 'corazón dedos x2', 'mención x2'],
+        puesto3: ['sombrero y bigote'],
+        puesto2: ['gafas de sol'],
+        puesto1: ['money gun']
       },
-      mediumGifts: 'dedo, corazon, corazón',
-      vipGifts: 'sombrero, bigote, donut, rosquilla',
-      vipMinDiamonds: 30
+      vipMinDiamonds: 100
     };
     try {
       const savedRules = localStorage.getItem(STORAGE_KEY_RULES);
@@ -2657,16 +2659,18 @@
       if (elDia) elDia.value = rulesConfig.vipMinDiamonds;
 
       const cats = rulesConfig.giftCategories || {};
-      const r1 = cats.reaccionInmediata || ['Gafas', 'Dinero', 'Fuegos artificiales'];
-      const p1 = cats.primerPuesto || ['Sombrero y bigote', 'Rosquilla', 'Halcón'];
-      const u1 = cats.subirPosicion || ['Corazón con dedos', 'Pato', 'Rosa x5'];
-      const d1 = cats.desbloquear || ['Rosa', 'Tik Tok', 'Pesas'];
+      const d1 = cats.desbloquear || ['rosa', 'corazón con los dedos', 'tik tok'];
+      const u1 = cats.subirPosicion || ['rosa x10', 'corazón dedos x2', 'mención x2'];
+      const p3 = cats.puesto3 || ['sombrero y bigote'];
+      const p2 = cats.puesto2 || ['gafas de sol'];
+      const p1 = cats.puesto1 || ['money gun'];
 
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      setVal('input-cfg-reac-1', r1[0]); setVal('input-cfg-reac-2', r1[1]); setVal('input-cfg-reac-3', r1[2]);
-      setVal('input-cfg-top1-1', p1[0]); setVal('input-cfg-top1-2', p1[1]); setVal('input-cfg-top1-3', p1[2]);
-      setVal('input-cfg-up1-1', u1[0]); setVal('input-cfg-up1-2', u1[1]); setVal('input-cfg-up1-3', u1[2]);
       setVal('input-cfg-unl-1', d1[0]); setVal('input-cfg-unl-2', d1[1]); setVal('input-cfg-unl-3', d1[2]);
+      setVal('input-cfg-up1-1', u1[0]); setVal('input-cfg-up1-2', u1[1]); setVal('input-cfg-up1-3', u1[2]);
+      setVal('input-cfg-pos3', p3[0]);
+      setVal('input-cfg-pos2', p2[0]);
+      setVal('input-cfg-pos1', p1[0]);
 
       if (modal) modal.style.display = 'flex';
     }
@@ -2681,30 +2685,23 @@
       rulesConfig.likesReq = Number(document.getElementById('input-cfg-likes').value) || 1000;
       rulesConfig.sharesReq = Number(document.getElementById('input-cfg-shares').value) || 10;
       rulesConfig.rosesReq = Number(document.getElementById('input-cfg-roses').value) || 5;
-      rulesConfig.vipMinDiamonds = Number(document.getElementById('input-cfg-vip-diamonds').value) || 30;
+      rulesConfig.vipMinDiamonds = Number(document.getElementById('input-cfg-vip-diamonds').value) || 100;
 
       const getVal = (id, def) => { const el = document.getElementById(id); return el && el.value.trim() ? el.value.trim() : def; };
       rulesConfig.giftCategories = {
-        reaccionInmediata: [
-          getVal('input-cfg-reac-1', 'Gafas'),
-          getVal('input-cfg-reac-2', 'Dinero'),
-          getVal('input-cfg-reac-3', 'Fuegos artificiales')
-        ],
-        primerPuesto: [
-          getVal('input-cfg-top1-1', 'Sombrero y bigote'),
-          getVal('input-cfg-top1-2', 'Rosquilla'),
-          getVal('input-cfg-top1-3', 'Halcón')
+        desbloquear: [
+          getVal('input-cfg-unl-1', 'rosa'),
+          getVal('input-cfg-unl-2', 'corazón con los dedos'),
+          getVal('input-cfg-unl-3', 'tik tok')
         ],
         subirPosicion: [
-          getVal('input-cfg-up1-1', 'Corazón con dedos'),
-          getVal('input-cfg-up1-2', 'Pato'),
-          getVal('input-cfg-up1-3', 'Rosa x5')
+          getVal('input-cfg-up1-1', 'rosa x10'),
+          getVal('input-cfg-up1-2', 'corazón dedos x2'),
+          getVal('input-cfg-up1-3', 'mención x2')
         ],
-        desbloquear: [
-          getVal('input-cfg-unl-1', 'Rosa'),
-          getVal('input-cfg-unl-2', 'Tik Tok'),
-          getVal('input-cfg-unl-3', 'Pesas')
-        ]
+        puesto3: [getVal('input-cfg-pos3', 'sombrero y bigote')],
+        puesto2: [getVal('input-cfg-pos2', 'gafas de sol')],
+        puesto1: [getVal('input-cfg-pos1', 'money gun')]
       };
 
       try {
@@ -2727,23 +2724,24 @@
       actualizarTextosReglas();
       renderizarTodo();
       cerrarModalReglas();
-      mostrarToast('✅ ¡Metas y 4 categorías de regalos guardadas!');
+      mostrarToast('✅ ¡Reglas y configuración de regalos guardadas!');
     }
 
     function restablecerReglasDefault() {
       document.getElementById('input-cfg-likes').value = 1000;
       document.getElementById('input-cfg-shares').value = 10;
       document.getElementById('input-cfg-roses').value = 5;
-      document.getElementById('input-cfg-vip-diamonds').value = 30;
+      document.getElementById('input-cfg-vip-diamonds').value = 100;
 
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-      setVal('input-cfg-reac-1', 'Gafas'); setVal('input-cfg-reac-2', 'Dinero'); setVal('input-cfg-reac-3', 'Fuegos artificiales');
-      setVal('input-cfg-top1-1', 'Sombrero y bigote'); setVal('input-cfg-top1-2', 'Rosquilla'); setVal('input-cfg-top1-3', 'Halcón');
-      setVal('input-cfg-up1-1', 'Corazón con dedos'); setVal('input-cfg-up1-2', 'Pato'); setVal('input-cfg-up1-3', 'Rosa x5');
-      setVal('input-cfg-unl-1', 'Rosa'); setVal('input-cfg-unl-2', 'Tik Tok'); setVal('input-cfg-unl-3', 'Pesas');
+      setVal('input-cfg-unl-1', 'rosa'); setVal('input-cfg-unl-2', 'corazón con los dedos'); setVal('input-cfg-unl-3', 'tik tok');
+      setVal('input-cfg-up1-1', 'rosa x10'); setVal('input-cfg-up1-2', 'corazón dedos x2'); setVal('input-cfg-up1-3', 'mención x2');
+      setVal('input-cfg-pos3', 'sombrero y bigote');
+      setVal('input-cfg-pos2', 'gafas de sol');
+      setVal('input-cfg-pos1', 'money gun');
     }
 
-    // Clasificar regalo según las 4 categorías configuradas
+    // Clasificar regalo según las categorías simplificadas
     function clasificarRegalo(regaloNombre, diamondCount = 0) {
       if (!regaloNombre) return 'normal';
       const r = regaloNombre.toLowerCase();
@@ -2758,15 +2756,21 @@
         });
       };
 
-      if (matchCat(cats.reaccionInmediata)) return 'reaccion_inmediata';
-      if (matchCat(cats.primerPuesto) || (diamondCount && diamondCount >= (Number(rulesConfig.vipMinDiamonds) || 30))) return 'primer_puesto';
-      if (matchCat(cats.subirPosicion)) return 'subir_posicion';
-      if (matchCat(cats.desbloquear)) return 'desbloquear';
-
-      // Fallbacks clásicos
-      if (r.includes('sombrero') || r.includes('rosquilla') || r.includes('donut')) return 'primer_puesto';
-      if (r.includes('corazon') || r.includes('corazón') || r.includes('dedo')) return 'subir_posicion';
-      if (r.includes('rosa') || r.includes('rose')) return 'desbloquear';
+      if (matchCat(cats.puesto1) || r.includes('money gun') || r.includes('moneygun') || (diamondCount && diamondCount >= (Number(rulesConfig.vipMinDiamonds) || 100))) {
+        return 'puesto_1';
+      }
+      if (matchCat(cats.puesto2) || r.includes('gafas') || r.includes('lentes')) {
+        return 'puesto_2';
+      }
+      if (matchCat(cats.puesto3) || r.includes('sombrero') || r.includes('bigote')) {
+        return 'puesto_3';
+      }
+      if (matchCat(cats.subirPosicion) || r.includes('mencion') || r.includes('mención') || r.includes('pato')) {
+        return 'subir_posicion';
+      }
+      if (matchCat(cats.desbloquear) || r.includes('corazon') || r.includes('corazón') || r.includes('dedo') || r.includes('rosa')) {
+        return 'desbloquear';
+      }
 
       return 'normal';
     }
@@ -2774,7 +2778,7 @@
     // Determinar la prioridad según regalo o tipo (dinámico)
     function calcularPrioridad(regaloNombre) {
       const cat = clasificarRegalo(regaloNombre);
-      if (cat === 'reaccion_inmediata' || cat === 'primer_puesto') return 'vip';
+      if (cat === 'puesto_1' || cat === 'puesto_2' || cat === 'puesto_3') return 'vip';
       if (cat === 'subir_posicion') return 'medium';
       return 'normal';
     }
@@ -2819,12 +2823,22 @@
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      // Si es un regalo de 'reacción inmediata', colocar directamente en turno #1
+      // Inserción según regalo específico
       const catRegalo = clasificarRegalo(regaloNombre);
-      if (catRegalo === 'reaccion_inmediata') {
+      if (catRegalo === 'puesto_1') {
         state.queue.unshift(nuevaEntrada);
         nuevaEntrada.status = 'unlocked';
         lanzarAnimacionManosDoradas(nuevaEntrada);
+      } else if (catRegalo === 'puesto_2') {
+        nuevaEntrada.status = 'unlocked';
+        const targetPos = Math.min(1, state.queue.length);
+        state.queue.splice(targetPos, 0, nuevaEntrada);
+        playAlertSound('vip');
+      } else if (catRegalo === 'puesto_3') {
+        nuevaEntrada.status = 'unlocked';
+        const targetPos = Math.min(2, state.queue.length);
+        state.queue.splice(targetPos, 0, nuevaEntrada);
+        playAlertSound('vip');
       } else if (prioridad === 'vip') {
         const primerNoVipIndex = state.queue.findIndex(item => item.priority !== 'vip');
         if (primerNoVipIndex === -1) {
@@ -3059,33 +3073,48 @@
           song.unlockedReason = regaloNombre;
         }
 
-        // 1. REACCIÓN INMEDIATA: Salta directo al Puesto #1 (Turno actual)
-        if (categoriaRegalo === 'reaccion_inmediata') {
+        // 1. DESBLOQUEA Y PASA A POSICIÓN #1 (Money Gun o equivalente)
+        if (categoriaRegalo === 'puesto_1') {
           song.status = 'unlocked';
           song.priority = 'vip';
           state.queue.splice(indiceEnCola, 1);
           state.queue.unshift(song);
           lanzarAnimacionManosDoradas(song);
           persistirYNotificar();
-          mostrarToast(`⚡ ¡REACCIÓN INMEDIATA! ${userDisplay} envió ${regaloNombre} y saltó al PUESTO #1`);
-          mostrarActividadEnVivo(`⚡ ¡REACCIÓN INMEDIATA! ${userDisplay} saltó al #1 con ${regaloNombre}`);
+          mostrarToast(`🥇 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" al PUESTO #1`);
+          mostrarActividadEnVivo(`🥇 ¡${userDisplay} catapultó al PUESTO #1 con ${regaloNombre}!`);
           return;
         }
 
-        // 2. PRIMER PUESTO (Regalos VIP o diamantes altos): Elevado por Manos Doradas al puesto 1
-        if (categoriaRegalo === 'primer_puesto') {
+        // 2. DESBLOQUEA Y PASA A POSICIÓN #2 (Gafas de sol o equivalente)
+        if (categoriaRegalo === 'puesto_2') {
           song.status = 'unlocked';
           song.priority = 'vip';
           state.queue.splice(indiceEnCola, 1);
-          state.queue.unshift(song);
-          lanzarAnimacionManosDoradas(song);
+          const targetIndex = Math.min(1, state.queue.length);
+          state.queue.splice(targetIndex, 0, song);
+          playAlertSound('vip');
           persistirYNotificar();
-          mostrarToast(`👑 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" elevada al PRIMER PUESTO`);
-          mostrarActividadEnVivo(`👑 ¡${userDisplay} subió al PRIMER PUESTO con ${regaloNombre}!`);
+          mostrarToast(`🥈 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" pasó al PUESTO #2`);
+          mostrarActividadEnVivo(`🥈 ¡${userDisplay} subió al PUESTO #2 con ${regaloNombre}!`);
           return;
         }
 
-        // 3. SUBIR 1 POSICIÓN: Sube un escalón en la cola
+        // 3. DESBLOQUEA Y PASA A POSICIÓN #3 (Sombrero y bigote o equivalente)
+        if (categoriaRegalo === 'puesto_3') {
+          song.status = 'unlocked';
+          song.priority = 'vip';
+          state.queue.splice(indiceEnCola, 1);
+          const targetIndex = Math.min(2, state.queue.length);
+          state.queue.splice(targetIndex, 0, song);
+          playAlertSound('vip');
+          persistirYNotificar();
+          mostrarToast(`🥉 ¡${userDisplay} envió ${regaloNombre}! Canción "${song.title}" pasó al PUESTO #3`);
+          mostrarActividadEnVivo(`🥉 ¡${userDisplay} subió al PUESTO #3 con ${regaloNombre}!`);
+          return;
+        }
+
+        // 4. SUBIR UNA POSICIÓN (Rosa x10, Corazón dedos x2, Mención x2)
         if (categoriaRegalo === 'subir_posicion') {
           if (indiceEnCola > 0) {
             const targetPos = indiceEnCola - 1;
@@ -3107,7 +3136,7 @@
           return;
         }
 
-        // 4. DESBLOQUEAR LA CANCIÓN
+        // 5. DESBLOQUEAR LA CANCIÓN (Rosa x5, Corazón con dedos x1, etc.)
         if (categoriaRegalo === 'desbloquear' || desbloquear) {
           song.status = 'unlocked';
           song.unlockedReason = regaloNombre;
@@ -3510,26 +3539,28 @@
         registrarSeguidorUsuario(userPrueba, handlePrueba, userPrueba, '9991');
         mostrarActividadEnVivo(`💬 ${userPrueba} (Seguidor): Escucha Duki - Givenchy`);
         procesarMensajeTikTok('Escucha Duki - Givenchy', userPrueba, '', 1, handlePrueba, userPrueba, '9991', true);
-      } else if (tipo === 'rosa_1') {
-        registrarRegaloUsuario(userPrueba, 'Rosa', 1, '', handlePrueba, userPrueba, '9991');
       } else if (tipo === 'rosas_5') {
-        registrarRegaloUsuario(userPrueba, 'Rosa', 5, 'Escucha Bad Bunny - Ojitos Lindos', handlePrueba, userPrueba, '9991');
-      } else if (tipo === 'share_1') {
-        registrarCompartidoUsuario(userPrueba, handlePrueba, userPrueba, '9991');
+        registrarRegaloUsuario(userPrueba, 'Rosa', 5, '', handlePrueba, userPrueba, '9991');
       } else if (tipo === 'shares_10') {
         for (let i = 0; i < 10; i++) {
           registrarCompartidoUsuario(userPrueba, handlePrueba, userPrueba, '9991');
         }
-      } else if (tipo === 'likes_100') {
-        registrarLikesUsuario(userPrueba, 100, handlePrueba, userPrueba, '9991');
-      } else if (tipo === 'likes_1000' || tipo === 'likes_500') {
+      } else if (tipo === 'likes_1000') {
         registrarLikesUsuario(userPrueba, 1000, handlePrueba, userPrueba, '9991');
-      } else if (tipo === 'gift_vip_donut') {
-        procesarMensajeTikTok('Escucha Feid - Luna', 'Donador VIP', 'Rosquilla', 1, '@donador_vip', 'Donador VIP', '9992', true, 30);
-      } else if (tipo === 'gift_vip_sombrero') {
-        procesarMensajeTikTok('Escucha Bizarrap ft. Quevedo', 'Super VIP', 'Sombrero y bigote', 1, '@super_vip', 'Super VIP', '9993', true, 99);
-      } else if (tipo === 'gift_corazon') {
-        procesarMensajeTikTok('Escucha Anuel AA - Más Rica Que Ayer', 'Fan Corazón', 'Corazón con los dedos', 1, '@fan_corazon', 'Fan Corazón', '9994', true, 10);
+      } else if (tipo === 'corazon_x1') {
+        registrarRegaloUsuario(userPrueba, 'Corazón con los dedos', 1, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'rosas_10') {
+        registrarRegaloUsuario(userPrueba, 'Rosa x10', 10, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'corazon_x2') {
+        registrarRegaloUsuario(userPrueba, 'Corazón dedos x2', 2, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'mencion_x2') {
+        registrarRegaloUsuario(userPrueba, 'Mención x2', 2, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'posicion_3') {
+        registrarRegaloUsuario(userPrueba, 'Sombrero y bigote', 1, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'posicion_2') {
+        registrarRegaloUsuario(userPrueba, 'Gafas de sol', 1, '', handlePrueba, userPrueba, '9991');
+      } else if (tipo === 'posicion_1') {
+        registrarRegaloUsuario(userPrueba, 'Money Gun', 1, '', handlePrueba, userPrueba, '9991', 100);
       }
     }
 
