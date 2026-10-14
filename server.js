@@ -115,15 +115,15 @@ const server = http.createServer((req, res) => {
   let reqUrl = pathname;
 
   if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/panel' || reqUrl === '/studio-panel' || reqUrl === '/dashboard' || reqUrl === '/studio') {
-    reqUrl = '/studio-unified.html';
+    reqUrl = '/index.html';
   } else if (reqUrl === '/overlay' || reqUrl === '/studio-overlay') {
-    reqUrl = '/studio-unified.html';
+    reqUrl = '/index.html';
   } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
-    reqUrl = '/studio-unified.html';
+    reqUrl = '/index.html';
   } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
-    reqUrl = '/studio-unified.html';
+    reqUrl = '/index.html';
   } else if (reqUrl.startsWith('/widgets/studio-unificado')) {
-    reqUrl = '/studio-unified.html';
+    reqUrl = '/index.html';
   } else if (reqUrl === '/api/tts') {
     let text = (params.get('q') || params.get('text') || '').slice(0, 350);
     // Filtrar todos los emojis y símbolos para que NUNCA se lean en voz alta

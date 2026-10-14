@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD Live Bot | TikTok Live Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07080c;
+      --bg-card: rgba(15, 17, 26, 0.92);
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.5);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.5);
+      --cyan-neon: #00e5ff;
+      --cyan-glow: rgba(0, 229, 255, 0.4);
+      --green-ok: #22c55e;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --font-main: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* VISTAS */
+    .view-mode {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+    .view-mode.active {
+      display: flex;
+    }
+
+    /* ========================================================= */
+    /* VISTA 1: OVERLAY TRANSPARENTE 9:16 (TIKTOK LIVE STUDIO 2160x3840 / OBS) */
+    /* ========================================================= */
+    #overlay-view {
+      position: relative;
+      background: transparent !important;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(30px, 4.5vh, 160px) clamp(20px, 3.5vw, 90px);
+    }
+
+    /* TARJETA SUPERIOR: MÚSICA EN TURNO */
+    .overlay-top-card {
+      background: rgba(8, 9, 14, 0.95);
+      border: clamp(4px, 0.5vw, 12px) solid var(--blood-red);
+      border-radius: clamp(24px, 3.5vw, 64px);
+      padding: clamp(20px, 3.2vw, 68px) clamp(24px, 3.8vw, 80px);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.98), 0 0 clamp(30px, 4vw, 80px) var(--blood-red-glow);
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 60px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto;
+      transition: all 0.3s ease;
+    }
+
+    .disc-icon-box {
+      width: clamp(75px, 11vw, 210px);
+      height: clamp(75px, 11vw, 210px);
+      border-radius: 50%;
+      background: #111;
+      border: clamp(3px, 0.5vw, 10px) solid var(--blood-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(36px, 5.5vw, 110px);
+      box-shadow: 0 0 clamp(20px, 3vw, 60px) var(--blood-red-glow);
+      flex-shrink: 0;
+      animation: spinRecord 4s linear infinite;
+    }
+    @keyframes spinRecord {
+      100% { transform: rotate(360deg); }
+    }
+
+    .song-details-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.8vw, 16px);
+    }
+
+    .song-badge-tag {
+      font-size: clamp(15px, 2.2vw, 42px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #fde047;
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1vw, 18px);
+      text-shadow: 0 0 16px rgba(253, 224, 71, 0.5);
+    }
+
+    .song-title-text {
+      font-size: clamp(32px, 5vw, 98px);
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.95), 0 0 clamp(20px, 3vw, 60px) rgba(255,255,255,0.6);
+    }
+
+    .song-user-text {
+      font-size: clamp(20px, 3.2vw, 62px);
+      font-weight: 800;
+      color: var(--cyan-neon);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.9), 0 0 20px var(--cyan-glow);
+    }
+
+    .queue-pill-count {
+      background: rgba(255, 15, 59, 0.25);
+      border: clamp(2px, 0.35vw, 8px) solid var(--blood-red);
+      padding: clamp(6px, 1vw, 22px) clamp(14px, 2vw, 44px);
+      border-radius: clamp(14px, 2vw, 40px);
+      font-size: clamp(14px, 2.2vw, 42px);
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+      box-shadow: 0 0 20px rgba(255, 15, 59, 0.4);
+    }
+
+    /* POP-UP GIGANTE DE EVENTOS (NUEVA CANCIÓN, DESBLOQUEO, SUBIDA) */
+    .overlay-alert-banner {
+      position: absolute;
+      top: clamp(130px, 16vh, 580px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px) scale(0.92);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(18, 12, 24, 0.98), rgba(8, 8, 14, 0.98));
+      border: clamp(4px, 0.7vw, 14px) solid var(--gold-vip);
+      border-radius: clamp(24px, 3.8vw, 68px);
+      padding: clamp(24px, 3.8vw, 76px) clamp(28px, 4.2vw, 86px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.98), 0 0 clamp(40px, 6vw, 120px) var(--gold-vip-glow);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1.2vw, 24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+      backdrop-filter: blur(24px);
+    }
+    .overlay-alert-banner.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .alert-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .alert-badge-label {
+      font-size: clamp(18px, 3vw, 58px);
+      font-weight: 900;
+      color: var(--gold-vip);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 clamp(15px, 2.5vw, 45px) var(--gold-vip-glow);
+    }
+    .alert-song-title {
+      font-size: clamp(36px, 5.8vw, 115px);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+      text-transform: uppercase;
+      text-shadow: 0 0 clamp(25px, 4vw, 80px) rgba(255,255,255,0.85), 0 4px 16px #000;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .alert-user-desc {
+      font-size: clamp(22px, 3.4vw, 68px);
+      font-weight: 800;
+      color: #f1f5f9;
+      text-shadow: 0 3px 12px #000;
+    }
+
+    /* SUBTÍTULO INFERIOR DE COMENTARIOS TTS */
+    .overlay-tts-box {
+      background: rgba(12, 14, 22, 0.95);
+      border: clamp(3px, 0.55vw, 11px) solid var(--cyan-neon);
+      border-radius: clamp(24px, 3.8vw, 68px);
+      padding: clamp(20px, 3.2vw, 64px) clamp(24px, 3.8vw, 76px);
+      box-shadow: 0 25px 70px rgba(0,0,0,0.98), 0 0 clamp(30px, 4.5vw, 90px) var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 60px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto clamp(20px, 3vh, 120px) auto;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .overlay-tts-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tts-avatar-circle {
+      width: clamp(65px, 9.5vw, 190px);
+      height: clamp(65px, 9.5vw, 190px);
+      border-radius: 50%;
+      border: clamp(3px, 0.5vw, 10px) solid var(--cyan-neon);
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 0 clamp(16px, 2.5vw, 50px) var(--cyan-glow);
+    }
+
+    .tts-content-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.6vw, 14px);
+    }
+    .tts-name-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.2vw, 24px);
+    }
+    .tts-user-name {
+      font-size: clamp(20px, 3.2vw, 64px);
+      font-weight: 900;
+      color: var(--cyan-neon);
+      text-shadow: 0 0 15px var(--cyan-glow);
+    }
+    .tts-badge-type {
+      font-size: clamp(13px, 2vw, 40px);
+      font-weight: 800;
+      padding: clamp(2px, 0.4vw, 8px) clamp(8px, 1.4vw, 28px);
+      border-radius: clamp(8px, 1.2vw, 24px);
+      background: rgba(0, 229, 255, 0.25);
+      color: #fff;
+    }
+    .tts-comment-text {
+      font-size: clamp(26px, 4.2vw, 84px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      text-shadow: 0 4px 14px rgba(0,0,0,0.95);
+      word-break: break-word;
+    }
+
+    /* ========================================================= */
+    /* VISTA 2: PANEL DE CONTROL DEL STREAMER (COMPLETO Y LIMPIO) */
+    /* ========================================================= */
+    #panel-view {
+      flex-direction: column;
+      background: #0a0c13;
+    }
+
+    .streamer-navbar {
+      height: 70px;
+      background: #11131c;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      flex-shrink: 0;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .navbar-brand h1 {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .navbar-brand span {
+      color: var(--blood-red);
+    }
+
+    .navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
+    .btn-action {
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 16px var(--blood-red-glow);
+    }
+    .btn-primary:hover {
+      background: #ff2a51;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* CONTENEDOR PRINCIPAL DEL PANEL */
+    .streamer-container {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 900px) {
+      .streamer-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .card-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .card-title-bar h2 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* FILA DE CANCIONES EN LA COLA */
+    .queue-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 440px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 12px 16px;
+      transition: all 0.2s;
+    }
+    .queue-row.current-song {
+      background: rgba(255, 15, 59, 0.12);
+      border-color: var(--blood-red);
+      box-shadow: 0 0 15px rgba(255, 15, 59, 0.2);
+    }
+
+    .row-info-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .row-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-user {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .row-actions-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-row-action {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-row-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .btn-row-action.delete:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    /* BOTONES DE SIMULADOR */
+    .sim-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .btn-sim {
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .btn-sim:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--cyan-neon);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 1: OVERLAY VERTICAL 9:16 PARA TIKTOK LIVE STUDIO    -->
+  <!-- ========================================================= -->
+  <div id="overlay-view" class="view-mode">
+    
+    <!-- 1. Tarjeta Superior: Canción en Turno -->
+    <div class="overlay-top-card">
+      <div class="disc-icon-box" id="disc-record">💿</div>
+      <div class="song-details-col">
+        <div class="song-badge-tag">
+          <span id="overlay-status-badge">▶ EN TURNO AHORA</span>
+        </div>
+        <div class="song-title-text" id="overlay-song-title">ESPERANDO PETICIÓN...</div>
+        <div class="song-user-text" id="overlay-song-user">Comenta: Escucha [Canción]</div>
+      </div>
+      <div class="queue-pill-count" id="overlay-queue-pill">0 EN COLA</div>
+    </div>
+
+    <!-- 2. Alerta Gigante Pop-in (Nueva canción, desbloqueo, salto de puesto) -->
+    <div class="overlay-alert-banner" id="overlay-alert-box">
+      <div class="alert-header-row">
+        <span class="alert-badge-label" id="alert-label-text">🎵 ¡NUEVA CANCIÓN EN COLA!</span>
+      </div>
+      <div class="alert-song-title" id="alert-title-text">NOMBRE DE CANCIÓN</div>
+      <div class="alert-user-desc" id="alert-desc-text">Pedida por @Usuario</div>
+    </div>
+
+    <!-- 3. Subtítulo Inferior: Comentarios TTS -->
+    <div class="overlay-tts-box" id="overlay-tts-card">
+      <img src="https://api.dicebear.com/7.x/identicon/svg?seed=TikTok" class="tts-avatar-circle" id="overlay-tts-avatar" alt="Avatar">
+      <div class="tts-content-col">
+        <div class="tts-name-row">
+          <span class="tts-user-name" id="overlay-tts-user">@Usuario</span>
+          <span class="tts-badge-type" id="overlay-tts-badge">💬 Chat</span>
+        </div>
+        <div class="tts-comment-text" id="overlay-tts-message">Mensaje del comentario...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 2: PANEL DE CONTROL DEL STREAMER                    -->
+  <!-- ========================================================= -->
+  <div id="panel-view" class="view-mode active">
+    
+    <!-- Navbar Superior -->
+    <header class="streamer-navbar">
+      <div class="navbar-brand">
+        <h1>SLOW MD <span>STREAM BOT</span></h1>
+      </div>
+
+      <div class="navbar-actions">
+        <div class="live-status-pill">
+          <span class="status-dot" id="panel-status-dot"></span>
+          <span id="panel-status-text">Desconectado</span>
+        </div>
+        <input type="text" id="panel-username-input" placeholder="Usuario TikTok (slowmdoficial)" value="slowmdoficial" style="padding: 7px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 12px; width: 170px;">
+        <button class="btn-action btn-primary" id="btn-toggle-live">Conectar Live</button>
+        <button class="btn-action btn-secondary" onclick="copiarEnlaceOverlay()">📋 Copiar Link Overlay</button>
+        <button class="btn-action btn-secondary" onclick="window.open('/?view=overlay', 'OverlayWindow', 'width=460,height=820')">📺 Ver Overlay</button>
+      </div>
+    </header>
+
+    <!-- Área de Contenido -->
+    <main class="streamer-container">
+      
+      <!-- Columna Izquierda: Cola de Canciones -->
+      <section class="panel-card">
+        <div class="card-title-bar">
+          <h2>🎵 Cola de Canciones (<span id="panel-count-queue">0</span>)</h2>
+          <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
+        </div>
+
+        <div class="queue-items-list" id="panel-queue-list">
+          <!-- Canciones renderizadas dinámicamente -->
+        </div>
+
+        <!-- Formulario para agregar canción manual -->
+        <form id="form-manual-song" style="display: flex; gap: 8px; margin-top: 6px;">
+          <input type="text" id="manual-title" placeholder="Título de la canción..." required style="flex: 2; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+          <input type="text" id="manual-user" placeholder="Usuario..." style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+          <button type="submit" class="btn-action btn-primary">Agregar</button>
+        </form>
+      </section>
+
+      <!-- Columna Derecha: Reglas, Simulador y Voz -->
+      <section style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Tarjeta de Reglas Activas -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>⚙️ Reglas de Desbloqueo y Salto</h2>
+          </div>
+          <div style="font-size: 12.5px; line-height: 1.6; color: #cbd5e1;">
+            <div>🔓 <strong>Desbloqueo:</strong> Rosa x5, Compartir x10, Likes x1000 o Corazón x1</div>
+            <div>⬆️ <strong>Subir 1 Puesto:</strong> Rosa x10, Corazón x2 o Mención x2</div>
+            <div>🥉 <strong>Puesto #3:</strong> Sombrero y bigote x1</div>
+            <div>🥈 <strong>Puesto #2:</strong> Gafas de sol x1</div>
+            <div>🥇 <strong>Puesto #1:</strong> Money Gun x1</div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Simulador de Pruebas -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
+          </div>
+          <div class="sim-buttons-grid">
+            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
+            <button class="btn-sim" onclick="simular('song')">🎵 Pedir Canción</button>
+            <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Desbloq)</button>
+            <button class="btn-sim" onclick="simular('rosas10')">🌹 Rosa x10 (+1 Puesto)</button>
+            <button class="btn-sim" onclick="simular('top3')">🎩 Sombrero (Puesto #3)</button>
+            <button class="btn-sim" onclick="simular('top2')">🕶️ Gafas (Puesto #2)</button>
+            <button class="btn-sim" onclick="simular('top1')" style="grid-column: span 2; border-color: var(--gold-vip); color: #fde047;">🔫 Money Gun (Puesto #1 VIP)</button>
+          </div>
+        </div>
+
+        <!-- Ajustes de Voz TTS -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>🎙️ Voz TTS (Lectura Limpia sin Emojis)</h2>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
+            <select id="tts-audio-output" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+              <option value="overlay" selected>Solo en Overlay (TikTok Live Studio)</option>
+              <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
+              <option value="none">Silenciar Voz</option>
+            </select>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT ULTRA-ROBUSTO Y LIMPIO                         -->
+  <!-- ========================================================= -->
+  <script>
+    // BLOQUEAR LA VOZ NATIVA ROBÓTICA DE TIKTOK / WINDOWS
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak = function() { window.speechSynthesis.cancel(); };
+      } catch(e) {}
+    }
+
+    // ESTADO LOCAL
+    let state = {
+      queue: [],
+      status: 'disconnected',
+      username: 'slowmdoficial'
+    };
+
+    let isOverlay = false;
+
+    // DETECCIÓN DE MODO POR URL (?view=overlay)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('view') === 'overlay') {
+      isOverlay = true;
+      document.getElementById('overlay-view').classList.add('active');
+      document.getElementById('panel-view').classList.remove('active');
+    } else {
+      document.getElementById('panel-view').classList.add('active');
+      document.getElementById('overlay-view').classList.remove('active');
+    }
+
+    // AUDIO QUEUE PARA TTS LIMPIO SIN SOLAPAMIENTOS
+    const ttsAudioQueue = [];
+    let isPlayingAudio = false;
+
+    function hablarTTS(texto) {
+      if (!texto) return;
+      const outputSetting = document.getElementById('tts-audio-output')?.value || 'overlay';
+      if (outputSetting === 'none') return;
+      if (!isOverlay && outputSetting === 'overlay') return; // En el panel no suena para evitar eco
+
+      // Limpiar estrictamente emojis y caracteres raros
+      const limpio = texto
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!limpio) return;
+
+      const audioUrl = `/api/tts?q=${encodeURIComponent(limpio)}&lang=es`;
+      ttsAudioQueue.push(audioUrl);
+      procesarColaAudio();
+    }
+
+    function procesarColaAudio() {
+      if (isPlayingAudio || ttsAudioQueue.length === 0) return;
+      isPlayingAudio = true;
+      const nextUrl = ttsAudioQueue.shift();
+      const audio = new Audio(nextUrl);
+      audio.onended = () => {
+        isPlayingAudio = false;
+        procesarColaAudio();
+      };
+      audio.onerror = () => {
+        isPlayingAudio = false;
+        procesarColaAudio();
+      };
+      audio.play().catch(() => {
+        isPlayingAudio = false;
+        procesarColaAudio();
+      });
+    }
+
+    // CONEXIÓN WEBSOCKET
+    let ws = null;
+    let wsTimer = null;
+
+    function conectarWS() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}`);
+
+      ws.onopen = () => {
+        actualizarUIConexion('connected');
+        ws.send(JSON.stringify({ action: 'getStatus' }));
+        ws.send(JSON.stringify({ action: 'getQueue' }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'STATUS') {
+            state.status = data.status;
+            state.username = data.username || state.username;
+            actualizarUIConexion(data.status, data.username);
+          } else if (data.type === 'QUEUE_UPDATE') {
+            const prevLen = state.queue.length;
+            state.queue = data.queue || [];
+            renderizarCola();
+
+            if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
+              const pos = data.newPosition || 1;
+              mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos });
+              hablarTTS(`La canción de ${data.songUser} subió a la posición ${pos}`);
+            } else if (data.eventType === 'unlock') {
+              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser });
+              hablarTTS(`¡Canción de ${data.songUser} desbloqueada!`);
+            } else if (data.eventType === 'new_song' || data.newSong) {
+              const s = data.newSong || { title: data.songTitle, user: data.songUser };
+              mostrarAlertaOverlay('nueva', s);
+              hablarTTS(`Nueva canción en cola: ${s.title}`);
+            } else if (state.queue.length > prevLen) {
+              const s = state.queue[state.queue.length - 1];
+              mostrarAlertaOverlay('nueva', s);
+              hablarTTS(`Nueva canción en cola: ${s.title}`);
+            }
+          } else if (data.type === 'CHAT') {
+            mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
+            hablarTTS(`${data.user} dice: ${data.comment}`);
+          } else if (data.type === 'GIFT') {
+            mostrarTTSOverlay(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
+            hablarTTS(`¡Gracias a ${data.user} por ${data.giftName}!`);
+          } else if (data.type === 'FOLLOW') {
+            mostrarTTSOverlay(data.user, '¡Comenzó a seguirte!', 'follow', data.avatarUrl);
+            hablarTTS(`¡Bienvenido ${data.user}, gracias por seguirme!`);
+          }
+        } catch(e) {}
+      };
+
+      ws.onclose = () => {
+        actualizarUIConexion('disconnected');
+        clearTimeout(wsTimer);
+        wsTimer = setTimeout(conectarWS, 2500);
+      };
+    }
+
+    function actualizarUIConexion(status, username) {
+      const dot = document.getElementById('panel-status-dot');
+      const text = document.getElementById('panel-status-text');
+      const btn = document.getElementById('btn-toggle-live');
+      if (!dot || !text) return;
+
+      if (status === 'connected') {
+        dot.className = 'status-dot connected';
+        text.textContent = `En Vivo: @${username || state.username}`;
+        if (btn) btn.textContent = 'Desconectar';
+      } else {
+        dot.className = 'status-dot';
+        text.textContent = 'Desconectado';
+        if (btn) btn.textContent = 'Conectar Live';
+      }
+    }
+
+    // RENDERIZADO DE LA COLA
+    function renderizarCola() {
+      // 1. Overlay
+      const songTitle = document.getElementById('overlay-song-title');
+      const songUser = document.getElementById('overlay-song-user');
+      const statusBadge = document.getElementById('overlay-status-badge');
+      const queuePill = document.getElementById('overlay-queue-pill');
+
+      if (queuePill) queuePill.textContent = `${state.queue.length} EN COLA`;
+
+      if (state.queue.length > 0) {
+        const top = state.queue[0];
+        if (songTitle) songTitle.textContent = top.title.toUpperCase();
+        if (songUser) songUser.textContent = `Petición de: @${top.user}`;
+        if (statusBadge) {
+          statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 EN ESPERA (CUMPLE REQUISITOS)';
+        }
+      } else {
+        if (songTitle) songTitle.textContent = 'ESPERANDO PETICIÓN...';
+        if (songUser) songUser.textContent = 'Sígueme y comenta: Escucha [Canción]';
+        if (statusBadge) statusBadge.textContent = 'EN ESPERA DE PETICIONES';
+      }
+
+      // 2. Panel del Streamer
+      const list = document.getElementById('panel-queue-list');
+      const count = document.getElementById('panel-count-queue');
+      if (count) count.textContent = state.queue.length;
+
+      if (list) {
+        if (state.queue.length === 0) {
+          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Comenta "Escucha [cancion]" en el Live.</div>`;
+        } else {
+          list.innerHTML = state.queue.map((song, idx) => {
+            return `
+              <div class="queue-row ${idx === 0 ? 'current-song' : ''}">
+                <div class="row-info-col">
+                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)}</div>
+                  <div class="row-user">@${escapeHtml(song.user)} • ${song.status === 'unlocked' ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
+                </div>
+                <div class="row-actions-col">
+                  <button type="button" class="btn-row-action" onclick="moverCancion(${idx}, -1)" title="Subir">▲</button>
+                  <button type="button" class="btn-row-action" onclick="moverCancion(${idx}, 1)" title="Bajar">▼</button>
+                  <button type="button" class="btn-row-action delete" onclick="eliminarCancion(${idx})" title="Eliminar">✕</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function moverCancion(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= state.queue.length) return;
+      const [item] = state.queue.splice(idx, 1);
+      state.queue.splice(target, 0, item);
+      sincronizarServidor();
+    }
+
+    function eliminarCancion(idx) {
+      state.queue.splice(idx, 1);
+      sincronizarServidor();
+    }
+
+    function vaciarCola() {
+      if (confirm('¿Vaciar toda la cola de canciones?')) {
+        state.queue = [];
+        sincronizarServidor();
+      }
+    }
+
+    function sincronizarServidor() {
+      renderizarCola();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'syncQueue', queue: state.queue }));
+      }
+    }
+
+    // ANIMACIÓN DE ALERTAS GIGANTES EN EL OVERLAY
+    let alertTimer = null;
+    function mostrarAlertaOverlay(tipo, info) {
+      const box = document.getElementById('overlay-alert-box');
+      const label = document.getElementById('alert-label-text');
+      const title = document.getElementById('alert-title-text');
+      const desc = document.getElementById('alert-desc-text');
+      if (!box || !info) return;
+
+      if (title) title.textContent = (info.title || 'CANCIÓN').toUpperCase();
+
+      if (tipo === 'subio') {
+        const pos = info.position || 1;
+        if (label) label.textContent = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
+        if (desc) desc.textContent = `¡La canción de @${info.user} avanzó al puesto #${pos}!`;
+      } else if (tipo === 'desbloqueada') {
+        if (label) label.textContent = '🔓 ¡CANCIÓN DESBLOQUEADA! 🔓';
+        if (desc) desc.textContent = `¡@${info.user} cumplió los requisitos de apoyo!`;
+      } else {
+        if (label) label.textContent = '🎵 ¡NUEVA CANCIÓN EN COLA! 🎵';
+        if (desc) desc.textContent = `Pedida por: @${info.user}`;
+      }
+
+      box.classList.add('show');
+      clearTimeout(alertTimer);
+      alertTimer = setTimeout(() => {
+        box.classList.remove('show');
+      }, 6500);
+    }
+
+    // CAJA DE COMENTARIOS TTS EN EL OVERLAY
+    let ttsTimer = null;
+    function mostrarTTSOverlay(user, msg, type = 'chat', avatarUrl = '') {
+      const box = document.getElementById('overlay-tts-card');
+      const userEl = document.getElementById('overlay-tts-user');
+      const badgeEl = document.getElementById('overlay-tts-badge');
+      const msgEl = document.getElementById('overlay-tts-message');
+      const avatarEl = document.getElementById('overlay-tts-avatar');
+      if (!box) return;
+
+      if (userEl) userEl.textContent = user || '@Usuario';
+      if (msgEl) msgEl.textContent = msg || '';
+      if (avatarEl && avatarUrl) avatarEl.src = avatarUrl;
+      if (badgeEl) badgeEl.textContent = type === 'gift' ? '🎁 Regalo' : (type === 'follow' ? '🌟 Seguidor' : '💬 Chat');
+
+      box.classList.add('show');
+      clearTimeout(ttsTimer);
+      ttsTimer = setTimeout(() => {
+        box.classList.remove('show');
+      }, 7000);
+    }
+
+    // SIMULADOR DE PRUEBAS
+    function simular(tipo) {
+      if (tipo === 'chat') {
+        const msgs = ['¡Saludos mi pana activo aquí!', 'Tremenda música suelta más!', 'Rómpela en ese Live bro'];
+        const m = msgs[Math.floor(Math.random() * msgs.length)];
+        mostrarTTSOverlay('Fan_TikTok', m, 'chat');
+        hablarTTS(`Fan_TikTok dice: ${m}`);
+      } else if (tipo === 'song') {
+        const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
+        const t = temas[Math.floor(Math.random() * temas.length)];
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked' };
+        state.queue.push(nuevo);
+        sincronizarServidor();
+        mostrarAlertaOverlay('nueva', nuevo);
+        hablarTTS(`Nueva canción en cola: ${nuevo.title}`);
+      } else if (tipo === 'rosas5') {
+        if (state.queue[0]) {
+          state.queue[0].status = 'unlocked';
+          sincronizarServidor();
+          mostrarAlertaOverlay('desbloqueada', state.queue[0]);
+          hablarTTS(`Canción desbloqueada con 5 rosas`);
+        }
+      } else if (tipo === 'rosas10') {
+        if (state.queue.length > 1) {
+          const [song] = state.queue.splice(1, 1);
+          state.queue.unshift(song);
+          sincronizarServidor();
+          mostrarAlertaOverlay('subio', { title: song.title, user: song.user, position: 1 });
+          hablarTTS(`La canción de ${song.user} subió a la posición 1`);
+        }
+      } else if (tipo === 'top3') {
+        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Puesto 3', user: 'Donador_Sombrero', status: 'unlocked' };
+        state.queue.splice(Math.min(2, state.queue.length), 0, nueva);
+        sincronizarServidor();
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 3 });
+        hablarTTS(`La canción de ${nueva.user} subió a la posición 3`);
+      } else if (tipo === 'top2') {
+        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Puesto 2', user: 'Donador_Gafas', status: 'unlocked' };
+        state.queue.splice(Math.min(1, state.queue.length), 0, nueva);
+        sincronizarServidor();
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 2 });
+        hablarTTS(`La canción de ${nueva.user} subió a la posición 2`);
+      } else if (tipo === 'top1') {
+        const nueva = { id: 'top1_' + Date.now(), title: 'Tema Puesto 1 (Money Gun)', user: 'Donador_VIP', status: 'unlocked' };
+        state.queue.unshift(nueva);
+        sincronizarServidor();
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 1 });
+        hablarTTS(`¡La canción de ${nueva.user} subió a la posición 1 con Money Gun!`);
+      }
+    }
+
+    function copiarEnlaceOverlay() {
+      const url = `${window.location.origin}/?view=overlay`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('✅ Enlace copiado al portapapeles:\n\n' + url + '\n\nPégalo como Fuente de Navegador en TikTok Live Studio.');
+        }).catch(() => {
+          prompt('Copia el siguiente enlace:', url);
+        });
+      } else {
+        prompt('Copia el siguiente enlace:', url);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
+    }
+
+    // INICIALIZAR
+    window.addEventListener('DOMContentLoaded', () => {
+      conectarWS();
+
+      // Botón conectar / desconectar Live
+      const btnLive = document.getElementById('btn-toggle-live');
+      const userInput = document.getElementById('panel-username-input');
+      if (btnLive && userInput) {
+        btnLive.addEventListener('click', () => {
+          const user = userInput.value.trim() || state.username || 'slowmdoficial';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            if (state.status === 'connected') {
+              ws.send(JSON.stringify({ action: 'disconnect' }));
+            } else {
+              ws.send(JSON.stringify({ action: 'connect', username: user }));
+            }
+          }
+        });
+      }
+
+      // Formulario agregar canción manual
+      const formManual = document.getElementById('form-manual-song');
+      if (formManual) {
+        formManual.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const title = document.getElementById('manual-title').value.trim();
+          const user = document.getElementById('manual-user').value.trim() || '@Admin';
+          if (title) {
+            const nueva = { id: 'man_' + Date.now(), title, user, status: 'unlocked' };
+            state.queue.push(nueva);
+            sincronizarServidor();
+            mostrarAlertaOverlay('nueva', nueva);
+            document.getElementById('manual-title').value = '';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
