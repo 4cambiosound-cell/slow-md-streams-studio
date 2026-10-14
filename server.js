@@ -374,27 +374,40 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
     return true;
   }
 
+  // Limpiar menciones de usuario iniciales (@usuario) y saludos ("oye", "bro", "hola", etc.)
+  let cleanText = text.replace(/^(@\S+\s*)+/i, '').trim();
+  cleanText = cleanText.replace(/^(?:hola|buenas|oye|bro|mano|pana|amigo|amiga|ey)\s*,?\s*/i, '').trim();
+
   let cancionDetectada = '';
 
-  const escuchaMatch = text.match(/^\s*(?:[!/]?escucha(?:te)?|puedes\s+escuchar)\s*:?\s+(.+)$/i);
+  // Soporta: escucha, escuchá, escúchame, escúchate, escuchate, puedes escuchar, pon, ponme, poner, ponte
+  const escuchaMatch = cleanText.match(/^(?:[!/]?escuch[aá](?:te|me)?|esc[uú]chate|esc[uú]chame|puedes\s+escuchar|pon(?:me|te)?|puedes\s+poner|poner)\s*:?\s+(.+)$/i);
   if (escuchaMatch && escuchaMatch[1].trim().length > 1) {
     cancionDetectada = escuchaMatch[1].trim();
   }
 
   if (!cancionDetectada) {
-    const parenMatch = text.match(/^\s*\((.+?)\)\s*$/);
+    const parenMatch = cleanText.match(/^\s*\((.+?)\)\s*$/);
     if (parenMatch && parenMatch[1].trim().length > 1) {
       cancionDetectada = parenMatch[1].trim();
     }
   }
 
-  if (!cancionDetectada && text.includes(' - ') && text.length > 3 && !text.includes('?')) {
-    cancionDetectada = text;
+  if (!cancionDetectada && cleanText.includes(' - ') && cleanText.length > 3 && !cleanText.includes('?')) {
+    cancionDetectada = cleanText;
   }
 
   if (!cancionDetectada) return false;
 
-  cancionDetectada = cancionDetectada.replace(/^["'(\[]+|["')\]]+$/g, '').trim();
+  // Limpiar emojis, comillas y frases de cortesía al final ("porfa", "por favor")
+  cancionDetectada = cancionDetectada
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\s*(?:porfa|por\s*favor|plis|pls|grax|gracias)\s*$/i, '')
+    .replace(/^["'(\[]+|["')\]]+$/g, '')
+    .replace(/[.,;!?]+$/, '')
+    .trim();
+
   if (!cancionDetectada || cancionDetectada.length < 2) return false;
 
   const chatName = (userChatName || 'Usuario').trim();
@@ -418,7 +431,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
 
   if (idx !== -1) {
     const yaTiene = queueState.queue[idx];
-    const aviso = `${chatName}, ya tienes una canción en la lista`;
+    const aviso = `${chatName}, ya tienes "${yaTiene.title}" en la lista`;
     broadcast({
       type: 'CHAT_WARNING',
       user: chatName,
@@ -477,13 +490,17 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
   saveQueueData();
   const announcement = status === 'unlocked'
     ? `¡${chatName} agregó y desbloqueó "${cancionDetectada}"!`
-    : `¡${chatName} agregó "${cancionDetectada}" a la lista!`;
+    : `¡${chatName} agregó "${cancionDetectada}" a la lista! Para desbloquearla envía 1000 tap tap, comparte 10 veces el live o envía 5 rosas.`;
+  const bannerDesc = status === 'unlocked'
+    ? `Desbloqueada por @${chatName}`
+    : `Desbloquea con: ${likesReq} Tap Tap • ${sharesReq} Compartidos • ${rosesReq} Rosas`;
   broadcast({
     type: 'QUEUE_UPDATE',
     queue: queueState.queue,
     history: queueState.history,
     sound: status === 'unlocked' ? 'normal' : null,
     newSong: nuevaCancion,
+    newSongDesc: bannerDesc,
     eventType: 'new_song',
     announcement: announcement
   });

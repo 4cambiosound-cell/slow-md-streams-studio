@@ -1060,7 +1060,8 @@
             } else if (data.eventType === 'new_song' || data.newSong) {
               const s = data.newSong || { title: data.songTitle, user: data.songUser };
               const msg = data.announcement || `¡${s.user} agregó "${s.title}" a la lista!`;
-              mostrarAlertaOverlay('nueva', { ...s, announcement: data.announcement });
+              const desc = data.newSongDesc || (s.status === 'locked' ? 'Desbloquea con: 1000 Tap Tap • 10 Compartidos • 5 Rosas' : `Pedida por: @${s.user}`);
+              mostrarAlertaOverlay('nueva', { ...s, announcement: desc });
               hablarTTS(msg);
             } else if (data.announcement) {
               mostrarAlertaOverlay('info', { title: data.songTitle || 'AVISO', user: data.songUser, announcement: data.announcement });
@@ -1450,8 +1451,9 @@
         const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked', overtakenCount: 0 };
         state.queue.push(nuevo);
         sincronizarServidor();
-        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista!`;
-        mostrarAlertaOverlay('nueva', { ...nuevo, announcement: msg });
+        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista! Para desbloquearla envía 1000 tap tap, comparte 10 veces el live o envía 5 rosas.`;
+        const desc = 'Desbloquea con: 1000 Tap Tap • 10 Compartidos • 5 Rosas';
+        mostrarAlertaOverlay('nueva', { ...nuevo, announcement: desc });
         hablarTTS(msg);
       } else if (tipo === 'verlista') {
         lastListTriggerTime = 0; // Reset cooldown para probar
