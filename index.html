@@ -911,15 +911,410 @@
       font-weight: 900;
       white-space: nowrap;
     }
-    .full-list-tag.unlocked {
-      background: rgba(34, 197, 94, 0.2);
-      color: #4ade80;
-      border: clamp(2px, 0.2vw, 4px) solid #22c55e;
+    /* WIDGET ÉPICO DE VOTACIÓN / JURADO (OVERLAY 2160x3840) */
+    .overlay-voting-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      width: clamp(340px, 86vw, 1750px);
+      background: linear-gradient(180deg, rgba(18, 20, 36, 0.98), rgba(9, 10, 18, 0.99));
+      border: clamp(4px, 0.5vw, 10px) solid #f59e0b;
+      border-radius: clamp(28px, 3.5vw, 70px);
+      padding: clamp(30px, 3.5vw, 80px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 2vw, 40px);
+      box-shadow: 0 0 clamp(40px, 5vw, 120px) rgba(245, 158, 11, 0.4), 0 30px 100px rgba(0,0,0,0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1200;
     }
-    .full-list-tag.locked {
-      background: rgba(239, 68, 68, 0.15);
+    .overlay-voting-modal.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+    .voting-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: clamp(2px, 0.3vw, 5px) solid rgba(255, 255, 255, 0.1);
+      padding-bottom: clamp(12px, 1.5vw, 30px);
+    }
+    .voting-badge {
+      font-size: clamp(20px, 2.2vw, 52px);
+      font-weight: 900;
+      color: #fbbf24;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .voting-timer-circle {
+      width: clamp(55px, 6vw, 140px);
+      height: clamp(55px, 6vw, 140px);
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.2);
+      border: clamp(3px, 0.4vw, 8px) solid #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(26px, 3vw, 68px);
+      font-weight: 900;
+      color: #fff;
+      animation: pulseTimer 1s infinite alternate;
+    }
+    @keyframes pulseTimer {
+      from { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+      to { transform: scale(1.08); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+    }
+    .voting-song-title {
+      font-size: clamp(30px, 3.8vw, 92px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.15;
+      text-align: center;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+    .voting-song-artist {
+      font-size: clamp(20px, 2.2vw, 56px);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .voting-bar-wrapper {
+      width: 100%;
+      height: clamp(22px, 2.5vw, 60px);
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: clamp(2px, 0.2vw, 4px) solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+    .voting-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+    }
+    .voting-score-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(10px, 1.5vw, 30px);
+      text-align: center;
+    }
+    .voting-stat {
+      background: rgba(255, 255, 255, 0.04);
+      border: clamp(2px, 0.2vw, 4px) solid rgba(255, 255, 255, 0.08);
+      border-radius: clamp(16px, 1.8vw, 36px);
+      padding: clamp(12px, 1.5vw, 30px) clamp(8px, 1vw, 20px);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .voting-stat .stat-num {
+      font-size: clamp(34px, 4vw, 96px);
+      font-weight: 900;
+      color: #38bdf8;
+    }
+    .voting-stat .stat-label {
+      font-size: clamp(14px, 1.4vw, 36px);
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .voting-recent-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(8px, 1vw, 20px);
+      justify-content: center;
+      max-height: clamp(80px, 10vw, 240px);
+      overflow-y: hidden;
+    }
+    .vote-chip {
+      background: rgba(245, 158, 11, 0.18);
+      border: clamp(2px, 0.2vw, 4px) solid #f59e0b;
+      color: #fff;
+      font-size: clamp(16px, 1.8vw, 46px);
+      font-weight: 800;
+      padding: clamp(6px, 0.8vw, 18px) clamp(14px, 1.6vw, 38px);
+      border-radius: 999px;
+      animation: chipPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes chipPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* BANNER DE CERTIFICACIÓN O NO CALIFICA */
+    .overlay-certificate-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      width: clamp(340px, 86vw, 1750px);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(9, 13, 25, 0.99));
+      border: clamp(5px, 0.6vw, 12px) solid #eab308;
+      border-radius: clamp(32px, 3.8vw, 80px);
+      padding: clamp(40px, 4.5vw, 100px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: clamp(18px, 2.2vw, 45px);
+      box-shadow: 0 0 140px rgba(234, 179, 8, 0.5), 0 30px 100px rgba(0,0,0,0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1300;
+      overflow: hidden;
+    }
+    .overlay-certificate-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .overlay-certificate-banner.failed {
+      border-color: #ef4444;
+      box-shadow: 0 0 140px rgba(239, 68, 68, 0.5), 0 30px 100px rgba(0,0,0,0.95);
+    }
+    .confetti-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .cert-trophy {
+      font-size: clamp(60px, 8vw, 180px);
+      line-height: 1;
+      animation: trophyBounce 1s infinite alternate;
+    }
+    @keyframes trophyBounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-12px); }
+    }
+    .cert-title {
+      font-size: clamp(34px, 4.5vw, 110px);
+      font-weight: 900;
+      color: #facc15;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .overlay-certificate-banner.failed .cert-title {
       color: #f87171;
-      border: clamp(2px, 0.2vw, 4px) solid #ef4444;
+    }
+    .cert-song-name {
+      font-size: clamp(28px, 3.5vw, 86px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .cert-score-badge {
+      background: rgba(234, 179, 8, 0.2);
+      border: clamp(3px, 0.35vw, 8px) solid #eab308;
+      color: #fde047;
+      font-size: clamp(24px, 2.8vw, 68px);
+      font-weight: 900;
+      padding: clamp(8px, 1.2vw, 24px) clamp(22px, 2.5vw, 60px);
+      border-radius: 999px;
+    }
+    .overlay-certificate-banner.failed .cert-score-badge {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .cert-footer-desc {
+      font-size: clamp(18px, 2.2vw, 54px);
+      font-weight: 700;
+      color: #cbd5e1;
+      max-width: 90%;
+    }
+
+    /* ALERTA DE SIRENA (SEGUIDOR OBLIGATORIO) */
+    .overlay-siren-alert {
+      position: absolute;
+      top: clamp(80px, 9vw, 220px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      width: clamp(320px, 88vw, 1750px);
+      background: linear-gradient(90deg, rgba(220, 38, 38, 0.98), rgba(153, 27, 27, 0.98));
+      border: clamp(4px, 0.5vw, 10px) solid #ffffff;
+      border-radius: clamp(22px, 2.6vw, 56px);
+      padding: clamp(20px, 2.5vw, 60px) clamp(24px, 3vw, 70px);
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 2vw, 50px);
+      box-shadow: 0 0 clamp(40px, 5vw, 120px) rgba(220, 38, 38, 0.8), 0 20px 60px rgba(0,0,0,0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1400;
+      animation: sirenFlash 0.5s infinite alternate;
+    }
+    @keyframes sirenFlash {
+      from { border-color: #ffffff; box-shadow: 0 0 40px rgba(255, 255, 255, 0.6); }
+      to { border-color: #ef4444; box-shadow: 0 0 100px rgba(239, 68, 68, 1); }
+    }
+    .overlay-siren-alert.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .siren-icon {
+      font-size: clamp(42px, 5.5vw, 130px);
+      line-height: 1;
+      animation: sirenShake 0.4s infinite;
+    }
+    @keyframes sirenShake {
+      0% { transform: rotate(-10deg); }
+      50% { transform: rotate(10deg); }
+      100% { transform: rotate(-10deg); }
+    }
+    .siren-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .siren-title {
+      font-size: clamp(22px, 2.6vw, 64px);
+      font-weight: 900;
+      color: #fee2e2;
+      letter-spacing: 0.05em;
+    }
+    .siren-msg {
+      font-size: clamp(24px, 3vw, 72px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* FILA DE CONTROLES SLIDER EN PANEL */
+    .slider-control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slider-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .slider-val-badge {
+      font-size: 12px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .custom-range-slider {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .custom-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-red-glow);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .custom-range-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* FILAS EN LA TARJETA DE LA PLAYLIST */
+    .playlist-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 340px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .playlist-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(234, 179, 8, 0.05);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+      border-radius: 12px;
+      padding: 10px 14px;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+    .playlist-row:hover {
+      background: rgba(234, 179, 8, 0.1);
+      border-color: rgba(234, 179, 8, 0.4);
+    }
+    .playlist-row-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .playlist-row-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .playlist-row-meta {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .playlist-score-pill {
+      font-weight: 800;
+      color: #eab308;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .playlist-actions-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .playlist-btn-mini {
+      padding: 6px 9px;
+      font-size: 11.5px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .playlist-btn-mini:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
     }
   </style>
 </head>
@@ -992,7 +1387,54 @@
           <span class="tts-user-name" id="overlay-tts-user">@Usuario</span>
           <span class="tts-badge-type" id="overlay-tts-badge">💬 Chat</span>
         </div>
-        <div class="tts-comment-text" id="overlay-tts-message">Mensaje del comentario...</div>
+    <!-- 4. WIDGET ÉPICO DE VOTACIÓN / JURADO (2160x3840) -->
+    <div class="overlay-voting-modal" id="overlay-voting-modal">
+      <div class="voting-modal-header">
+        <span class="voting-badge">⚖️ JURADO EN VIVO • CALIFICA DEL 1 AL 10</span>
+        <div class="voting-timer-circle" id="voting-timer-num">25</div>
+      </div>
+      <div class="voting-song-title" id="voting-song-title">ESPERANDO TEMA...</div>
+      <div class="voting-song-artist" id="voting-song-artist">Artista: @Usuario</div>
+      
+      <div class="voting-bar-wrapper">
+        <div class="voting-bar-fill" id="voting-bar-fill" style="width: 0%;"></div>
+      </div>
+      <div class="voting-score-row">
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-avg-score">0.0</span>
+          <span class="stat-label">PROMEDIO / 10</span>
+        </div>
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-pct-score">0%</span>
+          <span class="stat-label">APROBACIÓN</span>
+        </div>
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-count">0</span>
+          <span class="stat-label">VOTOS</span>
+        </div>
+      </div>
+
+      <div class="voting-recent-chips" id="voting-recent-chips">
+        <!-- Votos recientes en vivo -->
+      </div>
+    </div>
+
+    <!-- 5. BANNER ÉPICO DE ARTISTA CERTIFICADO O NO CALIFICA -->
+    <div class="overlay-certificate-banner" id="overlay-certificate-banner">
+      <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+      <div class="cert-trophy" id="cert-trophy-icon">🏆</div>
+      <div class="cert-title" id="cert-title-text">¡ARTISTA CERTIFICADO!</div>
+      <div class="cert-song-name" id="cert-song-name">NOMBRE DEL TEMA</div>
+      <div class="cert-score-badge" id="cert-score-badge">98% DE APROBACIÓN</div>
+      <div class="cert-footer-desc" id="cert-footer-desc">¡Entra a nuestra lista de artistas certificados!</div>
+    </div>
+
+    <!-- 6. ALERTA DE SIRENA (SEGUIDOR OBLIGATORIO) -->
+    <div class="overlay-siren-alert" id="overlay-siren-alert">
+      <div class="siren-icon">🚨</div>
+      <div class="siren-col">
+        <div class="siren-title">¡ALERTA DE SEGUIDOR!</div>
+        <div class="siren-msg" id="siren-alert-msg">@Usuario está intentando entrar sin seguirte 🚨</div>
       </div>
     </div>
 
@@ -1104,6 +1546,8 @@
             <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción (Regla 1)</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego canción?"</button>
             <button class="btn-sim" onclick="simular('spam')">🚫 Probar Filtro Spam (>2 rep)</button>
+            <button class="btn-sim" onclick="simular('sin_seguir')">🚨 Probar Intento Sin Seguir</button>
+            <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
             <button class="btn-sim" onclick="simular('taptap')">👆 1000 Tap Tap (Slow MD)</button>
             <button class="btn-sim" onclick="simular('compartido')">🔁 10 Compartidos (Maria)</button>
             <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Pedro)</button>
@@ -1114,18 +1558,80 @@
           </div>
         </div>
 
-        <!-- Ajustes de Voz TTS -->
+        <!-- Ajustes de Voz TTS y Controles de Streamer -->
         <div class="panel-card">
           <div class="card-title-bar">
-            <h2>🎙️ Voz TTS (Lectura Limpia sin Emojis)</h2>
+            <h2>🎙️ Voz TTS, Volumen y Reglas de Entrada</h2>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
-            <select id="tts-audio-output" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
-              <option value="overlay" selected>Solo en Overlay (TikTok Live Studio)</option>
-              <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
-              <option value="none">Silenciar Voz</option>
-            </select>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            
+            <!-- Salida de Audio -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
+              <select id="tts-audio-output" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+                <option value="overlay" selected>Solo en Overlay (TikTok Live Studio)</option>
+                <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
+                <option value="none">Silenciar Voz</option>
+              </select>
+            </div>
+
+            <!-- Control de Volumen -->
+            <div class="slider-control-group">
+              <div class="slider-header-row">
+                <span>🔊 Volumen de Voz y Efectos:</span>
+                <span class="slider-val-badge" id="tts-volume-val">100%</span>
+              </div>
+              <input type="range" id="tts-volume-slider" class="custom-range-slider" min="0" max="100" value="100" oninput="cambiarVolumenTTS(this.value)">
+            </div>
+
+            <!-- Control de Velocidad -->
+            <div class="slider-control-group">
+              <div class="slider-header-row">
+                <span>⚡ Velocidad de Lectura:</span>
+                <span class="slider-val-badge" id="tts-speed-val">1.0x</span>
+              </div>
+              <input type="range" id="tts-speed-slider" class="custom-range-slider" min="0.75" max="1.5" step="0.05" value="1.0" oninput="cambiarVelocidadTTS(this.value)">
+            </div>
+
+            <!-- Switch Requerir Seguidor Obligatorio -->
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div>
+                <div style="font-size: 12.5px; font-weight: 800; color: #fff;">🚨 Solo Seguidores Pueden Pedir:</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Alerta si alguien intenta entrar sin seguirte</div>
+              </div>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                <input type="checkbox" id="check-require-follower" checked onchange="toggleRequerirSeguidor(this.checked)" style="opacity: 0; width: 0; height: 0;">
+                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--cyan-neon); border-radius: 24px; transition: 0.3s;" id="switch-follower-bg"></span>
+              </label>
+            </div>
+
+            <!-- Controles Rápidos del Streamer -->
+            <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 11.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Acciones del Streamer:</span>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button type="button" class="btn-action btn-secondary" id="btn-toggle-queue-lock" onclick="toggleBloqueoCola()" style="font-size: 11px; padding: 8px;">
+                  🔓 Lista: Abierta
+                </button>
+                <button type="button" class="btn-action btn-secondary" onclick="explicarComoPedir()" style="font-size: 11px; padding: 8px;">
+                  💡 Explicar Reglas (...)
+                </button>
+              </div>
+              <button type="button" class="btn-action btn-primary" onclick="iniciarEncuestaDesdePanel()" style="width: 100%; font-size: 12.5px; padding: 10px; background: linear-gradient(90deg, #f59e0b, #d97706); box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);">
+                ⚖️ Iniciar Votación Jurado (25s)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tarjeta de La Playlist (Artistas Certificados >= 98%) -->
+        <div class="panel-card" style="border-color: rgba(234, 179, 8, 0.3);">
+          <div class="card-title-bar">
+            <h2>⭐ La Playlist (<span id="panel-count-certified">0</span> Certificados)</h2>
+            <button class="btn-action btn-secondary" onclick="exportarPlaylist()" style="padding: 5px 10px; font-size: 11px;">📋 Copiar Todo</button>
+          </div>
+          <div class="playlist-items-list" id="panel-certified-list">
+            <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 98% o más. Realiza una votación al terminar un tema.</div>
           </div>
         </div>
 
@@ -1152,7 +1658,22 @@
       queue: [],
       status: 'disconnected',
       username: 'slowmdoficial',
-      selectedSongIndex: 0
+      selectedSongIndex: 0,
+      queueLocked: false,
+      requireFollowerToRequest: true,
+      certifiedPlaylist: [],
+      ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
+      ttsSpeed: parseFloat(localStorage.getItem('tts_speed') || '1.0'),
+      voting: {
+        active: false,
+        song: null,
+        duration: 25,
+        remaining: 25,
+        avg: 0,
+        pct: 0,
+        votes: 0,
+        chips: []
+      }
     };
 
     let isOverlay = false;
@@ -1197,6 +1718,12 @@
       isPlayingAudio = true;
       const nextUrl = ttsAudioQueue.shift();
       const audio = new Audio(nextUrl);
+      
+      const vol = state.ttsVolume !== undefined ? state.ttsVolume : 1.0;
+      const spd = state.ttsSpeed !== undefined ? state.ttsSpeed : 1.0;
+      audio.volume = Math.max(0, Math.min(1, vol));
+      audio.playbackRate = Math.max(0.5, Math.min(2, spd));
+
       audio.onended = () => {
         isPlayingAudio = false;
         procesarColaAudio();
@@ -1223,6 +1750,7 @@
         actualizarUIConexion('connected');
         ws.send(JSON.stringify({ action: 'getStatus' }));
         ws.send(JSON.stringify({ action: 'getQueue' }));
+        ws.send(JSON.stringify({ action: 'getPlaylist' }));
       };
 
       ws.onmessage = (event) => {
@@ -1232,6 +1760,44 @@
             state.status = data.status;
             state.username = data.username || state.username;
             actualizarUIConexion(data.status, data.username);
+          } else if (data.type === 'EXTRA_CONFIG') {
+            if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
+            if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = data.requireFollowerToRequest;
+            if (Array.isArray(data.certifiedPlaylist)) state.certifiedPlaylist = data.certifiedPlaylist;
+            if (data.votingState && data.votingState.active) {
+              iniciarUIEncuesta(data.votingState.song, data.votingState.duration);
+            }
+            actualizarUIControlesStreamer();
+            renderizarPlaylist();
+          } else if (data.type === 'QUEUE_LOCK_UPDATE') {
+            state.queueLocked = Boolean(data.locked);
+            actualizarUIControlesStreamer();
+            if (data.announcement) {
+              mostrarAlertaOverlay('warning', { title: data.locked ? '🔒 COLA BLOQUEADA' : '🔓 COLA ABIERTA', user: 'Streamer', announcement: data.announcement });
+              hablarTTS(data.announcement);
+            }
+          } else if (data.type === 'NOT_FOLLOWER_WARNING') {
+            reproducirSonidoSirena();
+            mostrarSirenaOverlay(data.user, data.message);
+            hablarTTS(data.message);
+          } else if (data.type === 'VOTING_STARTED') {
+            iniciarUIEncuesta(data.song, data.duration || 25);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+          } else if (data.type === 'VOTE_CAST') {
+            actualizarUIVoto(data);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+          } else if (data.type === 'VOTING_FINISHED') {
+            finalizarUIEncuesta(data);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+            if (Array.isArray(data.certifiedPlaylist)) {
+              state.certifiedPlaylist = data.certifiedPlaylist;
+              renderizarPlaylist();
+            }
+          } else if (data.type === 'VOTING_CANCELLED') {
+            cerrarUIEncuesta();
+          } else if (data.type === 'PLAYLIST_UPDATE') {
+            state.certifiedPlaylist = data.playlist || [];
+            renderizarPlaylist();
           } else if (data.type === 'QUEUE_UPDATE') {
             const prevLen = state.queue.length;
             state.queue = data.queue || [];
@@ -1858,7 +2424,447 @@
         const msg = `${user} desbloqueó su canción y subió al puesto VIP con Money Gun`;
         mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 1, announcement: `¡${msg}!` });
         hablarTTS(`¡${msg}!`);
+      } else if (tipo === 'sin_seguir') {
+        const user = 'PedroNoFollower';
+        reproducirSonidoSirena();
+        const msg = `${user} está intentando entrar a la lista sin seguirte 🚨`;
+        mostrarSirenaOverlay(user, msg);
+        hablarTTS(msg);
+      } else if (tipo === 'voto_jurado') {
+        if (!state.voting || !state.voting.active) {
+          iniciarEncuestaDesdePanel();
+        }
+        setTimeout(() => {
+          const notas = [10, 9.8, 10, 10, 9.5];
+          const nota = notas[Math.floor(Math.random() * notas.length)];
+          const usuario = 'Carlos';
+          const primerNombre = 'Carlos';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              action: 'testChat',
+              user: usuario,
+              comment: `Le doy ${nota}`
+            }));
+          } else {
+            actualizarUIVoto({
+              user: usuario,
+              primerNombre: primerNombre,
+              score: nota,
+              average: 9.9,
+              percentage: 99,
+              totalVotes: 1
+            });
+            hablarTTS(`${primerNombre} le da un ${nota}`);
+          }
+        }, 600);
       }
+    }
+
+    // AJUSTES TTS Y CONTROLES DEL STREAMER
+    function cambiarVolumenTTS(val) {
+      const v = Math.max(0, Math.min(100, parseFloat(val) || 0));
+      state.ttsVolume = v / 100;
+      localStorage.setItem('tts_volume', state.ttsVolume);
+      const badge = document.getElementById('tts-volume-val');
+      if (badge) badge.textContent = Math.round(v) + '%';
+    }
+
+    function cambiarVelocidadTTS(val) {
+      const s = Math.max(0.75, Math.min(1.5, parseFloat(val) || 1.0));
+      state.ttsSpeed = s;
+      localStorage.setItem('tts_speed', state.ttsSpeed);
+      const badge = document.getElementById('tts-speed-val');
+      if (badge) badge.textContent = s.toFixed(2) + 'x';
+    }
+
+    function toggleRequerirSeguidor(activo) {
+      state.requireFollowerToRequest = Boolean(activo);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'toggleRequireFollower', active: state.requireFollowerToRequest }));
+      }
+      actualizarUIControlesStreamer();
+    }
+
+    function toggleBloqueoCola() {
+      const nuevo = !state.queueLocked;
+      state.queueLocked = nuevo;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'toggleQueueLock', locked: nuevo }));
+      }
+      actualizarUIControlesStreamer();
+    }
+
+    function explicarComoPedir() {
+      const explicacion = "Para agregar una canción a la lista debes poner la palabra Escucha seguido del nombre de la canción y del artista.";
+      mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: explicacion });
+      hablarTTS(explicacion);
+    }
+
+    function actualizarUIControlesStreamer() {
+      const btnLock = document.getElementById('btn-toggle-queue-lock');
+      if (btnLock) {
+        if (state.queueLocked) {
+          btnLock.innerHTML = '🔒 Lista: Bloqueada (0)';
+          btnLock.style.borderColor = '#ef4444';
+          btnLock.style.color = '#f87171';
+        } else {
+          btnLock.innerHTML = '🔓 Lista: Abierta (G)';
+          btnLock.style.borderColor = '#22c55e';
+          btnLock.style.color = '#86efac';
+        }
+      }
+      const chk = document.getElementById('check-require-follower');
+      const bg = document.getElementById('switch-follower-bg');
+      if (chk) chk.checked = Boolean(state.requireFollowerToRequest);
+      if (bg) bg.style.background = state.requireFollowerToRequest ? 'var(--cyan-neon)' : 'rgba(255,255,255,0.2)';
+    }
+
+    // GESTIÓN DE VOTACIÓN DEL JURADO (25s)
+    let votingInterval = null;
+    function iniciarEncuestaDesdePanel() {
+      let song = null;
+      if (state.queue.length > 0) {
+        const idx = (typeof state.selectedSongIndex === 'number' && state.selectedSongIndex < state.queue.length) ? state.selectedSongIndex : 0;
+        song = state.queue[idx];
+      }
+      if (!song) {
+        song = { title: 'Tema en Vivo', user: 'Streamer' };
+      }
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'startVoting', song: song, duration: 25 }));
+      } else {
+        iniciarUIEncuesta(song, 25);
+      }
+    }
+
+    function iniciarUIEncuesta(song, duration) {
+      const modal = document.getElementById('overlay-voting-modal');
+      const titleEl = document.getElementById('voting-song-title');
+      const artistEl = document.getElementById('voting-song-artist');
+      const timerEl = document.getElementById('voting-timer-num');
+      const barEl = document.getElementById('voting-bar-fill');
+      const avgEl = document.getElementById('voting-avg-score');
+      const pctEl = document.getElementById('voting-pct-score');
+      const countEl = document.getElementById('voting-count');
+      const chipsEl = document.getElementById('voting-recent-chips');
+
+      state.voting = {
+        active: true,
+        song: song,
+        duration: duration || 25,
+        remaining: duration || 25,
+        avg: 0,
+        pct: 0,
+        votes: 0,
+        chips: []
+      };
+
+      if (titleEl) titleEl.textContent = (song && song.title) ? song.title.toUpperCase() : 'CANCIÓN EN EVALUACIÓN';
+      if (artistEl) artistEl.textContent = `Artista / Solicitado por: @${(song && song.user) ? song.user : 'Comunidad'}`;
+      if (barEl) barEl.style.width = '0%';
+      if (avgEl) avgEl.textContent = '0.0';
+      if (pctEl) pctEl.textContent = '0%';
+      if (countEl) countEl.textContent = '0';
+      if (chipsEl) chipsEl.innerHTML = '';
+      if (timerEl) timerEl.textContent = state.voting.remaining;
+
+      if (modal) modal.classList.add('show');
+
+      clearInterval(votingInterval);
+      votingInterval = setInterval(() => {
+        state.voting.remaining--;
+        if (timerEl) timerEl.textContent = Math.max(0, state.voting.remaining);
+        if (state.voting.remaining <= 0) {
+          clearInterval(votingInterval);
+        }
+      }, 1000);
+    }
+
+    function actualizarUIVoto(data) {
+      const barEl = document.getElementById('voting-bar-fill');
+      const avgEl = document.getElementById('voting-avg-score');
+      const pctEl = document.getElementById('voting-pct-score');
+      const countEl = document.getElementById('voting-count');
+      const chipsEl = document.getElementById('voting-recent-chips');
+
+      const avg = Number(data.average || 0);
+      const pct = Number(data.percentage || 0);
+      const total = Number(data.totalVotes || 0);
+
+      if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+      if (avgEl) avgEl.textContent = avg.toFixed(1);
+      if (pctEl) pctEl.textContent = `${pct}%`;
+      if (countEl) countEl.textContent = total;
+
+      if (chipsEl && data.user) {
+        const chip = document.createElement('div');
+        chip.className = 'vote-chip';
+        chip.innerHTML = `<strong>@${escapeHtml(data.primerNombre || data.user)}:</strong> ${data.score}/10`;
+        chipsEl.prepend(chip);
+        while (chipsEl.children.length > 5) {
+          chipsEl.removeChild(chipsEl.lastChild);
+        }
+      }
+    }
+
+    let certBannerTimer = null;
+    function finalizarUIEncuesta(data) {
+      clearInterval(votingInterval);
+      const modal = document.getElementById('overlay-voting-modal');
+      if (modal) modal.classList.remove('show');
+
+      const banner = document.getElementById('overlay-certificate-banner');
+      const trophy = document.getElementById('cert-trophy-icon');
+      const title = document.getElementById('cert-title-text');
+      const songName = document.getElementById('cert-song-name');
+      const scoreBadge = document.getElementById('cert-score-badge');
+      const footerDesc = document.getElementById('cert-footer-desc');
+
+      if (!banner) return;
+
+      const passed = Boolean(data.certified);
+      const pct = data.percentage || 0;
+      const song = data.song || {};
+
+      if (passed) {
+        reproducirSonidoFanfarria();
+        reproducirSonidoAplausos();
+        lanzarConfetiCelebracion();
+
+        banner.className = 'overlay-certificate-banner certified show';
+        if (trophy) trophy.textContent = '🏆';
+        if (title) title.textContent = '¡ARTISTA CERTIFICADO!';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `⭐ ${pct}% DE APROBACIÓN ⭐`;
+        if (footerDesc) footerDesc.textContent = '¡Felicidades! Ingresa oficialmente a La Playlist de Artistas Certificados.';
+      } else {
+        reproducirSonidoBuzzer();
+
+        banner.className = 'overlay-certificate-banner rejected show';
+        if (trophy) trophy.textContent = '⚠️';
+        if (title) title.textContent = 'NO CALIFICA';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `${pct}% DE APROBACIÓN (Min. 98%)`;
+        if (footerDesc) footerDesc.textContent = '¡Siga trabajando en pulir su talento para la próxima!';
+      }
+
+      clearTimeout(certBannerTimer);
+      certBannerTimer = setTimeout(() => {
+        banner.classList.remove('show');
+      }, 9000);
+    }
+
+    function cerrarUIEncuesta() {
+      clearInterval(votingInterval);
+      const modal = document.getElementById('overlay-voting-modal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    // CONFETI CANVAS PARA CERTIFICADOS
+    function lanzarConfetiCelebracion() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.offsetWidth || 1800;
+      canvas.height = canvas.parentElement.offsetHeight || 1200;
+
+      const colors = ['#f59e0b', '#10b981', '#06b6d4', '#ec4899', '#8b5cf6', '#ffffff'];
+      const particles = [];
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() * 200 - 100),
+          y: canvas.height * 0.4 + (Math.random() * 100 - 50),
+          vx: (Math.random() - 0.5) * 22,
+          vy: (Math.random() - 0.8) * 26,
+          size: Math.random() * 12 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * 360,
+          vrot: (Math.random() - 0.5) * 14,
+          gravity: 0.45,
+          alpha: 1
+        });
+      }
+
+      let startTime = Date.now();
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rot += p.vrot;
+          p.alpha = Math.max(0, 1 - (Date.now() - startTime) / 4500);
+
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        });
+
+        if (alive && Date.now() - startTime < 4500) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // SÍNTESIS DE AUDIO PARA ALERTAS Y NOTIFICACIONES
+    function reproducirSonidoSirena() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        
+        const now = ctx.currentTime;
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.linearRampToValueAtTime(1150, now + 0.35);
+        osc.frequency.linearRampToValueAtTime(650, now + 0.7);
+        osc.frequency.linearRampToValueAtTime(1150, now + 1.05);
+        osc.frequency.linearRampToValueAtTime(650, now + 1.4);
+
+        const v = 0.35 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        gain.gain.setValueAtTime(v, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 1.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.6);
+      } catch(e) {}
+    }
+
+    let sirenTimer = null;
+    function mostrarSirenaOverlay(user, msg) {
+      const alertEl = document.getElementById('overlay-siren-alert');
+      const msgEl = document.getElementById('siren-alert-msg');
+      if (!alertEl) return;
+      if (msgEl) msgEl.textContent = msg || `@${user} está intentando entrar a la lista sin seguirte 🚨`;
+      alertEl.classList.add('show');
+      clearTimeout(sirenTimer);
+      sirenTimer = setTimeout(() => {
+        alertEl.classList.remove('show');
+      }, 6000);
+    }
+
+    function reproducirSonidoFanfarria() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.4 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const notes = [
+          { f: 523.25, d: 0.15 },
+          { f: 659.25, d: 0.15 },
+          { f: 783.99, d: 0.15 },
+          { f: 1046.50, d: 0.6 }
+        ];
+        let time = ctx.currentTime;
+        notes.forEach((n) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, time);
+          gain.gain.setValueAtTime(vol, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + n.d);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(time);
+          osc.stop(time + n.d);
+          time += n.d * 0.9;
+        });
+      } catch(e) {}
+    }
+
+    function reproducirSonidoBuzzer() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.35 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        const now = ctx.currentTime;
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.6);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.65);
+      } catch(e) {}
+    }
+
+    // GESTIÓN DE LA PLAYLIST (ARTISTAS CERTIFICADOS >= 98%)
+    function renderizarPlaylist() {
+      const listEl = document.getElementById('panel-certified-list');
+      const countEl = document.getElementById('panel-count-certified');
+      const playlist = state.certifiedPlaylist || [];
+      if (countEl) countEl.textContent = playlist.length;
+      if (!listEl) return;
+
+      if (playlist.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 98% o más. Realiza una votación al terminar un tema.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = playlist.map((item, idx) => {
+        return `
+          <div class="playlist-row">
+            <div class="playlist-info-col">
+              <div class="playlist-item-title">#${idx + 1} ⭐ ${escapeHtml(item.title)}</div>
+              <div class="playlist-item-meta">Artista: @${escapeHtml(item.user)} • Calificación: ${item.percentage || 100}% (${item.average || '10'}/10 con ${item.votes || 0} votos)</div>
+            </div>
+            <div class="playlist-actions-col">
+              <button type="button" class="btn-player btn-player-cp" onclick="copiarTexto('${escapeHtml(item.title)} de @${escapeHtml(item.user)}')" title="Copiar tema" style="padding: 6px 10px; font-size: 11px;">📋</button>
+              <button type="button" class="btn-row-action delete" onclick="eliminarDePlaylist('${item.id}')" title="Eliminar de La Playlist">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copiarTexto(texto) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          alert(`✅ Copiado al portapapeles: "${texto}"`);
+        }).catch(() => {
+          prompt('Copia este texto:', texto);
+        });
+      } else {
+        prompt('Copia este texto:', texto);
+      }
+    }
+
+    function eliminarDePlaylist(id) {
+      if (confirm('¿Deseas eliminar este artista certificado de La Playlist?')) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'deleteFromPlaylist', id: id }));
+        } else {
+          state.certifiedPlaylist = state.certifiedPlaylist.filter(p => p.id !== id);
+          renderizarPlaylist();
+        }
+      }
+    }
+
+    function exportarPlaylist() {
+      if (!state.certifiedPlaylist || state.certifiedPlaylist.length === 0) {
+        alert('La Playlist está vacía en este momento.');
+        return;
+      }
+      const texto = state.certifiedPlaylist.map((p, i) => `${i + 1}. ${p.title} - @${p.user} (${p.percentage}%)`).join('\n');
+      copiarTexto(`🏆 LA PLAYLIST (Artistas Certificados Slow MD Live) 🏆\n\n${texto}`);
     }
 
     function copiarEnlaceOverlay() {
@@ -1882,6 +2888,25 @@
     // INICIALIZAR
     window.addEventListener('DOMContentLoaded', () => {
       conectarWS();
+
+      // Sliders TTS
+      const sliderVol = document.getElementById('tts-volume-slider');
+      const valVol = document.getElementById('tts-volume-val');
+      if (sliderVol) {
+        const v = Math.round(state.ttsVolume * 100);
+        sliderVol.value = v;
+        if (valVol) valVol.textContent = v + '%';
+      }
+
+      const sliderSpd = document.getElementById('tts-speed-slider');
+      const valSpd = document.getElementById('tts-speed-val');
+      if (sliderSpd) {
+        sliderSpd.value = state.ttsSpeed;
+        if (valSpd) valSpd.textContent = state.ttsSpeed.toFixed(2) + 'x';
+      }
+
+      actualizarUIControlesStreamer();
+      renderizarPlaylist();
 
       // Botón conectar / desconectar Live
       const btnLive = document.getElementById('btn-toggle-live');

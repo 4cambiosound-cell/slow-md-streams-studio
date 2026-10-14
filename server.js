@@ -9,8 +9,12 @@ const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 
 // Cargar configuración guardada
+const PLAYLIST_FILE = path.join(__dirname, 'certified-playlist.json');
+
 let botConfig = {
   lastUsername: '',
+  requireFollowerToRequest: true,
+  queueLocked: false,
   rules: {
     likesReq: 1000,
     sharesReq: 10,
@@ -56,6 +60,141 @@ try {
   console.error('[Config] Error leyendo bot-config.json:', e.message);
 }
 
+// Cargar "La Playlist" de Artistas Certificados (>=98%)
+let certifiedPlaylist = [];
+try {
+  if (fs.existsSync(PLAYLIST_FILE)) {
+    certifiedPlaylist = JSON.parse(fs.readFileSync(PLAYLIST_FILE, 'utf8'));
+    if (!Array.isArray(certifiedPlaylist)) certifiedPlaylist = [];
+  }
+} catch (e) {
+  certifiedPlaylist = [];
+}
+
+function saveCertifiedPlaylist() {
+  try {
+    fs.writeFileSync(PLAYLIST_FILE, JSON.stringify(certifiedPlaylist, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[Playlist] Error guardando certified-playlist.json:', e.message);
+  }
+}
+
+// ESTADO GLOBAL DE ENCUESTA / JURADO (25s)
+let votingState = {
+  active: false,
+  song: null,
+  voters: new Map(), // userKey -> score
+  duration: 25,
+  startedAt: 0,
+  timer: null
+};
+
+// Parser robusto de calificaciones del 1 al 10 en diversos formatos:
+// "Le doy 2", "Un 7", "10/10", "8.9", "7.5", "10", "Doy un 9", "Nota 8"
+function parseScore(comment) {
+  if (!comment) return null;
+  const t = comment.trim().toLowerCase();
+
+  // Caso "10/10" o "8/10" o "7.5/10"
+  const fractionMatch = t.match(/\b([1-9](?:\.[0-9]+)?|10)\s*\/\s*10\b/);
+  if (fractionMatch) {
+    const num = parseFloat(fractionMatch[1]);
+    if (num >= 1 && num <= 10) return num;
+  }
+
+  // Caso "le doy un 8", "le doy 8.5", "un 7", "doy 9", "nota: 8", "calificación 10"
+  const prefixMatch = t.match(/(?:(?:le\s+)?doy(?:\s+un)?|un|nota|calificaci[oó]n|pongo)\s+([1-9](?:\.[0-9]+)?|10)\b/i);
+  if (prefixMatch) {
+    const num = parseFloat(prefixMatch[1]);
+    if (num >= 1 && num <= 10) return num;
+  }
+
+  // Caso número directo solo: "10", "8", "9.5", "7"
+  const directMatch = t.match(/^\s*([1-9](?:\.[0-9]+)?|10)\s*$/);
+  if (directMatch) {
+    const num = parseFloat(directMatch[1]);
+    if (num >= 1 && num <= 10) return num;
+  }
+
+  return null;
+}
+
+function startVoting(duration = 25, songOverride = null) {
+  const song = songOverride || queueState.queue[0] || { title: 'Canción en Turno', user: 'Artista' };
+  votingState.active = true;
+  votingState.song = song;
+  votingState.voters.clear();
+  votingState.duration = duration;
+  votingState.startedAt = Date.now();
+
+  clearTimeout(votingState.timer);
+  votingState.timer = setTimeout(() => {
+    finishVoting();
+  }, duration * 1000);
+
+  const voiceMsg = `¡Inicia la votación para la canción ${song.title}! ¿Cuánto le damos del 1 al 10? Tienen ${duration} segundos para calificar.`;
+  broadcast({
+    type: 'VOTING_STARTED',
+    song: song,
+    duration: duration,
+    voiceAnnouncement: voiceMsg
+  });
+  addLog(`⚖️ ¡Inició votación para "${song.title}" (${duration}s)!`, 'queue');
+}
+
+function cancelVoting() {
+  if (!votingState.active) return;
+  votingState.active = false;
+  clearTimeout(votingState.timer);
+  broadcast({ type: 'VOTING_CANCELLED' });
+  addLog(`❌ Votación cancelada.`, 'warn');
+}
+
+function finishVoting() {
+  if (!votingState.active) return;
+  votingState.active = false;
+  clearTimeout(votingState.timer);
+
+  const song = votingState.song || { title: 'Canción', user: 'Artista' };
+  const totalVotes = votingState.voters.size;
+  let sum = 0;
+  for (const val of votingState.voters.values()) sum += val;
+  const avg = totalVotes > 0 ? Number((sum / totalVotes).toFixed(1)) : 0;
+  const pct = totalVotes > 0 ? Math.round((avg / 10) * 100) : 0;
+  const approved = pct >= 98;
+
+  let voiceMsg = '';
+  if (approved) {
+    voiceMsg = `La canción ${song.title} entra a nuestra lista de artistas certificados. ¡Excelente trabajo!`;
+    const certItem = {
+      id: 'cert_' + Date.now(),
+      title: song.title,
+      user: song.user,
+      score: avg,
+      percentage: pct,
+      totalVotes: totalVotes,
+      certifiedAt: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    };
+    certifiedPlaylist.unshift(certItem);
+    saveCertifiedPlaylist();
+  } else {
+    voiceMsg = `La canción ${song.title} no califica para entrar a nuestra lista. ¡Siga trabajando en pulir su talento!`;
+  }
+
+  broadcast({
+    type: 'VOTING_FINISHED',
+    song: song,
+    avg: avg,
+    pct: pct,
+    totalVotes: totalVotes,
+    approved: approved,
+    voiceAnnouncement: voiceMsg,
+    certifiedPlaylist: certifiedPlaylist
+  });
+
+  addLog(`🏁 Votación finalizada para "${song.title}": ${pct}% (${avg}/10) con ${totalVotes} votos. ${approved ? '⭐ CERTIFICADA' : '❌ NO CALIFICA'}`, 'queue');
+}
+
 function saveConfig() {
   try {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(botConfig, null, 2), 'utf8');
@@ -63,6 +202,10 @@ function saveConfig() {
     console.error('[Config] Error guardando bot-config.json:', e.message);
   }
 }
+
+// Seguidores conocidos en memoria durante el stream y timestamp de conexión
+const knownFollowers = new Set();
+let connectedAt = 0;
 
 // Estado de conexión TikTok
 let tiktokConnection = null;
@@ -340,10 +483,99 @@ function esComentarioSpam(userKey, comment) {
   return repetidos >= 2;
 }
 
-function processServerChat(comment, userChatName, userHandle = '', userId = '') {
+function processServerChat(comment, userChatName, userHandle = '', userId = '', isFollower = false, isModerator = false) {
   const text = (comment || '').trim();
 
-  // Detección de preguntas de cómo agregar canción a la lista
+  // STREAMER & MODERATOR AUTHORIZATION CHECK
+  const cleanHandle = (userHandle || '').toLowerCase().replace(/^@/, '');
+  const cleanName = (userChatName || '').toLowerCase().replace(/^@/, '');
+  const configUser = (botConfig.lastUsername || '').toLowerCase().replace(/^@/, '');
+
+  const isStreamer = Boolean(
+    (cleanHandle && (cleanHandle === configUser || cleanHandle === 'slowmdoficial')) ||
+    (cleanName && (cleanName === configUser || cleanName === 'slowmdoficial'))
+  );
+  const isAuthorized = isStreamer || isModerator;
+
+  // COMANDOS DE CONTROL DESDE EL STREAMER / MODERADORES:
+  if (isAuthorized) {
+    // 1. (...) -> Explicación de cómo agregar canción a la lista
+    if (text === '...' || text === '…' || /^\.{3,}$/.test(text)) {
+      const voiceMsg = "Para agregar una canción a la lista debes poner la palabra: Escucha, más el nombre de la canción más el nombre del artista, y se agrega automáticamente a la lista.";
+      const bannerMsg = "Comenta: Escucha [Canción] - [Artista]";
+      broadcast({
+        type: 'HOW_TO_ADD_HELP',
+        user: userChatName,
+        bannerText: bannerMsg,
+        voiceText: voiceMsg
+      });
+      addLog(`💡 Streamer solicitó explicación con (...)`, 'chat');
+      return true;
+    }
+
+    // 2. (0) -> Bloquear lista de canciones
+    if (text === '0') {
+      botConfig.queueLocked = true;
+      saveConfig();
+      const announcement = "¡La lista de canciones ha sido bloqueada! No se aceptan más peticiones por el momento.";
+      broadcast({
+        type: 'QUEUE_LOCK_UPDATE',
+        locked: true,
+        announcement: announcement
+      });
+      addLog(`🔒 Streamer bloqueó la lista de canciones (0)`, 'queue');
+      return true;
+    }
+
+    // 3. (G o g) -> Reabrir lista de canciones
+    if (text.toLowerCase() === 'g') {
+      botConfig.queueLocked = false;
+      saveConfig();
+      const announcement = "¡La lista de canciones ha sido reabierta! Ya pueden pedir sus canciones con la palabra Escucha.";
+      broadcast({
+        type: 'QUEUE_LOCK_UPDATE',
+        locked: false,
+        announcement: announcement
+      });
+      addLog(`🔓 Streamer reabrió la lista de canciones (G)`, 'queue');
+      return true;
+    }
+
+    // 4. (borra a X) -> Eliminar la canción de un usuario específico
+    const borraMatch = text.match(/^borra\s+a\s+(.+)$/i);
+    if (borraMatch) {
+      const target = borraMatch[1].trim().replace(/^@/, '');
+      const targetKey = normalizarUserKey(target);
+      const idx = queueState.queue.findIndex(s => {
+        return normalizarUserKey(s.user) === targetKey ||
+               (s.handle && normalizarUserKey(s.handle) === targetKey) ||
+               s.user.toLowerCase().includes(target.toLowerCase());
+      });
+      if (idx !== -1) {
+        const removed = queueState.queue.splice(idx, 1)[0];
+        saveQueueData();
+        const announcement = `Se eliminó la canción de ${removed.user} de la lista.`;
+        broadcast({
+          type: 'QUEUE_UPDATE',
+          queue: queueState.queue,
+          history: queueState.history,
+          announcement: announcement
+        });
+        addLog(`🗑️ Streamer eliminó la canción "${removed.title}" de @${removed.user}`, 'queue');
+      } else {
+        addLog(`⚠️ No se encontró la canción de "${target}" para eliminar`, 'queue');
+      }
+      return true;
+    }
+
+    // 5. Comando "calificar" o "encuesta" para iniciar votación
+    if (text.toLowerCase() === 'calificar' || text.toLowerCase() === 'encuesta') {
+      startVoting(25);
+      return true;
+    }
+  }
+
+  // Detección de preguntas de cómo agregar canción a la lista (usuarios generales)
   const ayudaRegex = /(?:c[oó]mo|como)\s+(?:agrego|entro|pongo|hago|a[nñ]ado|pido|meter|subir|estar|anotar)\b.*(?:canci[oó]n|cancion|lista|cola|tema|musica)/i;
   const ayudaCortaRegex = /^(?:c[oó]mo|como)\s+(?:entro|estar|entrar)\s+(?:a\s+)?(?:la\s+)?(?:lista|cola)\??$/i;
   const ayudaPedirRegex = /^(?:c[oó]mo|como)\s+(?:pido|pedir|agregar|poner)\s+(?:una\s+)?(?:canci[oó]n|cancion|tema)\??$/i;
@@ -417,6 +649,41 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
 
   const userKey = normalizarUserKey(chatName);
   const handleKey = userHandle ? normalizarUserKey(userHandle) : '';
+
+  // VALIDACIÓN 1: ¿LA LISTA ESTÁ BLOQUEADA POR EL STREAMER (COMANDO 0)?
+  if (botConfig.queueLocked) {
+    const aviso = `${chatName}, la lista de canciones está cerrada temporalmente. Espera a que el streamer la vuelva a abrir.`;
+    broadcast({
+      type: 'CHAT_WARNING',
+      user: chatName,
+      message: aviso
+    });
+    addLog(`🔒 ${chatName} intentó pedir "${cancionDetectada}" pero la lista está bloqueada (0)`, 'chat');
+    return true;
+  }
+
+  // VALIDACIÓN 2: ¿SE REQUIERE SEGUIR AL CANAL PARA PEDIR CANCIONES?
+  const userIsFollower = Boolean(
+    isFollower ||
+    knownFollowers.has(userKey) ||
+    (handleKey && knownFollowers.has(handleKey)) ||
+    isAuthorized
+  );
+
+  if (botConfig.requireFollowerToRequest !== false && !userIsFollower) {
+    const primerNombre = (chatName || '').trim().split(/[\s_.-]+/)[0] || chatName;
+    const aviso = `${primerNombre} está intentando entrar a la lista sin seguirte 🚨`;
+    broadcast({
+      type: 'NOT_FOLLOWER_WARNING',
+      user: chatName,
+      primerNombre: primerNombre,
+      sound: 'siren',
+      message: aviso
+    });
+    addLog(`🚨 ${chatName} intentó pedir "${cancionDetectada}" sin seguirte 🚨`, 'chat');
+    return true;
+  }
+
   const likesActuales = serverUserLikes.get(userKey) || (handleKey ? serverUserLikes.get(handleKey) : 0) || 0;
   const sharesActuales = serverUserShares.get(userKey) || (handleKey ? serverUserShares.get(handleKey) : 0) || 0;
   const rosesActuales = serverUserRoses.get(userKey) || (handleKey ? serverUserRoses.get(handleKey) : 0) || 0;
@@ -808,19 +1075,18 @@ async function connectToTikTok(rawUsername) {
 
   try {
     tiktokConnection = new TikTokLiveConnection(username, {
-      processInitialData: true,
+      processInitialData: false, // NO procesar historial antiguo antes de conectar
       enableExtendedGiftInfo: false,
       fetchRoomInfoOnConnect: false
     });
 
     const state = await tiktokConnection.connect();
+    connectedAt = Date.now();
     updateStatus('connected', { username, roomId: state.roomId, error: null });
     addLog(`¡Conectado exitosamente al Live de @${username}! (Room ID: ${state.roomId})`, 'success');
 
-// Seguidores conocidos en memoria durante el stream
-const knownFollowers = new Set();
-let globalLiveLikes = 0;
-let lastLikesMilestone = 0;
+    let globalLiveLikes = 0;
+    let lastLikesMilestone = 0;
 
     const extractUserInfo = (data) => {
       const u = data.user || {};
@@ -882,18 +1148,59 @@ let lastLikesMilestone = 0;
 
     // Escuchar Comentarios
     tiktokConnection.on(WebcastEvent.CHAT, (data) => {
+      // Ignorar eventos antiguos enviados por TikTok antes de conectar
+      if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
+
       const info = extractUserInfo(data);
       const comment = (data.content || data.comment || '').trim();
       if (!comment) return;
 
       const userKey = normalizarUserKey(info.chatName);
+
+      // SI LA ENCUESTA / VOTACIÓN DEL JURADO ESTÁ ACTIVA (25s):
+      if (votingState.active) {
+        const score = parseScore(comment);
+        if (score !== null) {
+          if (!votingState.voters.has(userKey)) {
+            votingState.voters.set(userKey, score);
+            const totalVotes = votingState.voters.size;
+            let sum = 0;
+            for (const val of votingState.voters.values()) sum += val;
+            const avg = Number((sum / totalVotes).toFixed(1));
+            const pct = Math.round((avg / 10) * 100);
+
+            const primerNombre = (info.chatName || '').trim().split(/[\s_.-]+/)[0] || info.chatName;
+
+            broadcast({
+              type: 'VOTE_CAST',
+              user: info.chatName,
+              primerNombre: primerNombre,
+              score: score,
+              totalVotes: totalVotes,
+              currentAvg: avg,
+              currentPct: pct,
+              voiceAnnouncement: `${primerNombre} le da un ${score}`
+            });
+            addLog(`🗳️ ${primerNombre} calificó con ${score} (Promedio: ${avg}/10 - ${pct}%)`, 'chat');
+          }
+        }
+        // Mientras la encuesta esté activa, no leer comentarios generales en TTS
+        return;
+      }
+
       if (esComentarioSpam(userKey, comment)) {
         addLog(`🚫 Comentario silenciado por spam (>2 repetidos en 10s): "${comment}" (@${info.chatName})`, 'chat');
         return;
       }
 
       addLog(`💬 ${info.chatName} (${info.handle}): ${comment}`, 'chat');
-      const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId);
+      const isModerator = Boolean(
+        data.isModerator ||
+        data.user?.isModerator ||
+        data.userBadgeList?.some(b => b.badgeSceneType === 1 || b.type === 'moderator')
+      );
+
+      const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId, info.isFollower, isModerator);
       if (!wasAction) {
         broadcast({
           type: 'CHAT',
@@ -912,6 +1219,8 @@ let lastLikesMilestone = 0;
 
     // Escuchar cuando alguien sigue el canal en vivo
     tiktokConnection.on(WebcastEvent.FOLLOW, (data) => {
+      if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
+
       const info = extractUserInfo(data);
       knownFollowers.add(normalizarUserKey(info.chatName));
       knownFollowers.add(normalizarUserKey(info.handle));
@@ -933,6 +1242,7 @@ let lastLikesMilestone = 0;
 
     // Escuchar Regalos
     tiktokConnection.on(WebcastEvent.GIFT, (data) => {
+      if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
       if (data.repeatEnd === 0) return;
 
       const info = extractUserInfo(data);
@@ -966,6 +1276,8 @@ let lastLikesMilestone = 0;
 
     // Escuchar cuando los espectadores comparten el Live
     const handleShareEvent = (data) => {
+      if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
+
       const info = extractUserInfo(data);
       addLog(`🔄 ${info.chatName} compartió el En Vivo`, 'share');
       processServerShare(info.chatName, {
@@ -1003,6 +1315,7 @@ let lastLikesMilestone = 0;
 
     // Escuchar Likes (toques a la pantalla)
     tiktokConnection.on(WebcastEvent.LIKE, (data) => {
+      if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
       const info = extractUserInfo(data);
       const count = Number(data.count) || Number(data.likeCount) || 1;
       const total = data.total || null;
@@ -1099,6 +1412,19 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'LAYOUT_UPDATE', layout: botConfig.layout }));
   ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
   ws.send(JSON.stringify({ type: 'RECENT_LOGS', logs: recentLogs }));
+  ws.send(JSON.stringify({
+    type: 'EXTRA_CONFIG',
+    queueLocked: botConfig.queueLocked,
+    requireFollowerToRequest: botConfig.requireFollowerToRequest,
+    certifiedPlaylist: certifiedPlaylist,
+    votingState: {
+      active: votingState.active,
+      song: votingState.song,
+      duration: votingState.duration,
+      startedAt: votingState.startedAt,
+      totalVotes: votingState.voters.size
+    }
+  }));
 
   ws.on('message', (message) => {
     try {
@@ -1163,6 +1489,36 @@ wss.on('connection', (ws) => {
             client.send(updateMsg);
           }
         }
+      } else if (payload.action === 'startVoting') {
+        startVoting(payload.duration || 25, payload.song);
+      } else if (payload.action === 'cancelVoting') {
+        cancelVoting();
+      } else if (payload.action === 'getPlaylist') {
+        ws.send(JSON.stringify({ type: 'PLAYLIST_UPDATE', playlist: certifiedPlaylist }));
+      } else if (payload.action === 'deleteFromPlaylist') {
+        certifiedPlaylist = certifiedPlaylist.filter(p => p.id !== payload.id);
+        saveCertifiedPlaylist();
+        broadcast({ type: 'PLAYLIST_UPDATE', playlist: certifiedPlaylist });
+      } else if (payload.action === 'toggleQueueLock') {
+        botConfig.queueLocked = payload.locked !== undefined ? Boolean(payload.locked) : !botConfig.queueLocked;
+        saveConfig();
+        const msg = botConfig.queueLocked ? "¡La lista de canciones ha sido bloqueada! No se aceptan más peticiones por el momento." : "¡La lista de canciones ha sido reabierta! Ya pueden pedir sus canciones con la palabra Escucha.";
+        broadcast({
+          type: 'QUEUE_LOCK_UPDATE',
+          locked: botConfig.queueLocked,
+          announcement: msg
+        });
+        addLog(botConfig.queueLocked ? "🔒 Lista bloqueada manualmente desde el panel" : "🔓 Lista desbloqueada manualmente desde el panel", 'queue');
+      } else if (payload.action === 'toggleRequireFollower') {
+        botConfig.requireFollowerToRequest = payload.required !== undefined ? Boolean(payload.required) : !botConfig.requireFollowerToRequest;
+        saveConfig();
+        broadcast({
+          type: 'EXTRA_CONFIG',
+          queueLocked: botConfig.queueLocked,
+          requireFollowerToRequest: botConfig.requireFollowerToRequest,
+          certifiedPlaylist: certifiedPlaylist
+        });
+        addLog(`⚙️ Requisito de seguidor obligatorio: ${botConfig.requireFollowerToRequest ? 'ACTIVADO' : 'DESACTIVADO'}`, 'info');
       }
     } catch (e) {
       console.error('Error procesando mensaje WS:', e);
