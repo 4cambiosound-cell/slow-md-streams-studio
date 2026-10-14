@@ -543,7 +543,14 @@
       <div>
         <div class="nav-section-title">WIDGETS ACTIVOS</div>
         <ul class="nav-list">
-          <li class="nav-item active" onclick="seleccionarWidget('cola-canciones')">
+          <li class="nav-item active" onclick="seleccionarWidget('studio-unificado')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">📱</span>
+              <span>Suite Unificada (Emulador)</span>
+            </div>
+            <span class="badge-status badge-active" style="background: rgba(255, 184, 0, 0.2); color: #fde047; border-color: rgba(255, 184, 0, 0.4);">NUEVO</span>
+          </li>
+          <li class="nav-item" onclick="seleccionarWidget('cola-canciones')">
             <div class="nav-item-left">
               <span class="nav-item-icon">🎵</span>
               <span>Cola de Canciones</span>
@@ -647,8 +654,11 @@
     <!-- ÁREA DE VISUALIZACIÓN DE WIDGETS -->
     <section class="studio-viewport">
       
+      <!-- WIDGET PRINCIPAL: SUITE UNIFICADA CON EMULADOR DRAG & DROP -->
+      <iframe id="frame-studio-unificado" class="widget-frame active" src="/studio-unified.html?view=panel"></iframe>
+
       <!-- WIDGET 1: COLA DE CANCIONES (IFRAME EN VIVO) -->
-      <iframe id="frame-cola-canciones" class="widget-frame active" src="/cola-slow-md.html?view=panel"></iframe>
+      <iframe id="frame-cola-canciones" class="widget-frame" src="/cola-slow-md.html?view=panel"></iframe>
 
       <!-- WIDGET 2: CAJA DE COMENTARIOS TTS & ALERTAS 3D (IFRAME EN VIVO) -->
       <iframe id="frame-comentarios-tts" class="widget-frame" src="/comentarios-tts.html?view=panel"></iframe>
@@ -710,9 +720,16 @@
   </div>
 
   <script>
-    let widgetActual = 'cola-canciones';
+    let widgetActual = 'studio-unificado';
 
     const WIDGETS_CONFIG = {
+      'studio-unificado': {
+        title: '📱 SUITE UNIFICADA (EMULADOR DRAG & DROP)',
+        tag: 'Suite Principal',
+        overlayPath: '/studio-unified.html?view=overlay',
+        panelPath: '/studio-unified.html?view=panel',
+        frameId: 'frame-studio-unificado'
+      },
       'cola-canciones': {
         title: '🎵 COLA DE CANCIONES (TIKTOK LIVE)',
         tag: 'Widget Activo',

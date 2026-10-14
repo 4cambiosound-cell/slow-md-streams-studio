@@ -24,6 +24,12 @@ let botConfig = {
     },
     vipMinDiamonds: 100
   },
+  layout: {
+    queue: { x: 5, y: 12, width: 90, height: 32, visible: true },
+    nowPlaying: { x: 5, y: 45, width: 90, height: 10, visible: true },
+    tts: { x: 5, y: 64, width: 90, height: 18, visible: true },
+    alerts: { x: 5, y: 20, width: 90, height: 40, visible: true }
+  },
   tts: {
     voiceURI: 'google_hd_es',
     voiceName: 'Google Español (HD)',
@@ -110,18 +116,26 @@ const server = http.createServer((req, res) => {
 
   if (reqUrl === '/' || reqUrl === '/index.html') {
     // Si la URL pide explícitamente vista overlay o panel, servir cola-slow-md.html
-    if (params.get('view') === 'overlay' || params.get('view') === 'panel') {
-      reqUrl = '/cola-slow-md.html';
+    if (params.get('view') === 'overlay') {
+      reqUrl = '/studio-unified.html';
+    } else if (params.get('view') === 'panel') {
+      reqUrl = '/studio-unified.html';
     } else {
       // Por defecto, cargar el panel multiversal Slow MD Stream Studio
       reqUrl = '/dashboard.html';
     }
+  } else if (reqUrl === '/overlay' || reqUrl === '/studio-overlay') {
+    reqUrl = '/studio-unified.html';
+  } else if (reqUrl === '/panel' || reqUrl === '/studio-panel') {
+    reqUrl = '/studio-unified.html';
   } else if (reqUrl === '/dashboard' || reqUrl === '/studio') {
     reqUrl = '/dashboard.html';
   } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
     reqUrl = '/cola-slow-md.html';
   } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
     reqUrl = '/comentarios-tts.html';
+  } else if (reqUrl.startsWith('/widgets/studio-unificado')) {
+    reqUrl = '/studio-unified.html';
   } else if (reqUrl === '/api/tts') {
     const text = (params.get('q') || params.get('text') || '').slice(0, 350);
     const lang = params.get('tl') || params.get('lang') || 'es';
@@ -857,10 +871,11 @@ function disconnectTikTok() {
 
 // Manejador de conexiones WebSocket
 wss.on('connection', (ws) => {
-  // Enviar estado actual, cola de canciones, reglas y logs iniciales al nuevo cliente
+  // Enviar estado actual, cola de canciones, reglas, layout y logs iniciales al nuevo cliente
   ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
   ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
   ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
+  ws.send(JSON.stringify({ type: 'LAYOUT_UPDATE', layout: botConfig.layout }));
   ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
   ws.send(JSON.stringify({ type: 'RECENT_LOGS', logs: recentLogs }));
 
@@ -873,6 +888,16 @@ wss.on('connection', (ws) => {
         disconnectTikTok();
       } else if (payload.action === 'getStatus') {
         ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
+      } else if (payload.action === 'getLayout') {
+        ws.send(JSON.stringify({ type: 'LAYOUT_UPDATE', layout: botConfig.layout }));
+      } else if (payload.action === 'updateLayout') {
+        botConfig.layout = {
+          ...botConfig.layout,
+          ...(payload.layout || {})
+        };
+        saveConfig();
+        broadcast({ type: 'LAYOUT_UPDATE', layout: botConfig.layout });
+        addLog(`📱 Diseño y posiciones de overlay actualizadas.`, 'info');
       } else if (payload.action === 'getTTSConfig') {
         ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
       } else if (payload.action === 'updateTTSConfig') {
@@ -891,9 +916,7 @@ wss.on('connection', (ws) => {
           sharesReq: Number(payload.rules?.sharesReq) || 10,
           rosesReq: Number(payload.rules?.rosesReq) || 5,
           giftCategories: payload.rules?.giftCategories || botConfig.rules.giftCategories,
-          mediumGifts: String(payload.rules?.mediumGifts || 'dedo, corazon, corazón').trim(),
-          vipGifts: String(payload.rules?.vipGifts || 'sombrero, bigote, donut, rosquilla').trim(),
-          vipMinDiamonds: Number(payload.rules?.vipMinDiamonds) || 30
+          vipMinDiamonds: Number(payload.rules?.vipMinDiamonds) || 100
         };
         saveConfig();
         broadcast({ type: 'RULES_UPDATE', rules: botConfig.rules });

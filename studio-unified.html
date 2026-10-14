@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD Studio | Suite Unificada TikTok Live</title>
+  <!-- Three.js para animación 3D de esferas y confeti volumétrico -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0a0b10;
+      --bg-card: rgba(18, 20, 29, 0.88);
+      --bg-card-hover: rgba(28, 32, 46, 0.95);
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.45);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.4);
+      --cyan-accent: #00e5ff;
+      --purple-accent: #b347eb;
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: rgba(255, 15, 59, 0.35);
+      --border-card: rgba(255, 255, 255, 0.1);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* CONTENEDORES DE VISTAS */
+    .view-container {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .view-container.active {
+      display: flex;
+    }
+
+    /* ============================================================= */
+    /* VISTA 1: OVERLAY UNIFICADO 9:16 TRANSPARENTE (PARA OBS/MELD)  */
+    /* ============================================================= */
+    #overlay-view {
+      position: relative;
+      background: transparent !important;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+    }
+
+    /* Lienzo 3D Three.js */
+    #three-canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* Bordes de pantalla iluminados */
+    .screen-edge-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8;
+      opacity: 0;
+      transition: opacity 0.4s ease-in-out;
+    }
+    .screen-edge-glow.glow-red {
+      opacity: 1;
+      box-shadow: inset 0 0 80px 30px #ff0f3b, inset 0 0 140px rgba(255, 15, 59, 0.6);
+      animation: pulseBorder 1.2s infinite alternate;
+    }
+    .screen-edge-glow.glow-gold {
+      opacity: 1;
+      box-shadow: inset 0 0 90px 35px #ffb800, inset 0 0 150px rgba(255, 184, 0, 0.6);
+      animation: pulseBorder 1.2s infinite alternate;
+    }
+    @keyframes pulseBorder {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* CAPA UNIVERSAL DE MÓDULOS DEL OVERLAY (POSICIONES DINÁMICAS %) */
+    .overlay-module-slot {
+      position: absolute;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Módulo 1: Cola de Canciones y Reglas */
+    #module-overlay-queue {
+      z-index: 15;
+    }
+
+    .stream-glass-panel {
+      background: rgba(10, 12, 20, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(255, 15, 59, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    .glass-panel-header {
+      padding: 8px 12px;
+      background: linear-gradient(90deg, rgba(255, 15, 59, 0.35), rgba(15, 18, 28, 0.8));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .glass-header-title {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-counter-badge {
+      background: var(--blood-red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px var(--blood-red-glow);
+    }
+
+    .rules-ticker-banner {
+      background: rgba(0, 0, 0, 0.45);
+      padding: 6px 10px;
+      font-size: 10.5px;
+      line-height: 1.35;
+      color: #cbd5e1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      flex-shrink: 0;
+    }
+    .rules-ticker-banner strong {
+      color: #fff;
+    }
+    .rules-ticker-perks {
+      font-size: 9.5px;
+      color: #fde047;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .queue-items-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      scrollbar-width: none;
+    }
+    .queue-items-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .song-pill-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 9px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      font-size: 11px;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+    .song-pill-item.is-first {
+      background: linear-gradient(90deg, rgba(255, 15, 59, 0.25), rgba(255, 255, 255, 0.05));
+      border-color: rgba(255, 15, 59, 0.5);
+      box-shadow: 0 0 12px rgba(255, 15, 59, 0.3);
+    }
+    .song-pill-item.is-vip {
+      background: linear-gradient(90deg, rgba(255, 184, 0, 0.2), rgba(255, 255, 255, 0.05));
+      border-color: rgba(255, 184, 0, 0.5);
+    }
+
+    .song-pos-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      min-width: 22px;
+    }
+    .song-pill-item.is-first .song-pos-badge {
+      color: var(--blood-red);
+    }
+
+    .song-details-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .song-title-row {
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .song-user-row {
+      font-size: 9.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .song-status-tag {
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .tag-unlocked {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .tag-locked {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Módulo 2: Ahora Sonando (Now Playing Banner) */
+    #module-overlay-nowplaying {
+      z-index: 16;
+    }
+    .now-playing-pill {
+      background: linear-gradient(90deg, rgba(255, 15, 59, 0.85), rgba(15, 18, 28, 0.9));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px var(--blood-red-glow);
+      width: 100%;
+      height: 100%;
+    }
+    .disc-animated-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      animation: spinDisc 3s linear infinite;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+    @keyframes spinDisc {
+      100% { transform: rotate(360deg); }
+    }
+    .now-playing-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .now-tag-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #fde047;
+      text-transform: uppercase;
+    }
+    .now-song-name {
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+    }
+    .now-song-requester {
+      font-size: 10px;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Módulo 3: Caja de Comentarios TTS */
+    #module-overlay-tts {
+      z-index: 17;
+    }
+    .tts-comment-box {
+      background: rgba(14, 17, 26, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tts-comment-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .tts-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--cyan-accent);
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+    .tts-text-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .tts-header-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tts-username {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--cyan-accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tts-badge {
+      font-size: 8.5px;
+      font-weight: 800;
+      background: rgba(0, 229, 255, 0.2);
+      color: #fff;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .tts-message-body {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #f8fafc;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .voice-eq-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+      margin-left: auto;
+    }
+    .voice-eq-bars span {
+      width: 2.5px;
+      background: var(--blood-red);
+      border-radius: 2px;
+      animation: eqDance 0.7s infinite alternate ease-in-out;
+    }
+    .voice-eq-bars span:nth-child(1) { height: 4px; animation-delay: 0.1s; }
+    .voice-eq-bars span:nth-child(2) { height: 12px; animation-delay: 0.3s; }
+    .voice-eq-bars span:nth-child(3) { height: 7px; animation-delay: 0.2s; }
+    @keyframes eqDance {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    /* Módulo 4: Alertas Especiales (Manos Doradas, Hitos) */
+    #module-overlay-alerts {
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .golden-hands-stage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .golden-hands-stage.active {
+      display: flex;
+    }
+    .hands-banner-crown {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 0 15px var(--gold-vip), 0 0 30px var(--gold-vip);
+      margin-bottom: 8px;
+      animation: pulseGlow 1s infinite alternate;
+    }
+    .hands-song-card {
+      background: linear-gradient(135deg, rgba(255, 184, 0, 0.95), rgba(217, 119, 6, 0.95));
+      border: 2px solid #fff;
+      border-radius: var(--radius-md);
+      padding: 10px 18px;
+      text-align: center;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 184, 0, 0.6);
+      transform: scale(0.9);
+      animation: popInBounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-width: 90%;
+    }
+    .hands-song-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+    }
+    .hands-song-user {
+      font-size: 11px;
+      font-weight: 700;
+      color: #262626;
+    }
+    .hands-svg-pair {
+      display: flex;
+      justify-content: space-between;
+      width: 170px;
+      margin-top: -12px;
+    }
+    .hand-svg {
+      width: 65px;
+      height: 65px;
+      filter: drop-shadow(0 0 10px rgba(255, 184, 0, 0.8));
+    }
+    .hand-left { animation: handLiftL 1.2s infinite alternate ease-in-out; }
+    .hand-right { animation: handLiftR 1.2s infinite alternate ease-in-out; }
+
+    @keyframes handLiftL {
+      0% { transform: translateY(0) rotate(-6deg); }
+      100% { transform: translateY(-8px) rotate(-12deg); }
+    }
+    @keyframes handLiftR {
+      0% { transform: translateY(0) rotate(6deg); }
+      100% { transform: translateY(-8px) rotate(12deg); }
+    }
+    @keyframes popInBounce {
+      0% { transform: scale(0.5); opacity: 0; }
+      70% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ============================================================= */
+    /* VISTA 2: PANEL DEL STREAMER CON EMULADOR INTERACTIVO DRAG&DROP */
+    /* ============================================================= */
+    #panel-view {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      min-height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    /* Header del Panel */
+    .studio-navbar {
+      height: 64px;
+      background: rgba(14, 17, 26, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--blood-red), #99001f);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 12px var(--blood-red-glow);
+    }
+    .brand-titles h1 {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .brand-titles p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .connection-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+    .status-dot.connecting {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    .btn-nav {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-nav-primary {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 15px var(--blood-red-glow);
+    }
+    .btn-nav-primary:hover {
+      background: #ff2a51;
+      transform: translateY(-1px);
+    }
+    .btn-nav-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .btn-nav-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* CONTENIDO DEL PANEL: 2 COLUMNAS (EMULADOR CELULAR A LA IZQUIERDA + CONTROLES A LA DERECHA) */
+    .studio-workspace-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      padding: 24px;
+      overflow-y: auto;
+      max-width: 1680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1080px) {
+      .studio-workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* COLUMNA 1: EL EMULADOR INTERACTIVO DE CELULAR */
+    .phone-emulator-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .emulator-instructions-banner {
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 11.5px;
+      color: #e2e8f0;
+      line-height: 1.4;
+      width: 100%;
+    }
+    .emulator-instructions-banner strong {
+      color: var(--cyan-accent);
+    }
+
+    /* Chasis físico del teléfono (Proporción exacta 9:16) */
+    .phone-device-frame {
+      width: 380px;
+      height: 770px;
+      border-radius: 46px;
+      background: #111;
+      border: 10px solid #262936;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 15, 59, 0.15);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dynamic Island / Notch superior */
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 105px;
+      height: 24px;
+      background: #000;
+      border-radius: 14px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .notch-camera {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #1e293b;
+    }
+
+    /* Pantalla interactiva dentro del teléfono con la captura de tu Live */
+    .phone-screen-canvas {
+      position: absolute;
+      inset: 0;
+      background-image: url('/media_1791953012537.png');
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+    }
+
+    /* Filtro oscuro para resaltar los widgets */
+    .screen-scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.38);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Elementos Arrastrables dentro del Emulador */
+    .draggable-module-item {
+      position: absolute;
+      border: 2px dashed rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      background: rgba(22, 27, 46, 0.75);
+      backdrop-filter: blur(8px);
+      cursor: grab;
+      user-select: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      z-index: 10;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+    .draggable-module-item:hover, .draggable-module-item.active {
+      border: 2px solid var(--cyan-accent);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+      z-index: 30;
+    }
+    .draggable-module-item.dragging {
+      cursor: grabbing;
+      opacity: 0.85;
+      transform: scale(1.02);
+      border-color: var(--gold-vip);
+      box-shadow: 0 0 20px rgba(255, 184, 0, 0.6);
+    }
+
+    .module-drag-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px 6px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+
+    .module-drag-preview {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+      padding: 4px;
+    }
+
+    /* COLUMNA 2: CONTROLES DEL STREAMER (COLA, TTS, SIMULADOR Y CONFIGURACIÓN) */
+    .studio-controls-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Tabs de navegación de la columna derecha */
+    .studio-tabs-row {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+    .studio-tab-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .studio-tab-btn.active {
+      background: rgba(255, 15, 59, 0.15);
+      border-color: rgba(255, 15, 59, 0.4);
+      color: #fff;
+    }
+
+    .tab-content-panel {
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .tab-content-panel.active {
+      display: flex;
+    }
+
+    .control-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title-row h3 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Lista interactiva de cola de canciones en el panel */
+    .panel-queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .panel-queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      gap: 12px;
+    }
+    .panel-queue-row.is-current {
+      background: linear-gradient(90deg, rgba(255, 15, 59, 0.2), rgba(255, 255, 255, 0.04));
+      border-color: rgba(255, 15, 59, 0.4);
+    }
+
+    .row-meta-col {
+      flex: 1;
+      min-width: 0;
+    }
+    .row-song-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .row-song-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .row-btn-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .icon-action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .icon-action-btn.btn-remove:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    /* Switch flotante de modo */
+    .floating-mode-switch {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(14, 18, 28, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 30px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+    }
+    .floating-mode-switch button {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .floating-mode-switch button.active {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 12px var(--blood-red-glow);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================= -->
+  <!-- VISTA 1: OVERLAY TRANSPARENTE 9:16 (MELD STUDIO / OBS)        -->
+  <!-- ============================================================= -->
+  <div id="overlay-view" class="view-container active">
+    
+    <!-- Canvas 3D para esferas de avatar y confeti -->
+    <div id="three-canvas-container"></div>
+
+    <!-- Bordes luminosos -->
+    <div id="overlay-edge-glow" class="screen-edge-glow"></div>
+
+    <!-- MÓDULO 1: COLA DE CANCIONES Y REGLAS -->
+    <div id="module-overlay-queue" class="overlay-module-slot">
+      <div class="stream-glass-panel">
+        <div class="glass-panel-header">
+          <div class="glass-header-title">
+            <span>🎵</span>
+            <span>COLA DE REACCIONES</span>
+          </div>
+          <span id="overlay-queue-badge" class="glass-counter-badge">0 EN LISTA</span>
+        </div>
+        <div class="rules-ticker-banner">
+          <div>1. Sígueme y comenta: <strong>Escucha [Canción]</strong></div>
+          <div>2. Desbloquea: <strong>5 Rosas 🌹</strong> • <strong>10 Shares 🔄</strong> • <strong>1000 Likes ❤️</strong> • <strong>1 Corazón 🫰</strong></div>
+          <div class="rules-ticker-perks">⚡ +1 Puesto: Rosa x10 / Corazón x2 • 👑 VIP: Sombrero (#3) | Gafas (#2) | Money Gun (#1)</div>
+        </div>
+        <div class="queue-items-scroll" id="overlay-queue-items-list">
+          <!-- Elementos de la cola renderizados dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO 2: AHORA SONANDO (NOW PLAYING) -->
+    <div id="module-overlay-nowplaying" class="overlay-module-slot">
+      <div class="now-playing-pill" id="now-playing-pill-container" style="display: none;">
+        <div class="disc-animated-icon">💿</div>
+        <div class="now-playing-info">
+          <div class="now-tag-label">EN TURNO ACTUAL • REACCIONANDO AHORA</div>
+          <div class="now-song-name" id="now-song-title">-</div>
+          <div class="now-song-requester" id="now-song-user">Petición de: -</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO 3: CAJA DE COMENTARIOS TTS -->
+    <div id="module-overlay-tts" class="overlay-module-slot">
+      <div class="tts-comment-box" id="tts-popup-box">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD" alt="Avatar" class="tts-avatar" id="tts-avatar-img">
+        <div class="tts-text-col">
+          <div class="tts-header-row">
+            <span class="tts-username" id="tts-username-text">@Usuario</span>
+            <span class="tts-badge" id="tts-badge-type">💬 Chat</span>
+            <div class="voice-eq-bars" id="tts-voice-bars">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="tts-message-body" id="tts-comment-text">Mensaje del espectador...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO 4: ALERTAS ESPECIALES & MANOS DORADAS AL PUESTO #1 -->
+    <div id="module-overlay-alerts" class="overlay-module-slot">
+      <div class="golden-hands-stage" id="golden-hands-stage">
+        <div class="hands-banner-crown">👑 ¡ELEVADO AL 1ER PUESTO! 👑</div>
+        <div class="hands-song-card">
+          <div class="hands-song-title" id="hands-song-title">CANCIÓN</div>
+          <div class="hands-song-user" id="hands-song-user">@Usuario</div>
+        </div>
+        <div class="hands-svg-pair">
+          <svg class="hand-svg hand-left" viewBox="0 0 100 100" fill="none">
+            <path d="M50 85 C35 85, 20 70, 20 50 C20 40, 25 25, 30 15 C33 10, 38 12, 38 18 C38 30, 42 35, 42 20 C42 12, 48 10, 50 18 C52 28, 54 32, 56 18 C58 10, 64 12, 64 22 C64 34, 66 38, 70 28 C74 18, 80 22, 78 35 C75 55, 65 85, 50 85 Z" fill="#ffb800"/>
+          </svg>
+          <svg class="hand-svg hand-right" viewBox="0 0 100 100" fill="none">
+            <path d="M50 85 C35 85, 20 70, 20 50 C20 40, 25 25, 30 15 C33 10, 38 12, 38 18 C38 30, 42 35, 42 20 C42 12, 48 10, 50 18 C52 28, 54 32, 56 18 C58 10, 64 12, 64 22 C64 34, 66 38, 70 28 C74 18, 80 22, 78 35 C75 55, 65 85, 50 85 Z" fill="#ffb800"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- VISTA 2: PANEL DE CONTROL CON EMULADOR DE CELULAR DRAG & DROP -->
+  <!-- ============================================================= -->
+  <div id="panel-view" class="view-container">
+    
+    <!-- Navbar Superior -->
+    <header class="studio-navbar">
+      <div class="brand-cluster">
+        <div class="brand-logo">🔥</div>
+        <div class="brand-titles">
+          <h1>SLOW MD STREAM STUDIO</h1>
+          <p>Suite Unificada TikTok Live & Meld Studio</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <div class="connection-status-pill">
+          <span class="status-dot" id="status-indicator-dot"></span>
+          <span id="status-indicator-text">Desconectado</span>
+        </div>
+        <input type="text" id="streamer-username-input" placeholder="Usuario TikTok (ej. slowmdoficial)" style="padding: 7px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm); color: #fff; font-size: 12px; width: 170px;">
+        <button class="btn-nav btn-nav-primary" id="btn-toggle-connection">Conectar Live</button>
+        <button class="btn-nav btn-nav-secondary" onclick="window.open('/studio-unified.html?view=overlay', 'SlowMD_Overlay', 'width=450,height=800')">📺 Abrir Overlay OBS</button>
+      </div>
+    </header>
+
+    <!-- Workspace Principal -->
+    <main class="studio-workspace-grid">
+      
+      <!-- COLUMNA 1: EMULADOR INTERACTIVO DRAG & DROP -->
+      <section class="phone-emulator-column">
+        <div class="emulator-instructions-banner">
+          <strong>📱 Emulador Interactivo en Vivo:</strong> Arrastra los recuadros directamente sobre la pantalla de tu celular para ubicarlos exactamente donde quieras sin tapar tu cara ni el chat.
+        </div>
+
+        <div class="phone-device-frame">
+          <div class="phone-notch">
+            <div class="notch-camera"></div>
+          </div>
+          
+          <div class="phone-screen-canvas" id="emulator-screen-canvas">
+            <div class="screen-scrim"></div>
+
+            <!-- Módulo Arrastrable 1: Cola de Canciones -->
+            <div class="draggable-module-item" id="drag-module-queue" data-module="queue">
+              <div class="module-drag-header">
+                <span>🎵 Cola de Canciones</span>
+                <span>Arrastrar ✥</span>
+              </div>
+              <div class="module-drag-preview">
+                Lista de Peticiones & Reglas
+              </div>
+            </div>
+
+            <!-- Módulo Arrastrable 2: Now Playing -->
+            <div class="draggable-module-item" id="drag-module-nowplaying" data-module="nowPlaying">
+              <div class="module-drag-header">
+                <span>💿 Ahora Sonando</span>
+                <span>Arrastrar ✥</span>
+              </div>
+              <div class="module-drag-preview">
+                Banner Canción en Turno
+              </div>
+            </div>
+
+            <!-- Módulo Arrastrable 3: Comentarios TTS -->
+            <div class="draggable-module-item" id="drag-module-tts" data-module="tts">
+              <div class="module-drag-header">
+                <span>🎙️ Comentarios TTS</span>
+                <span>Arrastrar ✥</span>
+              </div>
+              <div class="module-drag-preview">
+                Subtítulo de Voz & Mensajes
+              </div>
+            </div>
+
+            <!-- Módulo Arrastrable 4: Alertas 3D / Manos Doradas -->
+            <div class="draggable-module-item" id="drag-module-alerts" data-module="alerts">
+              <div class="module-drag-header">
+                <span>👑 Alertas & Manos Doradas</span>
+                <span>Arrastrar ✥</span>
+              </div>
+              <div class="module-drag-preview">
+                Efectos 3D / Salto al #1
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; width: 100%; max-width: 380px;">
+          <button class="btn-nav btn-nav-secondary" style="flex: 1; justify-content: center;" id="btn-reset-layout">↺ Restablecer Posiciones</button>
+          <button class="btn-nav btn-nav-primary" style="flex: 1; justify-content: center;" id="btn-save-layout">💾 Guardar Diseño</button>
+        </div>
+      </section>
+
+      <!-- COLUMNA 2: GESTIÓN DE COLA, CONFIGURACIÓN DE REGLAS Y SIMULADOR -->
+      <section class="studio-controls-column">
+        
+        <!-- Tabs de control -->
+        <div class="studio-tabs-row">
+          <button class="studio-tab-btn active" data-tab="tab-queue">🎵 Cola de Canciones</button>
+          <button class="studio-tab-btn" data-tab="tab-simulator">🎮 Simulador TikTok</button>
+          <button class="studio-tab-btn" data-tab="tab-rules">⚙️ Reglas y Regalos</button>
+          <button class="studio-tab-btn" data-tab="tab-tts">🎙️ Voz TTS</button>
+        </div>
+
+        <!-- TAB 1: COLA DE CANCIONES -->
+        <div class="tab-content-panel active" id="tab-queue">
+          <div class="control-card">
+            <div class="card-title-row">
+              <h3>🎵 Canciones en Espera (<span id="panel-queue-count">0</span>)</h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-nav btn-nav-secondary" id="btn-clear-queue">Vaciar Cola</button>
+              </div>
+            </div>
+
+            <div class="panel-queue-list" id="panel-queue-container">
+              <!-- Elementos de la cola -->
+            </div>
+
+            <!-- Formulario agregar canción manual -->
+            <form id="form-add-manual" style="display: flex; gap: 8px; margin-top: 8px;">
+              <input type="text" id="manual-song-title" placeholder="Título de la canción..." required style="flex: 2; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm); color: #fff; font-size: 12px;">
+              <input type="text" id="manual-user-name" placeholder="Usuario..." style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm); color: #fff; font-size: 12px;">
+              <button type="submit" class="btn-nav btn-nav-primary">Agregar</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 2: SIMULADOR DE PRUEBAS -->
+        <div class="tab-content-panel" id="tab-simulator">
+          <div class="control-card">
+            <div class="card-title-row">
+              <h3>🎮 Simulador de Eventos TikTok Live</h3>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+              Haz clic en cualquiera de estos botones para probar en tiempo real las animaciones, la lectura de comentarios por voz TTS y el ordenamiento de la cola:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;">
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('chat_comentario')">💬 Comentario Chat</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('pedir_cancion')">🎵 Pedir Canción</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('nuevo_follower')">🌟 Nuevo Seguidor</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('rosas_5')">🌹 Rosa x5 (Desbloq)</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('corazon_x1')">🫰 Corazón x1 (Desbloq)</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('rosas_10')">🌹 Rosa x10 (+1 Puesto)</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('posicion_3')">🎩 Sombrero (Puesto #3)</button>
+              <button class="btn-nav btn-nav-secondary" onclick="simularEvento('posicion_2')">🕶️ Gafas (Puesto #2)</button>
+              <button class="btn-nav btn-nav-primary" onclick="simularEvento('posicion_1')">🔫 Money Gun (Puesto #1)</button>
+              <button class="btn-nav btn-nav-primary" onclick="simularEvento('likes_10000')">❤️ 10,000 Likes (Hito)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: REGLAS Y REGALOS -->
+        <div class="tab-content-panel" id="tab-rules">
+          <div class="control-card">
+            <div class="card-title-row">
+              <h3>⚙️ Configuración de Metas & Regalos</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">❤️ Likes Meta</label>
+                <input type="number" id="input-rules-likes" value="1000" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">🔄 Shares Meta</label>
+                <input type="number" id="input-rules-shares" value="10" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">🌹 Rosas Meta</label>
+                <input type="number" id="input-rules-roses" value="5" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #fde047;">🥇 Regalo para Puesto #1 (Money Gun)</label>
+                <input type="text" id="input-gift-top1" value="money gun" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #60a5fa;">🥈 Regalo para Puesto #2 (Gafas de sol)</label>
+                <input type="text" id="input-gift-top2" value="gafas de sol" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #fbbf24;">🥉 Regalo para Puesto #3 (Sombrero y bigote)</label>
+                <input type="text" id="input-gift-top3" value="sombrero y bigote" style="width: 100%; padding: 7px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; margin-top: 4px;">
+              </div>
+            </div>
+
+            <button class="btn-nav btn-nav-primary" style="margin-top: 10px; align-self: flex-start;" id="btn-save-rules-panel">Guardar Reglas</button>
+          </div>
+        </div>
+
+        <!-- TAB 4: CONFIGURACIÓN TTS -->
+        <div class="tab-content-panel" id="tab-tts">
+          <div class="control-card">
+            <div class="card-title-row">
+              <h3>🎙️ Ajustes de Voz TTS</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Voz Seleccionada</label>
+                <select id="select-tts-voice" style="width: 100%; padding: 8px; background: #161a29; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; margin-top: 4px;">
+                  <option value="google_hd_es">Google Español (HD Natural)</option>
+                  <option value="google_es_female">Google Español Femenino</option>
+                  <option value="google_es_male">Google Español Masculino</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Volumen</label>
+                <input type="range" id="range-tts-volume" min="0" max="1" step="0.05" value="1" style="width: 100%; margin-top: 4px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Velocidad de Lectura</label>
+                <input type="range" id="range-tts-rate" min="0.75" max="1.5" step="0.05" value="1" style="width: 100%; margin-top: 4px;">
+              </div>
+              <button class="btn-nav btn-nav-primary" style="margin-top: 6px; align-self: flex-start;" id="btn-save-tts-settings">Guardar Voz</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Switch Flotante de Vista Rápida -->
+  <div class="floating-mode-switch">
+    <span style="font-size: 11px; color: var(--text-muted);">VISTA:</span>
+    <button id="btn-switch-overlay" onclick="cambiarVista('overlay')">Overlay OBS</button>
+    <button id="btn-switch-panel" class="active" onclick="cambiarVista('panel')">Panel de Control</button>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- SCRIPTS & LÓGICA DE SINCRONIZACIÓN Y DRAG & DROP              -->
+  <!-- ============================================================= -->
+  <script>
+    // ESTADO MAESTRO DEL ESTUDIO
+    let state = {
+      queue: [],
+      history: [],
+      layout: {
+        queue: { x: 4, y: 12, width: 92, height: 32, visible: true },
+        nowPlaying: { x: 4, y: 45, width: 92, height: 9, visible: true },
+        tts: { x: 4, y: 64, width: 92, height: 18, visible: true },
+        alerts: { x: 4, y: 20, width: 92, height: 40, visible: true }
+      },
+      rules: {
+        likesReq: 1000,
+        sharesReq: 10,
+        rosesReq: 5,
+        giftCategories: {
+          desbloquear: ['rosa', 'corazón con los dedos', 'tik tok'],
+          subirPosicion: ['rosa x10', 'corazón dedos x2', 'mención x2'],
+          puesto3: ['sombrero y bigote'],
+          puesto2: ['gafas de sol'],
+          puesto1: ['money gun']
+        },
+        vipMinDiamonds: 100
+      },
+      tts: {
+        voiceURI: 'google_hd_es',
+        volume: 1.0,
+        rate: 1.0
+      },
+      status: 'disconnected',
+      username: ''
+    };
+
+    // WEBSOCKET DE TIEMPO REAL
+    let ws = null;
+    let wsReconnectTimer = null;
+
+    function conectarWebSocket() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${location.host}`;
+      
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          actualizarIndicadorConexion('connected');
+          ws.send(JSON.stringify({ action: 'getStatus' }));
+          ws.send(JSON.stringify({ action: 'getLayout' }));
+          ws.send(JSON.stringify({ action: 'getQueue' }));
+          ws.send(JSON.stringify({ action: 'getRules' }));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'STATUS') {
+              state.status = data.status;
+              state.username = data.username || state.username;
+              actualizarIndicadorConexion(data.status, data.username);
+            } else if (data.type === 'LAYOUT_UPDATE') {
+              if (data.layout) {
+                state.layout = { ...state.layout, ...data.layout };
+                aplicarLayoutAOverlay();
+                actualizarPosicionesEnEmulador();
+              }
+            } else if (data.type === 'QUEUE_UPDATE') {
+              state.queue = data.queue || [];
+              state.history = data.history || [];
+              renderizarCola();
+              if (data.sound) playTone(data.sound);
+              if (data.eventType === 'hands_top1') {
+                mostrarManosDoradas(data.songTitle || 'CANCIÓN TOP 1', data.songUser || '@VIP');
+              }
+            } else if (data.type === 'RULES_UPDATE') {
+              if (data.rules) {
+                state.rules = { ...state.rules, ...data.rules };
+                poblarInputsReglas();
+              }
+            } else if (data.type === 'TTS_CONFIG_UPDATE') {
+              if (data.config) state.tts = { ...state.tts, ...data.config };
+            } else if (data.type === 'CHAT') {
+              mostrarPopupTTS(data.user, data.comment, 'chat', data.avatarUrl);
+              hablarTTS(data.user + ' dice: ' + data.comment);
+            } else if (data.type === 'GIFT') {
+              mostrarPopupTTS(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
+              hablarTTS(`¡Gracias a ${data.user} por ${data.giftName}!`);
+            } else if (data.type === 'FOLLOW') {
+              lanzarEsferasAvatar3D(data.avatarUrl);
+              mostrarPopupTTS(data.user, '¡Comenzó a seguirte!', 'follow', data.avatarUrl);
+              hablarTTS(`¡Bienvenido ${data.user}, gracias por seguirme!`);
+            } else if (data.type === 'LIKE') {
+              if (data.total && data.total % 10000 === 0) {
+                lanzarConfetiCorazones3D();
+                activarBordeLuminoso('glow-gold');
+              }
+            }
+          } catch (e) {
+            console.error('Error parseando mensaje WS:', e);
+          }
+        };
+
+        ws.onclose = () => {
+          actualizarIndicadorConexion('disconnected');
+          clearTimeout(wsReconnectTimer);
+          wsReconnectTimer = setTimeout(conectarWebSocket, 2000);
+        };
+      } catch (err) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = setTimeout(conectarWebSocket, 3000);
+      }
+    }
+
+    function actualizarIndicadorConexion(status, username) {
+      const dot = document.getElementById('status-indicator-dot');
+      const text = document.getElementById('status-indicator-text');
+      const btn = document.getElementById('btn-toggle-connection');
+      if (!dot || !text) return;
+
+      dot.className = 'status-dot ' + status;
+      if (status === 'connected') {
+        text.textContent = 'En Vivo: @' + (username || state.username);
+        if (btn) btn.textContent = 'Desconectar';
+      } else if (status === 'connecting') {
+        text.textContent = 'Conectando a @' + (username || state.username) + '...';
+        if (btn) btn.textContent = 'Conectando...';
+      } else {
+        text.textContent = 'Desconectado';
+        if (btn) btn.textContent = 'Conectar Live';
+      }
+    }
+
+    // APLICAR LAYOUT A LOS SLOTS DEL OVERLAY (Porcentajes exactos de pantalla)
+    function aplicarLayoutAOverlay() {
+      const modules = ['queue', 'nowPlaying', 'tts', 'alerts'];
+      modules.forEach(modKey => {
+        const slotEl = document.getElementById(`module-overlay-${modKey.toLowerCase()}`);
+        const config = state.layout[modKey];
+        if (slotEl && config) {
+          slotEl.style.left = `${config.x}%`;
+          slotEl.style.top = `${config.y}%`;
+          slotEl.style.width = `${config.width}%`;
+          slotEl.style.height = `${config.height}%`;
+          slotEl.style.display = config.visible !== false ? 'flex' : 'none';
+        }
+      });
+    }
+
+    // ACTUALIZAR POSICIONES EN EL EMULADOR DRAG & DROP
+    function actualizarPosicionesEnEmulador() {
+      const modules = ['queue', 'nowPlaying', 'tts', 'alerts'];
+      modules.forEach(modKey => {
+        const itemEl = document.getElementById(`drag-module-${modKey.toLowerCase()}`);
+        const config = state.layout[modKey];
+        if (itemEl && config) {
+          itemEl.style.left = `${config.x}%`;
+          itemEl.style.top = `${config.y}%`;
+          itemEl.style.width = `${config.width}%`;
+          itemEl.style.height = `${config.height}%`;
+        }
+      });
+    }
+
+    // IMPLEMENTACIÓN DRAG & DROP EN EL EMULADOR DE CELULAR
+    function inicializarDragAndDropEmulador() {
+      const canvas = document.getElementById('emulator-screen-canvas');
+      if (!canvas) return;
+
+      let activeItem = null;
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
+
+      const items = canvas.querySelectorAll('.draggable-module-item');
+      items.forEach(item => {
+        item.addEventListener('mousedown', (e) => {
+          activeItem = item;
+          item.classList.add('dragging');
+          
+          const rect = canvas.getBoundingClientRect();
+          startX = e.clientX;
+          startY = e.clientY;
+
+          const itemRect = item.getBoundingClientRect();
+          initialLeft = ((itemRect.left - rect.left) / rect.width) * 100;
+          initialTop = ((itemRect.top - rect.top) / rect.height) * 100;
+
+          e.preventDefault();
+        });
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!activeItem) return;
+        const rect = canvas.getBoundingClientRect();
+        const deltaXPercent = ((e.clientX - startX) / rect.width) * 100;
+        const deltaYPercent = ((e.clientY - startY) / rect.height) * 100;
+
+        let newLeft = Math.max(0, Math.min(100 - parseFloat(activeItem.style.width || 90), initialLeft + deltaXPercent));
+        let newTop = Math.max(0, Math.min(100 - parseFloat(activeItem.style.height || 20), initialTop + deltaYPercent));
+
+        activeItem.style.left = `${newLeft.toFixed(2)}%`;
+        activeItem.style.top = `${newTop.toFixed(2)}%`;
+
+        const modName = activeItem.dataset.module;
+        if (modName && state.layout[modName]) {
+          state.layout[modName].x = parseFloat(newLeft.toFixed(2));
+          state.layout[modName].y = parseFloat(newTop.toFixed(2));
+          aplicarLayoutAOverlay();
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (activeItem) {
+          activeItem.classList.remove('dragging');
+          activeItem = null;
+          guardarLayoutServidor();
+        }
+      });
+    }
+
+    function guardarLayoutServidor() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateLayout',
+          layout: state.layout
+        }));
+      }
+    }
+
+    // RENDERIZADO DE LA COLA EN OVERLAY Y PANEL
+    function renderizarCola() {
+      const overlayList = document.getElementById('overlay-queue-items-list');
+      const overlayBadge = document.getElementById('overlay-queue-badge');
+      const nowSection = document.getElementById('now-playing-pill-container');
+      const nowTitle = document.getElementById('now-song-title');
+      const nowUser = document.getElementById('now-song-user');
+      const panelList = document.getElementById('panel-queue-container');
+      const panelCount = document.getElementById('panel-queue-count');
+
+      if (overlayBadge) overlayBadge.textContent = `${state.queue.length} EN LISTA`;
+      if (panelCount) panelCount.textContent = state.queue.length;
+
+      // Now Playing (#1)
+      if (state.queue.length > 0 && state.queue[0].status === 'unlocked') {
+        const top = state.queue[0];
+        if (nowSection) nowSection.style.display = 'flex';
+        if (nowTitle) nowTitle.textContent = top.title;
+        if (nowUser) nowUser.textContent = `Petición de: ${top.user}`;
+      } else {
+        if (nowSection) nowSection.style.display = 'none';
+      }
+
+      // Overlay Items
+      if (overlayList) {
+        if (state.queue.length === 0) {
+          overlayList.innerHTML = `<div style="text-align:center; padding:18px 8px; font-size:11px; color:#94a3b8;">La cola está vacía. ¡Sé el primero en pedir!</div>`;
+        } else {
+          overlayList.innerHTML = state.queue.map((song, idx) => {
+            const isFirst = (idx === 0);
+            const isLocked = (song.status === 'locked');
+            return `
+              <div class="song-pill-item ${isFirst ? 'is-first' : ''} ${song.priority === 'vip' ? 'is-vip' : ''}">
+                <span class="song-pos-badge">#${idx + 1}</span>
+                <div class="song-details-col">
+                  <div class="song-title-row">${escapeHtml(song.title)}</div>
+                  <div class="song-user-row">
+                    <span>${escapeHtml(song.user)}</span>
+                    <span class="song-status-tag ${isLocked ? 'tag-locked' : 'tag-unlocked'}">${isLocked ? '🔒 Bloqueada' : '🔓 Lista'}</span>
+                    ${song.gift ? `<span style="color:#fde047;">🎁 ${escapeHtml(song.gift)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Panel Items
+      if (panelList) {
+        if (state.queue.length === 0) {
+          panelList.innerHTML = `<div style="text-align:center; padding:16px; font-size:12px; color:#64748b;">No hay canciones pendientes.</div>`;
+        } else {
+          panelList.innerHTML = state.queue.map((song, idx) => {
+            return `
+              <div class="panel-queue-row ${idx === 0 ? 'is-current' : ''}">
+                <div class="row-meta-col">
+                  <div class="row-song-title">#${idx + 1} ${escapeHtml(song.title)}</div>
+                  <div class="row-song-subtitle">
+                    <span>${escapeHtml(song.user)}</span>
+                    <span style="color:${song.status === 'locked' ? '#f87171' : '#4ade80'}">${song.status === 'locked' ? '🔒 Bloqueada' : '🔓 Desbloqueada'}</span>
+                  </div>
+                </div>
+                <div class="row-btn-actions">
+                  <button class="icon-action-btn" onclick="moverCancion(${idx}, -1)" title="Subir">▲</button>
+                  <button class="icon-action-btn" onclick="moverCancion(${idx}, 1)" title="Bajar">▼</button>
+                  <button class="icon-action-btn btn-remove" onclick="eliminarCancion(${idx})" title="Eliminar">✕</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function moverCancion(index, dir) {
+      const newIdx = index + dir;
+      if (newIdx < 0 || newIdx >= state.queue.length) return;
+      const [item] = state.queue.splice(index, 1);
+      state.queue.splice(newIdx, 0, item);
+      sincronizarColaServidor();
+    }
+
+    function eliminarCancion(index) {
+      state.queue.splice(index, 1);
+      sincronizarColaServidor();
+    }
+
+    function sincronizarColaServidor() {
+      renderizarCola();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'syncQueue',
+          queue: state.queue,
+          history: state.history
+        }));
+      }
+    }
+
+    // CAJA DE COMENTARIOS TTS Y ANIMACIÓN EN OVERLAY
+    let ttsHideTimer = null;
+    function mostrarPopupTTS(user, message, type = 'chat', avatarUrl = '') {
+      const box = document.getElementById('tts-popup-box');
+      const userEl = document.getElementById('tts-username-text');
+      const badgeEl = document.getElementById('tts-badge-type');
+      const textEl = document.getElementById('tts-comment-text');
+      const avatarEl = document.getElementById('tts-avatar-img');
+
+      if (!box) return;
+      if (userEl) userEl.textContent = user || '@Usuario';
+      if (textEl) textEl.textContent = message || '';
+      if (avatarEl && avatarUrl) avatarEl.src = avatarUrl;
+      if (badgeEl) {
+        badgeEl.textContent = type === 'gift' ? '🎁 Regalo' : (type === 'follow' ? '🌟 Seguidor' : '💬 Chat');
+      }
+
+      box.classList.add('show');
+      clearTimeout(ttsHideTimer);
+      ttsHideTimer = setTimeout(() => {
+        box.classList.remove('show');
+      }, 7000);
+    }
+
+    // MANOS DORADAS AL PUESTO #1
+    let handsTimer = null;
+    function mostrarManosDoradas(title, user) {
+      const stage = document.getElementById('golden-hands-stage');
+      const titleEl = document.getElementById('hands-song-title');
+      const userEl = document.getElementById('hands-song-user');
+      if (!stage) return;
+
+      if (titleEl) titleEl.textContent = (title || 'CANCIÓN').toUpperCase();
+      if (userEl) userEl.textContent = user || '@Usuario';
+
+      stage.classList.add('active');
+      playTone('top1');
+      activarBordeLuminoso('glow-gold');
+
+      clearTimeout(handsTimer);
+      handsTimer = setTimeout(() => {
+        stage.classList.remove('active');
+      }, 3500);
+    }
+
+    function activarBordeLuminoso(clase) {
+      const glow = document.getElementById('overlay-edge-glow');
+      if (!glow) return;
+      glow.className = 'screen-edge-glow ' + clase;
+      setTimeout(() => {
+        glow.className = 'screen-edge-glow';
+      }, 3000);
+    }
+
+    // VOZ TTS DE GOOGLE (VÍA /api/tts DEL SERVIDOR)
+    function hablarTTS(texto) {
+      if (!texto) return;
+      try {
+        const audio = new Audio(`/api/tts?q=${encodeURIComponent(texto.slice(0, 200))}&lang=es`);
+        audio.volume = state.tts.volume || 1;
+        audio.playbackRate = state.tts.rate || 1;
+        audio.play().catch(e => console.warn('Autoplay TTS bloqueado:', e));
+      } catch (err) {}
+    }
+
+    // EFECTOS DE SONIDO WEB AUDIO API
+    let audioCtx = null;
+    function playTone(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'top1') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.35);
+          });
+        } else if (type === 'subir') {
+          [587.33, 880.00].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+            gain.gain.setValueAtTime(0.2, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.25);
+          });
+        }
+      } catch (e) {}
+    }
+
+    // THREE.JS: ESFERAS 3D CAYENDO (SEGUIDORES) Y CONFETI (HITO 10K LIKES)
+    let scene, camera, renderer;
+    let sphereMeshes = [];
+    let confettiParticles = null;
+
+    function inicializarThreeJS() {
+      const container = document.getElementById('three-canvas-container');
+      if (!container || typeof THREE === 'undefined') return;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.z = 25;
+
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xff0f3b, 1.2);
+      dirLight.position.set(5, 10, 7);
+      scene.add(dirLight);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animarThreeJS();
+    }
+
+    function animarThreeJS() {
+      requestAnimationFrame(animarThreeJS);
+
+      // Físicas de esferas
+      for (let i = sphereMeshes.length - 1; i >= 0; i--) {
+        const s = sphereMeshes[i];
+        s.vy -= 0.35;
+        s.position.x += s.vx;
+        s.position.y += s.vy;
+        s.rotation.x += 0.05;
+
+        if (s.position.y <= -14) {
+          s.position.y = -14;
+          s.vy = -s.vy * 0.65;
+          s.bounces = (s.bounces || 0) + 1;
+        }
+
+        if (s.bounces > 4) {
+          s.material.opacity -= 0.03;
+          if (s.material.opacity <= 0) {
+            scene.remove(s);
+            sphereMeshes.splice(i, 1);
+          }
+        }
+      }
+
+      // Confeti
+      if (confettiParticles) {
+        confettiParticles.rotation.y += 0.01;
+        const pos = confettiParticles.geometry.attributes.position.array;
+        for (let i = 1; i < pos.length; i += 3) {
+          pos[i] -= 0.15;
+          if (pos[i] < -20) pos[i] = 20;
+        }
+        confettiParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function lanzarEsferasAvatar3D(avatarUrl) {
+      if (!scene) return;
+      const loader = new THREE.TextureLoader();
+      loader.load(avatarUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD', (tex) => {
+        for (let i = 0; i < 14; i++) {
+          const geom = new THREE.SphereGeometry(1.2, 24, 24);
+          const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, opacity: 1 });
+          const mesh = new THREE.Mesh(geom, mat);
+          mesh.position.set((Math.random() - 0.5) * 16, 16 + Math.random() * 8, (Math.random() - 0.5) * 6);
+          mesh.vx = (Math.random() - 0.5) * 0.3;
+          mesh.vy = -0.2 - Math.random() * 0.3;
+          scene.add(mesh);
+          sphereMeshes.push(mesh);
+        }
+      });
+    }
+
+    function lanzarConfetiCorazones3D() {
+      if (!scene) return;
+      if (confettiParticles) scene.remove(confettiParticles);
+
+      const count = 180;
+      const geom = new THREE.BufferGeometry();
+      const pos = [];
+      for (let i = 0; i < count; i++) {
+        pos.push((Math.random() - 0.5) * 30, Math.random() * 25 - 5, (Math.random() - 0.5) * 15);
+      }
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({ color: 0xff0f3b, size: 0.6, transparent: true });
+      confettiParticles = new THREE.Points(geom, mat);
+      scene.add(confettiParticles);
+    }
+
+    // SIMULADOR
+    function simularEvento(tipo) {
+      if (tipo === 'chat_comentario') {
+        const comentarios = [
+          '¡Que buen tema hermano!',
+          'Saludos desde Colombia!',
+          'Aquí activo en el stream 🔥',
+          'Suelta ese remix duro'
+        ];
+        const randomTxt = comentarios[Math.floor(Math.random() * comentarios.length)];
+        mostrarPopupTTS('Arsione_Music', randomTxt, 'chat');
+        hablarTTS(`Arsione_Music dice: ${randomTxt}`);
+      } else if (tipo === 'pedir_cancion') {
+        const canciones = ['Bad Bunny - Monaco', 'Feid - Luna', 'Duki - Givenchy', 'Anuel AA - Más Rica Que Ayer'];
+        const cancion = canciones[Math.floor(Math.random() * canciones.length)];
+        state.queue.push({
+          id: 'sim_' + Date.now(),
+          title: cancion,
+          user: 'Fan_Musica',
+          status: 'locked',
+          priority: 'normal'
+        });
+        sincronizarColaServidor();
+        mostrarPopupTTS('Fan_Musica', `Escucha ${cancion}`, 'chat');
+        hablarTTS(`Fan_Musica pidió la canción: ${cancion}`);
+      } else if (tipo === 'nuevo_follower') {
+        lanzarEsferasAvatar3D();
+        mostrarPopupTTS('NuevoSeguidor_VIP', '¡Comenzó a seguirte!', 'follow');
+        hablarTTS('¡Gracias a NuevoSeguidor_VIP por seguirme!');
+      } else if (tipo === 'rosas_5') {
+        if (state.queue.length > 0) {
+          state.queue[0].status = 'unlocked';
+          sincronizarColaServidor();
+          mostrarPopupTTS('DonadorRosa', 'Envió 5 Rosas 🌹 (¡Canción Desbloqueada!)', 'gift');
+          hablarTTS('¡DonadorRosa desbloqueó su canción con 5 rosas!');
+        }
+      } else if (tipo === 'corazon_x1') {
+        if (state.queue.length > 0) {
+          state.queue[0].status = 'unlocked';
+          sincronizarColaServidor();
+          mostrarPopupTTS('FanCorazon', 'Envió Corazón con los dedos 🫰 (¡Desbloqueada!)', 'gift');
+          hablarTTS('¡Canción desbloqueada con un corazón con los dedos!');
+        }
+      } else if (tipo === 'rosas_10') {
+        if (state.queue.length > 1) {
+          moverCancion(1, -1);
+          mostrarPopupTTS('FanVeloz', 'Envió 10 Rosas 🌹 (¡Subió 1 Puesto!)', 'gift');
+          hablarTTS('¡10 rosas enviadas, subió una posición!');
+        }
+      } else if (tipo === 'posicion_3') {
+        state.queue.splice(Math.min(2, state.queue.length), 0, {
+          id: 'sim_pos3_' + Date.now(),
+          title: 'Tema Sombrero y Bigote',
+          user: 'VIP_Tercero',
+          status: 'unlocked',
+          priority: 'vip'
+        });
+        sincronizarColaServidor();
+        mostrarPopupTTS('VIP_Tercero', 'Envió Sombrero y Bigote 🎩 (¡Pasa al Puesto #3!)', 'gift');
+        hablarTTS('¡VIP_Tercero envió sombrero y pasó al puesto 3!');
+      } else if (tipo === 'posicion_2') {
+        state.queue.splice(Math.min(1, state.queue.length), 0, {
+          id: 'sim_pos2_' + Date.now(),
+          title: 'Tema Gafas de Sol',
+          user: 'VIP_Segundo',
+          status: 'unlocked',
+          priority: 'vip'
+        });
+        sincronizarColaServidor();
+        mostrarPopupTTS('VIP_Segundo', 'Envió Gafas de Sol 🕶️ (¡Pasa al Puesto #2!)', 'gift');
+        hablarTTS('¡VIP_Segundo envió gafas y pasó al puesto 2!');
+      } else if (tipo === 'posicion_1') {
+        const nueva = {
+          id: 'sim_pos1_' + Date.now(),
+          title: 'Money Gun Supreme',
+          user: 'Donador_MVP',
+          status: 'unlocked',
+          priority: 'vip'
+        };
+        state.queue.unshift(nueva);
+        sincronizarColaServidor();
+        mostrarManosDoradas(nueva.title, nueva.user);
+        mostrarPopupTTS('Donador_MVP', '¡Envió Money Gun 🔫 y saltó al Puesto #1!', 'gift');
+        hablarTTS('¡Increíble! ¡Donador_MVP envió Money Gun y saltó al puesto número 1!');
+      } else if (tipo === 'likes_10000') {
+        lanzarConfetiCorazones3D();
+        activarBordeLuminoso('glow-gold');
+        mostrarPopupTTS('Comunidad Live', '🎉 ¡Llegamos a 10,000 Likes!', 'chat');
+        hablarTTS('¡Felicidades mi gente, alcanzamos la meta de 10 mil likes!');
+      }
+    }
+
+    // ALTERNAR VISTAS (OVERLAY VS PANEL)
+    function cambiarVista(vista) {
+      document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(vista === 'overlay' ? 'overlay-view' : 'panel-view');
+      if (target) target.classList.add('active');
+
+      const btnOv = document.getElementById('btn-switch-overlay');
+      const btnPa = document.getElementById('btn-switch-panel');
+      if (btnOv) btnOv.classList.toggle('active', vista === 'overlay');
+      if (btnPa) btnPa.classList.toggle('active', vista === 'panel');
+    }
+
+    function poblarInputsReglas() {
+      const elLikes = document.getElementById('input-rules-likes');
+      const elShares = document.getElementById('input-rules-shares');
+      const elRoses = document.getElementById('input-rules-roses');
+      if (elLikes) elLikes.value = state.rules.likesReq;
+      if (elShares) elShares.value = state.rules.sharesReq;
+      if (elRoses) elRoses.value = state.rules.rosesReq;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
+    }
+
+    // INICIALIZACIÓN GENERAL AL CARGAR DOM
+    window.addEventListener('DOMContentLoaded', () => {
+      // Detección de vista por parámetro URL: ?view=overlay o ?view=panel
+      const urlParams = new URLSearchParams(window.location.search);
+      const viewMode = urlParams.get('view') || 'panel';
+      cambiarVista(viewMode);
+
+      inicializarThreeJS();
+      inicializarDragAndDropEmulador();
+      conectarWebSocket();
+
+      // Botón conectar/desconectar TikTok
+      const btnConn = document.getElementById('btn-toggle-connection');
+      const userInput = document.getElementById('streamer-username-input');
+      if (btnConn && userInput) {
+        btnConn.addEventListener('click', () => {
+          const user = userInput.value.trim() || state.username || 'slowmdoficial';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            if (state.status === 'connected') {
+              ws.send(JSON.stringify({ action: 'disconnect' }));
+            } else {
+              ws.send(JSON.stringify({ action: 'connect', username: user }));
+            }
+          }
+        });
+      }
+
+      // Tabs del Panel
+      document.querySelectorAll('.studio-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.studio-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          const target = document.getElementById(btn.dataset.tab);
+          if (target) target.classList.add('active');
+        });
+      });
+
+      // Botón guardar layout
+      const btnSaveLayout = document.getElementById('btn-save-layout');
+      if (btnSaveLayout) {
+        btnSaveLayout.addEventListener('click', () => {
+          guardarLayoutServidor();
+          alert('✅ ¡Diseño y posiciones guardadas correctamente!');
+        });
+      }
+
+      // Botón reset layout
+      const btnResetLayout = document.getElementById('btn-reset-layout');
+      if (btnResetLayout) {
+        btnResetLayout.addEventListener('click', () => {
+          state.layout = {
+            queue: { x: 4, y: 12, width: 92, height: 32, visible: true },
+            nowPlaying: { x: 4, y: 45, width: 92, height: 9, visible: true },
+            tts: { x: 4, y: 64, width: 92, height: 18, visible: true },
+            alerts: { x: 4, y: 20, width: 92, height: 40, visible: true }
+          };
+          aplicarLayoutAOverlay();
+          actualizarPosicionesEnEmulador();
+          guardarLayoutServidor();
+        });
+      }
+
+      // Formulario agregar canción manual
+      const formManual = document.getElementById('form-add-manual');
+      if (formManual) {
+        formManual.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const title = document.getElementById('manual-song-title').value.trim();
+          const user = document.getElementById('manual-user-name').value.trim() || '@Admin';
+          if (title) {
+            state.queue.push({
+              id: 'manual_' + Date.now(),
+              title: title,
+              user: user,
+              status: 'unlocked',
+              priority: 'normal'
+            });
+            sincronizarColaServidor();
+            document.getElementById('manual-song-title').value = '';
+          }
+        });
+      }
+
+      // Vaciar cola
+      const btnClear = document.getElementById('btn-clear-queue');
+      if (btnClear) {
+        btnClear.addEventListener('click', () => {
+          if (confirm('¿Vaciar toda la cola de canciones?')) {
+            state.queue = [];
+            sincronizarColaServidor();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
