@@ -1484,16 +1484,28 @@
         <div class="tab-content-panel" id="tab-tts">
           <div class="control-card">
             <div class="card-title-row">
-              <h3>🎙️ Ajustes de Voz TTS</h3>
+              <h3>🎙️ Ajustes de Voz TTS (Google HD)</h3>
             </div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <div>
-                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Voz Seleccionada</label>
+                <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Voz Seleccionada (Solo Google HD - Sin voz genérica)</label>
                 <select id="select-tts-voice" style="width: 100%; padding: 8px; background: #161a29; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; margin-top: 4px;">
-                  <option value="google_hd_es">Google Español (HD Natural)</option>
+                  <option value="google_hd_es">Google Español (HD Natural - Recomendada)</option>
                   <option value="google_es_female">Google Español Femenino</option>
                   <option value="google_es_male">Google Español Masculino</option>
                 </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #00f2fe;">🔊 Salida de Audio (Evita que suene doble o eco)</label>
+                <select id="select-tts-output" style="width: 100%; padding: 8px; background: #161a29; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; margin-top: 4px;">
+                  <option value="overlay" selected>Solo en Overlay (TikTok Live Studio) [Recomendado]</option>
+                  <option value="panel">Solo en Panel de Control (Navegador Chrome/Edge)</option>
+                  <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
+                  <option value="none">Silenciar Voz (Desactivado)</option>
+                </select>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                  🛡️ <em>Si tienes abierto el panel en Chrome y el link del overlay en TikTok Studio, déjalo en <strong>"Solo en Overlay"</strong> para que el navegador no repita la voz.</em>
+                </p>
               </div>
               <div>
                 <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Volumen</label>
@@ -1503,7 +1515,7 @@
                 <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Velocidad de Lectura</label>
                 <input type="range" id="range-tts-rate" min="0.75" max="1.5" step="0.05" value="1" style="width: 100%; margin-top: 4px;">
               </div>
-              <button class="btn-nav btn-nav-primary" style="margin-top: 6px; align-self: flex-start;" id="btn-save-tts-settings">Guardar Voz</button>
+              <button class="btn-nav btn-nav-primary" style="margin-top: 6px; align-self: flex-start;" id="btn-save-tts-settings">Guardar Ajustes de Voz</button>
             </div>
           </div>
         </div>
@@ -1524,6 +1536,35 @@
   <!-- SCRIPTS & LÓGICA DE SINCRONIZACIÓN Y DRAG & DROP              -->
   <!-- ============================================================= -->
   <script>
+    // BLOQUEAR Y ANULAR TOTALMENTE LA SÍNTESIS NATIVA DEL SISTEMA / TIKTOK STUDIO (SABINA/HELENA ROBÓTICA)
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak = function() {
+          try { window.speechSynthesis.cancel(); } catch(e) {}
+        };
+        try {
+          Object.defineProperty(window, 'speechSynthesis', {
+            get: function() {
+              return {
+                speak: function() { try { window.speechSynthesis.cancel(); } catch(e) {} },
+                cancel: function() {},
+                pause: function() {},
+                resume: function() {},
+                getVoices: function() { return []; },
+                paused: false,
+                pending: false,
+                speaking: false
+              };
+            },
+            configurable: true
+          });
+        } catch(e) {}
+      } catch(e) {}
+    }
+
+    let currentViewMode = 'panel';
+
     // ESTADO MAESTRO DEL ESTUDIO
     let state = {
       queue: [],
@@ -1549,6 +1590,7 @@
       },
       tts: {
         voiceURI: 'google_hd_es',
+        audioOutput: 'overlay',
         volume: 1.0,
         rate: 1.0
       },
@@ -1608,7 +1650,10 @@
                 poblarInputsReglas();
               }
             } else if (data.type === 'TTS_CONFIG_UPDATE') {
-              if (data.config) state.tts = { ...state.tts, ...data.config };
+              if (data.config) {
+                state.tts = { ...state.tts, ...data.config };
+                poblarInputsTTS();
+              }
             } else if (data.type === 'CHAT') {
               mostrarPopupTTS(data.user, data.comment, 'chat', data.avatarUrl);
               hablarTTS(data.user + ' dice: ' + data.comment);
@@ -2151,16 +2196,37 @@
         .trim();
     }
 
-    // VOZ TTS DE GOOGLE (VÍA /api/tts DEL SERVIDOR) - SIN LEER EMOJIS
+    let currentTtsAudio = null;
+
+    // VOZ TTS DE GOOGLE (VÍA /api/tts DEL SERVIDOR) - SIN LEER EMOJIS NI VOZ NATIVA ROBÓTICA
     function hablarTTS(texto) {
       if (!texto) return;
+
+      // Filtro de salida para evitar eco o doble voz entre el panel de control y el overlay de TikTok Studio
+      const outputMode = state.tts?.audioOutput || 'overlay';
+      if (outputMode === 'none') return;
+      if (outputMode === 'overlay' && currentViewMode !== 'overlay') return;
+      if (outputMode === 'panel' && currentViewMode !== 'panel') return;
+
       const textoLimpio = limpiarEmojis(texto);
       if (!textoLimpio || textoLimpio.replace(/^@?[a-zA-Z0-9_.\s]+(dice|envió|pidió):?\s*$/i, '').trim() === '') return;
+
+      // Cancelar cualquier síntesis nativa genérica
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+      }
+
+      // Detener audio previo si estuviese reproduciéndose
+      if (currentTtsAudio) {
+        try { currentTtsAudio.pause(); } catch(e) {}
+        currentTtsAudio = null;
+      }
+
       try {
-        const audio = new Audio(`/api/tts?q=${encodeURIComponent(textoLimpio.slice(0, 200))}&lang=es`);
-        audio.volume = state.tts.volume || 1;
-        audio.playbackRate = state.tts.rate || 1;
-        audio.play().catch(e => console.warn('Autoplay TTS bloqueado:', e));
+        currentTtsAudio = new Audio(`/api/tts?q=${encodeURIComponent(textoLimpio.slice(0, 200))}&lang=es`);
+        currentTtsAudio.volume = state.tts?.volume !== undefined ? Number(state.tts.volume) : 1;
+        currentTtsAudio.playbackRate = state.tts?.rate !== undefined ? Number(state.tts.rate) : 1;
+        currentTtsAudio.play().catch(e => console.warn('Autoplay TTS bloqueado:', e));
       } catch (err) {}
     }
 
@@ -2414,6 +2480,7 @@
 
     // ALTERNAR VISTAS (OVERLAY VS PANEL)
     function cambiarVista(vista) {
+      currentViewMode = vista;
       document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
       const target = document.getElementById(vista === 'overlay' ? 'overlay-view' : 'panel-view');
       if (target) target.classList.add('active');
@@ -2431,6 +2498,17 @@
       if (elLikes) elLikes.value = state.rules.likesReq;
       if (elShares) elShares.value = state.rules.sharesReq;
       if (elRoses) elRoses.value = state.rules.rosesReq;
+    }
+
+    function poblarInputsTTS() {
+      const selVoice = document.getElementById('select-tts-voice');
+      const selOutput = document.getElementById('select-tts-output');
+      const rangeVol = document.getElementById('range-tts-volume');
+      const rangeRate = document.getElementById('range-tts-rate');
+      if (selVoice && state.tts?.voiceURI) selVoice.value = state.tts.voiceURI;
+      if (selOutput && state.tts?.audioOutput) selOutput.value = state.tts.audioOutput;
+      if (rangeVol && state.tts?.volume !== undefined) rangeVol.value = state.tts.volume;
+      if (rangeRate && state.tts?.rate !== undefined) rangeRate.value = state.tts.rate;
     }
 
     function escapeHtml(str) {
@@ -2540,6 +2618,54 @@
             state.queue = [];
             sincronizarColaServidor();
           }
+        });
+      }
+
+      // Guardar Ajustes TTS
+      const btnSaveTTS = document.getElementById('btn-save-tts-settings');
+      if (btnSaveTTS) {
+        btnSaveTTS.addEventListener('click', () => {
+          const selVoice = document.getElementById('select-tts-voice');
+          const selOutput = document.getElementById('select-tts-output');
+          const rangeVol = document.getElementById('range-tts-volume');
+          const rangeRate = document.getElementById('range-tts-rate');
+
+          state.tts = {
+            ...state.tts,
+            voiceURI: selVoice ? selVoice.value : 'google_hd_es',
+            audioOutput: selOutput ? selOutput.value : 'overlay',
+            volume: rangeVol ? parseFloat(rangeVol.value) : 1.0,
+            rate: rangeRate ? parseFloat(rangeRate.value) : 1.0
+          };
+
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              action: 'updateTTSConfig',
+              config: state.tts
+            }));
+          }
+          alert('✅ ¡Ajustes de voz guardados correctamente!');
+        });
+      }
+
+      // Guardar Reglas de Regalos
+      const btnSaveRules = document.getElementById('btn-save-rules-panel');
+      if (btnSaveRules) {
+        btnSaveRules.addEventListener('click', () => {
+          const elLikes = document.getElementById('input-rules-likes');
+          const elShares = document.getElementById('input-rules-shares');
+          const elRoses = document.getElementById('input-rules-roses');
+          state.rules.likesReq = Number(elLikes?.value) || 1000;
+          state.rules.sharesReq = Number(elShares?.value) || 10;
+          state.rules.rosesReq = Number(elRoses?.value) || 5;
+
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              action: 'updateRules',
+              rules: state.rules
+            }));
+          }
+          alert('✅ ¡Reglas de regalos guardadas!');
         });
       }
     });
