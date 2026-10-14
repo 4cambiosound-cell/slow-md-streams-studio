@@ -444,6 +444,164 @@
       border-color: var(--blood-red);
       box-shadow: 0 0 15px rgba(255, 15, 59, 0.2);
     }
+    .queue-row.selected-song {
+      border-color: #38bdf8 !important;
+      background: rgba(56, 189, 248, 0.12) !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25) !important;
+    }
+
+    /* BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS EN PANEL */
+    .panel-player-bar {
+      background: linear-gradient(180deg, rgba(26, 32, 53, 0.6) 0%, rgba(15, 18, 30, 0.8) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .player-bar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .player-current-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+      flex: 1;
+    }
+    .player-current-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+    }
+    .player-current-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-status-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .player-status-badge.unlocked {
+      background: rgba(34, 197, 94, 0.18);
+      border: 1px solid #22c55e;
+      color: #4ade80;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+    .player-status-badge.locked {
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+    .player-status-badge.empty {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+    }
+
+    .player-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 700px) {
+      .player-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .btn-player {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .btn-player-yt {
+      background: rgba(255, 0, 0, 0.18);
+      border-color: rgba(255, 0, 0, 0.45);
+      color: #ff4d4d;
+    }
+    .btn-player-yt:not(:disabled):hover {
+      background: #ff0000;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(255, 0, 0, 0.6);
+      transform: translateY(-2px);
+    }
+    .btn-player-sp {
+      background: rgba(29, 185, 84, 0.18);
+      border-color: rgba(29, 185, 84, 0.45);
+      color: #1ed760;
+    }
+    .btn-player-sp:not(:disabled):hover {
+      background: #1db954;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(29, 185, 84, 0.6);
+      transform: translateY(-2px);
+    }
+    .btn-player-bl {
+      background: rgba(255, 85, 0, 0.18);
+      border-color: rgba(255, 85, 0, 0.45);
+      color: #ff7733;
+    }
+    .btn-player-bl:not(:disabled):hover {
+      background: #ff5500;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(255, 85, 0, 0.6);
+      transform: translateY(-2px);
+    }
+    .btn-player-cp {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+    }
+    .btn-player-cp:not(:disabled):hover {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-player:disabled {
+      opacity: 0.3 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      filter: grayscale(90%) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .player-lock-hint {
+      font-size: 11.5px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
 
     .row-info-col {
       flex: 1;
@@ -873,6 +1031,36 @@
           <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
         </div>
 
+        <!-- BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS (4 BOTONES) -->
+        <div class="panel-player-bar" id="panel-player-bar">
+          <div class="player-bar-header">
+            <div class="player-current-info">
+              <span class="player-current-label">🎧 TEMA EN TURNO / SELECCIONADO:</span>
+              <span class="player-current-title" id="player-song-title">Sin canciones en la lista</span>
+            </div>
+            <span class="player-status-badge empty" id="player-song-status">SIN TEMAS</span>
+          </div>
+
+          <div class="player-buttons-grid">
+            <button type="button" id="btn-player-yt" class="btn-player btn-player-yt" disabled onclick="abrirPlataforma('youtube')" title="Abrir en YouTube">
+              ▶ YouTube
+            </button>
+            <button type="button" id="btn-player-sp" class="btn-player btn-player-sp" disabled onclick="abrirPlataforma('spotify')" title="Abrir en Spotify">
+              🟢 Spotify
+            </button>
+            <button type="button" id="btn-player-bl" class="btn-player btn-player-bl" disabled onclick="abrirPlataforma('bandlab')" title="Abrir en BandLab (Invitaciones)">
+              🎹 BandLab
+            </button>
+            <button type="button" id="btn-player-cp" class="btn-player btn-player-cp" disabled onclick="copiarTemaActual()" title="Copiar nombre de la canción">
+              📋 Copiar
+            </button>
+          </div>
+
+          <div class="player-lock-hint" id="player-lock-hint">
+            <span>ℹ️</span> <span id="player-lock-msg">Agrega una canción o espera peticiones en el Live.</span>
+          </div>
+        </div>
+
         <div class="queue-items-list" id="panel-queue-list">
           <!-- Canciones renderizadas dinámicamente -->
         </div>
@@ -963,7 +1151,8 @@
     let state = {
       queue: [],
       status: 'disconnected',
-      username: 'slowmdoficial'
+      username: 'slowmdoficial',
+      selectedSongIndex: 0
     };
 
     let isOverlay = false;
@@ -1147,7 +1336,9 @@
         if (statusBadge) statusBadge.textContent = 'EN ESPERA DE PETICIONES';
       }
 
-      // 2. Panel del Streamer
+      // 2. Panel del Streamer - Barra de Reproducción Superior y Lista
+      actualizarBarraReproductor();
+
       const list = document.getElementById('panel-queue-list');
       const count = document.getElementById('panel-count-queue');
       if (count) count.textContent = state.queue.length;
@@ -1157,21 +1348,138 @@
           list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Comenta "Escucha [cancion]" en el Live.</div>`;
         } else {
           list.innerHTML = state.queue.map((song, idx) => {
+            const isSelected = (state.selectedSongIndex || 0) === idx;
+            const isTop = idx === 0;
+            const isUnlocked = song.status === 'unlocked';
             return `
-              <div class="queue-row ${idx === 0 ? 'current-song' : ''}">
+              <div class="queue-row ${isSelected ? 'selected-song' : (isTop ? 'current-song' : '')}" onclick="seleccionarCancion(${idx})" style="cursor: pointer;" title="Haz clic para seleccionar este tema en la barra de reproducción">
                 <div class="row-info-col">
-                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)}</div>
-                  <div class="row-user">@${escapeHtml(song.user)} • ${song.status === 'unlocked' ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
+                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)} ${isSelected ? '🎧' : ''}</div>
+                  <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
                 </div>
                 <div class="row-actions-col">
-                  <button type="button" class="btn-row-action" onclick="moverCancion(${idx}, -1)" title="Subir">▲</button>
-                  <button type="button" class="btn-row-action" onclick="moverCancion(${idx}, 1)" title="Bajar">▼</button>
-                  <button type="button" class="btn-row-action delete" onclick="eliminarCancion(${idx})" title="Eliminar">✕</button>
+                  <button type="button" class="btn-row-action" onclick="event.stopPropagation(); moverCancion(${idx}, -1)" title="Subir">▲</button>
+                  <button type="button" class="btn-row-action" onclick="event.stopPropagation(); moverCancion(${idx}, 1)" title="Bajar">▼</button>
+                  <button type="button" class="btn-row-action delete" onclick="event.stopPropagation(); eliminarCancion(${idx})" title="Eliminar">✕</button>
                 </div>
               </div>
             `;
           }).join('');
         }
+      }
+    }
+
+    // GESTIÓN DE LA BARRA DE REPRODUCCIÓN / ACCIONES RÁPIDAS
+    function actualizarBarraReproductor() {
+      const titleEl = document.getElementById('player-song-title');
+      const statusEl = document.getElementById('player-song-status');
+      const hintEl = document.getElementById('player-lock-hint');
+      const btnYt = document.getElementById('btn-player-yt');
+      const btnSp = document.getElementById('btn-player-sp');
+      const btnBl = document.getElementById('btn-player-bl');
+      const btnCp = document.getElementById('btn-player-cp');
+
+      if (!titleEl || !btnYt) return;
+
+      if (typeof state.selectedSongIndex !== 'number' || state.selectedSongIndex < 0 || state.selectedSongIndex >= state.queue.length) {
+        state.selectedSongIndex = 0;
+      }
+
+      if (state.queue.length === 0) {
+        titleEl.textContent = 'Sin canciones en la lista';
+        if (statusEl) {
+          statusEl.textContent = 'SIN TEMAS';
+          statusEl.className = 'player-status-badge empty';
+        }
+        if (hintEl) {
+          hintEl.innerHTML = '<span>ℹ️</span> <span>Agrega una canción con el formulario abajo o espera peticiones en el Live.</span>';
+        }
+        btnYt.disabled = true;
+        btnSp.disabled = true;
+        btnBl.disabled = true;
+        btnCp.disabled = true;
+        return;
+      }
+
+      const song = state.queue[state.selectedSongIndex];
+      const isUnlocked = song && song.status === 'unlocked';
+
+      titleEl.textContent = `${song.title} (pedida por @${song.user})`;
+
+      if (statusEl) {
+        if (isUnlocked) {
+          statusEl.textContent = '🔓 DESBLOQUEADA';
+          statusEl.className = 'player-status-badge unlocked';
+        } else {
+          statusEl.textContent = '🔒 BLOQUEADA';
+          statusEl.className = 'player-status-badge locked';
+        }
+      }
+
+      // NINGÚN BOTÓN HABILITADO SI EL TEMA ESTÁ BLOQUEADO
+      btnYt.disabled = !isUnlocked;
+      btnSp.disabled = !isUnlocked;
+      btnBl.disabled = !isUnlocked;
+      btnCp.disabled = !isUnlocked;
+
+      if (hintEl) {
+        if (isUnlocked) {
+          hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Tema desbloqueado! Puedes escucharlo en YouTube, Spotify, BandLab o copiar el nombre.</span>';
+        } else {
+          hintEl.innerHTML = '<span style="color:#f87171;">🔒</span> <span style="color:#fca5a5;">Tema bloqueado: Requiere apoyo (1000 Tap Tap, 10 Compartidos o 5 Rosas) para habilitar los botones de escucha.</span>';
+        }
+      }
+    }
+
+    function seleccionarCancion(idx) {
+      if (idx >= 0 && idx < state.queue.length) {
+        state.selectedSongIndex = idx;
+        renderizarCola();
+      }
+    }
+
+    function abrirPlataforma(plataforma) {
+      const idx = typeof state.selectedSongIndex === 'number' ? state.selectedSongIndex : 0;
+      const song = state.queue[idx];
+      if (!song || song.status !== 'unlocked') {
+        alert('⚠️ Este tema se encuentra bloqueado. Los botones solo se habilitan cuando la canción esté desbloqueada.');
+        return;
+      }
+
+      const query = encodeURIComponent(song.title);
+      if (plataforma === 'youtube') {
+        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+      } else if (plataforma === 'spotify') {
+        window.open(`https://open.spotify.com/search/${query}`, '_blank');
+      } else if (plataforma === 'bandlab') {
+        // En BandLab: abre la sección de solicitudes e invitaciones / colaboraciones
+        window.open('https://www.bandlab.com/collaborations', '_blank');
+      }
+    }
+
+    function copiarTemaActual() {
+      const idx = typeof state.selectedSongIndex === 'number' ? state.selectedSongIndex : 0;
+      const song = state.queue[idx];
+      if (!song || song.status !== 'unlocked') {
+        alert('⚠️ Este tema se encuentra bloqueado. Debe estar desbloqueado para copiar.');
+        return;
+      }
+
+      const texto = song.title;
+      const btn = document.getElementById('btn-player-cp');
+      const originalText = btn ? btn.innerHTML : '📋 Copiar';
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          if (btn) {
+            btn.innerHTML = '✅ ¡Copiado!';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+          }
+        }).catch(() => {
+          prompt('Copia el nombre de la canción:', texto);
+        });
+      } else {
+        prompt('Copia el nombre de la canción:', texto);
       }
     }
 
