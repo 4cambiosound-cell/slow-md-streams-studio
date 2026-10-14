@@ -65,11 +65,10 @@
     /* ============================================================= */
     #overlay-view {
       position: relative;
-      background: transparent !important;
+      background: #000000 !important;
       overflow: hidden;
       width: 100vw;
       height: 100vh;
-      pointer-events: none;
     }
 
     /* Lienzo 3D Three.js */
@@ -116,66 +115,68 @@
       flex-direction: column;
     }
 
-    /* MÓDULO 1: CYBER RADIO BOOMBOX & ESPECTRO DE AUDIO DE ALTA GAMA */
+    /* ============================================================= */
+    /* MÓDULO 1: ESTACIÓN VERTICAL DE MÚSICA & ESPECTRO DE AUDIO REAL */
+    /* ============================================================= */
     #module-overlay-queue {
       z-index: 15;
     }
 
-    .cyber-radio-container {
+    .vertical-music-station {
       position: relative;
-      background: linear-gradient(160deg, #161a29 0%, #0d0f18 45%, #07080e 100%);
+      background: rgba(8, 8, 12, 0.94);
       border: 2px solid rgba(255, 15, 59, 0.45);
-      border-radius: 20px;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 
-                  inset 0 1px 1px rgba(255, 255, 255, 0.18),
-                  0 0 25px rgba(255, 15, 59, 0.2);
-      padding: 10px 14px 12px 14px;
+      border-radius: 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 
+                  0 0 30px rgba(255, 15, 59, 0.25),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      padding: 12px 16px 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       width: 100%;
       height: 100%;
       overflow: visible;
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .cyber-radio-container.radio-surge {
+    .vertical-music-station.music-surge {
       border-color: var(--gold-vip);
-      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9), 
-                  0 0 45px rgba(255, 184, 0, 0.85),
-                  0 0 70px rgba(255, 15, 59, 0.6);
-      animation: radioSurgePulse 0.8s infinite alternate;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 
+                  0 0 50px rgba(255, 184, 0, 0.85),
+                  0 0 80px rgba(255, 15, 59, 0.6);
+      animation: musicSurgePulse 0.8s infinite alternate;
     }
 
-    @keyframes radioSurgePulse {
+    @keyframes musicSurgePulse {
       0% { transform: scale(1); filter: brightness(1); }
       100% { transform: scale(1.02); filter: brightness(1.2); }
     }
 
     /* Pop-in Entrance Highlight Overlay */
-    .radio-entrance-highlight {
+    .vertical-entrance-banner {
       position: absolute;
-      top: -72px;
+      top: -80px;
       left: 0;
       right: 0;
-      background: linear-gradient(135deg, rgba(20, 24, 38, 0.96) 0%, rgba(10, 12, 20, 0.98) 100%);
+      background: linear-gradient(135deg, rgba(22, 10, 15, 0.98) 0%, rgba(12, 12, 18, 0.98) 100%);
       border: 2px solid var(--gold-vip);
-      border-radius: 14px;
-      padding: 8px 14px;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 184, 0, 0.6);
+      border-radius: 16px;
+      padding: 10px 16px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 184, 0, 0.7);
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
       opacity: 0;
-      transform: translateY(15px) scale(0.92);
+      transform: translateY(18px) scale(0.9);
       pointer-events: none;
       transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 50;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
-    .radio-entrance-highlight.active {
+    .vertical-entrance-banner.active {
       opacity: 1;
       transform: translateY(0) scale(1);
       pointer-events: auto;
@@ -188,45 +189,41 @@
     }
 
     .entrance-badge {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 900;
-      letter-spacing: 1.2px;
+      letter-spacing: 1.5px;
       color: #fff;
       text-transform: uppercase;
-      text-shadow: 0 0 10px var(--gold-vip);
+      text-shadow: 0 0 12px var(--gold-vip);
     }
 
     .entrance-timer-dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: var(--gold-vip);
-      box-shadow: 0 0 8px var(--gold-vip);
+      box-shadow: 0 0 10px var(--gold-vip);
       animation: pulseDot 0.6s infinite alternate;
-    }
-    @keyframes pulseDot {
-      0% { opacity: 0.4; transform: scale(0.8); }
-      100% { opacity: 1; transform: scale(1.2); }
     }
 
     .entrance-content {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .entrance-disc-icon {
-      width: 32px;
-      height: 32px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       background: #111;
       border: 2px solid var(--gold-vip);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 18px;
       animation: spinDisc 2.5s linear infinite;
-      box-shadow: 0 0 14px rgba(255, 184, 0, 0.5);
+      box-shadow: 0 0 16px rgba(255, 184, 0, 0.6);
       flex-shrink: 0;
     }
 
@@ -235,22 +232,22 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
     }
 
     .entrance-song-title {
-      font-size: 12.5px;
+      font-size: 13.5px;
       font-weight: 900;
       color: #fff;
       text-transform: uppercase;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
     }
 
     .entrance-song-meta {
-      font-size: 10px;
+      font-size: 10.5px;
       color: var(--text-secondary);
       display: flex;
       align-items: center;
@@ -258,7 +255,7 @@
     }
 
     .entrance-status-tag {
-      font-size: 8.5px;
+      font-size: 9px;
       font-weight: 800;
       padding: 1px 6px;
       border-radius: 4px;
@@ -290,86 +287,56 @@
       box-shadow: 0 0 8px var(--gold-vip);
     }
 
-    /* Radio Top Bar */
-    .radio-top-bar {
+    /* Header Superior de la Estación */
+    .station-top-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 6px;
+      padding-bottom: 8px;
+      gap: 8px;
     }
 
-    .radio-brand-tag {
-      font-size: 10.5px;
+    .station-brand {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
       font-weight: 900;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
       color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
-    .radio-brand-tag span {
-      font-size: 8.5px;
-      color: var(--cyan-accent);
-      font-weight: 700;
-      background: rgba(0, 229, 255, 0.12);
-      padding: 1px 5px;
-      border-radius: 4px;
-    }
-
-    .radio-led-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .radio-led {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      padding: 1px 5px;
-      border-radius: 3px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .radio-led::before {
-      content: '';
-      width: 4px;
-      height: 4px;
+    .station-live-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      display: inline-block;
-    }
-    .led-red {
-      background: rgba(255, 15, 59, 0.2);
-      color: #ff476f;
-      border: 1px solid rgba(255, 15, 59, 0.4);
-    }
-    .led-red::before {
-      background: #ff0f3b;
-      box-shadow: 0 0 6px #ff0f3b;
-    }
-    .led-cyan {
-      background: rgba(0, 229, 255, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(0, 229, 255, 0.35);
-    }
-    .led-cyan::before {
-      background: #00e5ff;
-      box-shadow: 0 0 6px #00e5ff;
-    }
-    .led-gold {
-      background: rgba(255, 184, 0, 0.15);
-      color: #fde047;
-      border: 1px solid rgba(255, 184, 0, 0.35);
-    }
-    .led-gold::before {
-      background: #ffb800;
-      box-shadow: 0 0 6px #ffb800;
+      background: var(--blood-red);
+      box-shadow: 0 0 8px var(--blood-red);
+      animation: pulseDot 0.8s infinite alternate;
     }
 
-    .radio-queue-badge {
+    .audio-mic-btn {
+      padding: 3px 8px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .audio-mic-btn.active {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: #22c55e;
+      color: #4ade80;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+    }
+
+    .station-queue-badge {
       background: var(--blood-red);
       color: #fff;
       font-size: 9.5px;
@@ -379,56 +346,37 @@
       box-shadow: 0 0 10px var(--blood-red-glow);
     }
 
-    /* Radio Body Row */
-    .radio-body-row {
+    /* Hero Principal Vertical: Vinilo Giratorio + Canción en Turno */
+    .station-hero-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex: 1;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 8px 12px;
     }
 
-    /* Parlantes (Speakers) */
-    .radio-speaker {
-      width: 66px;
-      height: 66px;
+    .vertical-vinyl-record {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1a1e2e 0%, #090a0f 65%, #222636 100%);
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), 0 0 14px rgba(255, 15, 59, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      animation: spinDisc 4s linear infinite;
+      transition: transform 0.08s ease-out;
     }
 
-    .speaker-outer-rim {
-      width: 100%;
-      height: 100%;
+    .vinyl-center-art {
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      background: radial-gradient(circle, #1a1e2e 0%, #0d0f18 70%, #2a2e40 100%);
-      border: 3px solid #2e334a;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-    }
-
-    .speaker-cone {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: radial-gradient(circle, #252a3d 0%, #111420 55%, #05060a 100%);
-      border: 2px solid rgba(255, 15, 59, 0.35);
-      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9), 0 0 8px rgba(255, 15, 59, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.06s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .speaker-cap {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--blood-red), #880018);
+      background: linear-gradient(135deg, var(--blood-red), #99001f);
       border: 1.5px solid #fff;
       display: flex;
       align-items: center;
@@ -438,89 +386,91 @@
       box-shadow: 0 0 8px var(--blood-red-glow);
     }
 
-    /* Centro: LCD Display + Espectro */
-    .radio-center-panel {
+    .station-track-info {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .radio-lcd-screen {
-      background: #06090e;
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      border-radius: 8px;
-      padding: 4px 8px;
-      box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.15);
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
 
-    .lcd-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 8px;
-      color: var(--cyan-accent);
-      opacity: 0.85;
-      text-transform: uppercase;
-    }
-
-    .lcd-marquee-wrapper {
-      overflow: hidden;
-      white-space: nowrap;
-      position: relative;
-      height: 18px;
-      display: flex;
-      align-items: center;
-    }
-
-    .lcd-marquee-text {
-      display: inline-block;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
+    .station-now-tag {
+      font-size: 8.5px;
       font-weight: 800;
-      color: #22d3ee;
-      text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+      letter-spacing: 1px;
+      color: #fde047;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      animation: marqueeScroll 18s linear infinite;
     }
 
-    @keyframes marqueeScroll {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
+    .station-track-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
-    .radio-spectrum-wrapper {
+    .station-track-user {
+      font-size: 10px;
+      color: var(--cyan-accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Espectro de Audio Real */
+    .station-spectrum-box {
       width: 100%;
-      height: 42px;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 2px 4px;
+      height: 52px;
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 3px 6px;
+      position: relative;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    #radio-spectrum-canvas {
+    #vertical-spectrum-canvas {
       width: 100%;
       height: 100%;
       display: block;
     }
 
-    /* Dual Stereo VU Meter */
-    .radio-vu-row {
+    .audio-permission-prompt {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #38bdf8;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+      padding: 4px 10px;
+      border-radius: 8px;
+      transition: opacity 0.3s;
+    }
+    .audio-permission-prompt.hidden {
+      display: none;
+    }
+
+    /* Medidores VU Stereo Inferiores */
+    .station-vu-row {
       display: flex;
       align-items: center;
       gap: 6px;
       padding: 0 2px;
     }
-
     .vu-label {
       font-family: 'JetBrains Mono', monospace;
       font-size: 8px;
@@ -528,7 +478,6 @@
       color: var(--text-muted);
       width: 8px;
     }
-
     .vu-bar-track {
       flex: 1;
       height: 4px;
@@ -536,13 +485,12 @@
       border-radius: 2px;
       overflow: hidden;
     }
-
     .vu-bar-fill {
       height: 100%;
-      width: 30%;
-      background: linear-gradient(90deg, #22c55e 0%, #eab308 70%, #ef4444 100%);
+      width: 25%;
+      background: linear-gradient(90deg, #22c55e 0%, #eab308 65%, #ef4444 100%);
       border-radius: 2px;
-      transition: width 0.08s ease-out;
+      transition: width 0.06s ease-out;
     }
 
     /* Módulo 2: Ahora Sonando (Now Playing Banner) */
@@ -1221,13 +1169,13 @@
     <!-- Bordes luminosos -->
     <div id="overlay-edge-glow" class="screen-edge-glow"></div>
 
-    <!-- MÓDULO 1: CYBER RADIO BOOMBOX & ESPECTRO DE AUDIO DE ALTA GAMA -->
+    <!-- MÓDULO 1: ESTACIÓN VERTICAL DE MÚSICA & ESPECTRO DE AUDIO REAL -->
     <div id="module-overlay-queue" class="overlay-module-slot">
-      <div class="cyber-radio-container" id="cyber-radio-box">
-        <!-- Pop-in Entrance Highlight Overlay (Se activa al entrar un tema) -->
-        <div class="radio-entrance-highlight" id="radio-entrance-highlight">
+      <div class="vertical-music-station" id="vertical-music-station">
+        <!-- Pop-in Entrance Highlight Overlay (Se activa al entrar un nuevo tema) -->
+        <div class="vertical-entrance-banner" id="vertical-entrance-banner">
           <div class="entrance-header">
-            <span class="entrance-badge">🔥 ¡NUEVO TEMA INGRESÓ A LA RADIO! 🔥</span>
+            <span class="entrance-badge">🔥 ¡NUEVO TEMA INGRESÓ! 🔥</span>
             <span class="entrance-timer-dot"></span>
           </div>
           <div class="entrance-content">
@@ -1243,63 +1191,47 @@
           <div class="entrance-progress-bar"><div class="entrance-progress-fill" id="entrance-progress-fill"></div></div>
         </div>
 
-        <!-- Radio Top Tuning Header -->
-        <div class="radio-top-bar">
-          <div class="radio-brand-tag">📻 SLOW-MD <span>CYBER BOOMBOX</span></div>
-          <div class="radio-led-group">
-            <span class="radio-led led-red">ON AIR</span>
-            <span class="radio-led led-cyan">STEREO</span>
-            <span class="radio-led led-gold">108.5 FM</span>
+        <!-- Header Superior de la Estación -->
+        <div class="station-top-header">
+          <div class="station-brand">
+            <span class="station-live-dot"></span>
+            <span>SLOW MD LIVE MUSIC</span>
           </div>
-          <div class="radio-queue-badge" id="radio-queue-counter">0 EN COLA</div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="audio-mic-btn" id="btn-toggle-mic-audio" onclick="activarCapturaAudioReal()" title="Haz clic para sincronizar las barras con tu música real">
+              <span id="mic-icon-status">🎙️</span>
+              <span id="mic-text-status">Sincronizar Audio</span>
+            </button>
+            <div class="station-queue-badge" id="station-queue-counter">0 EN COLA</div>
+          </div>
         </div>
 
-        <!-- Radio Main Audio Unit -->
-        <div class="radio-body-row">
-          <!-- Left Speaker Woofer -->
-          <div class="radio-speaker speaker-left">
-            <div class="speaker-outer-rim">
-              <div class="speaker-cone" id="speaker-cone-left">
-                <div class="speaker-cap">⚡</div>
-              </div>
-            </div>
+        <!-- Hero Principal: Disco de Vinilo Giratorio + Información de Canción -->
+        <div class="station-hero-row">
+          <div class="vertical-vinyl-record" id="vertical-vinyl-disc">
+            <div class="vinyl-center-art">🔥</div>
           </div>
-
-          <!-- Center Display & Spectrum -->
-          <div class="radio-center-panel">
-            <!-- LCD Display -->
-            <div class="radio-lcd-screen">
-              <div class="lcd-header-row">
-                <span class="lcd-channel">CH-01 • HI-FI STEREO</span>
-                <span class="lcd-status-text" id="lcd-status-text">ESPECTRO ACTIVO</span>
-              </div>
-              <div class="lcd-marquee-wrapper">
-                <div class="lcd-marquee-text" id="lcd-marquee-text">📻 SLOW MD CYBER RADIO • SÍGUEME Y COMENTA: Escucha [Canción]</div>
-              </div>
-            </div>
-
-            <!-- Equalizer Spectrum Visualizer -->
-            <div class="radio-spectrum-wrapper">
-              <canvas id="radio-spectrum-canvas" width="340" height="42"></canvas>
-            </div>
-
-            <!-- Dual Stereo VU Meter -->
-            <div class="radio-vu-row">
-              <span class="vu-label">L</span>
-              <div class="vu-bar-track"><div class="vu-bar-fill" id="vu-meter-l"></div></div>
-              <span class="vu-label">R</span>
-              <div class="vu-bar-track"><div class="vu-bar-fill" id="vu-meter-r"></div></div>
-            </div>
+          <div class="station-track-info">
+            <div class="station-now-tag" id="station-now-tag">EN TURNO ACTUAL • REPRODUCIENDO</div>
+            <div class="station-track-title" id="station-track-title">ESPERANDO PETICIÓN...</div>
+            <div class="station-track-user" id="station-track-user">Comenta: Escucha [Canción]</div>
           </div>
+        </div>
 
-          <!-- Right Speaker Woofer -->
-          <div class="radio-speaker speaker-right">
-            <div class="speaker-outer-rim">
-              <div class="speaker-cone" id="speaker-cone-right">
-                <div class="speaker-cap">⚡</div>
-              </div>
-            </div>
+        <!-- Espectro de Audio en Tiempo Real (Responde a la Música Real) -->
+        <div class="station-spectrum-box">
+          <canvas id="vertical-spectrum-canvas" width="360" height="52"></canvas>
+          <div class="audio-permission-prompt" id="audio-prompt-overlay" onclick="activarCapturaAudioReal()">
+            🎙️ Toca aquí para sincronizar el espectro con tu música
           </div>
+        </div>
+
+        <!-- Medidores VU Stereo -->
+        <div class="station-vu-row">
+          <span class="vu-label">L</span>
+          <div class="vu-bar-track"><div class="vu-bar-fill" id="vu-meter-l"></div></div>
+          <span class="vu-label">R</span>
+          <div class="vu-bar-track"><div class="vu-bar-fill" id="vu-meter-r"></div></div>
         </div>
       </div>
     </div>
@@ -1397,14 +1329,14 @@
           <div class="phone-screen-canvas" id="emulator-screen-canvas">
             <div class="screen-scrim"></div>
 
-            <!-- Módulo Arrastrable 1: Cyber Radio & Espectro -->
+            <!-- Módulo Arrastrable 1: Estación Vertical & Espectro Real -->
             <div class="draggable-module-item" id="drag-module-queue" data-module="queue">
               <div class="module-drag-header">
-                <span>📻 Cyber Radio & Espectro</span>
+                <span>🎵 Estación Vertical & Espectro Real</span>
                 <span>Arrastrar ✥</span>
               </div>
               <div class="module-drag-preview">
-                Radio Neón + Visualizador + Resaltado de Temas
+                Vinilo Neón + Espectro en Vivo + Alerta de Temas
               </div>
             </div>
 
@@ -1824,30 +1756,35 @@
       }
     }
 
-    // RENDERIZADO DE LA COLA EN OVERLAY (CYBER RADIO) Y PANEL
+    // RENDERIZADO DE LA COLA EN OVERLAY (ESTACIÓN VERTICAL) Y PANEL
     function renderizarCola() {
-      const radioQueueBadge = document.getElementById('radio-queue-counter');
-      const lcdStatus = document.getElementById('lcd-status-text');
-      const lcdMarquee = document.getElementById('lcd-marquee-text');
+      const stationQueueBadge = document.getElementById('station-queue-counter');
+      const trackTitle = document.getElementById('station-track-title');
+      const trackUser = document.getElementById('station-track-user');
+      const nowTag = document.getElementById('station-now-tag');
       const panelList = document.getElementById('panel-queue-container');
       const panelCount = document.getElementById('panel-queue-count');
 
-      if (radioQueueBadge) radioQueueBadge.textContent = `${state.queue.length} EN COLA`;
+      if (stationQueueBadge) stationQueueBadge.textContent = `${state.queue.length} EN COLA`;
       if (panelCount) panelCount.textContent = state.queue.length;
 
-      // Actualizar pantalla LCD y Marquee de la Radio
+      // Actualizar tarjeta central de la estación vertical
       if (state.queue.length > 0) {
         const top = state.queue[0];
-        if (lcdStatus) {
-          lcdStatus.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN' : '🔒 BLOQUEADA (TURNO #1)';
+        if (nowTag) {
+          nowTag.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 EN ESPERA (CUMPLE REQUISITOS)';
         }
-        if (lcdMarquee) {
-          const nextInfo = state.queue[1] ? ` • [SIGUIENTE: #${2} ${state.queue[1].title} (@${state.queue[1].user})]` : '';
-          lcdMarquee.textContent = `▶ EN VIVO: #${1} ${top.title.toUpperCase()} • DE: @${top.user} [${top.status === 'unlocked' ? '🔓 LISTA' : '🔒 BLOQUEADA'}]${nextInfo}`;
+        if (trackTitle) {
+          trackTitle.textContent = top.title.toUpperCase();
+        }
+        if (trackUser) {
+          const nextInfo = state.queue[1] ? ` • [Sig: #${2} ${state.queue[1].title}]` : '';
+          trackUser.textContent = `Petición de: @${top.user} [${top.status === 'unlocked' ? '🔓 LISTA' : '🔒 BLOQUEADA'}]${nextInfo}`;
         }
       } else {
-        if (lcdStatus) lcdStatus.textContent = 'ESPERANDO PETICIÓN';
-        if (lcdMarquee) lcdMarquee.textContent = '📻 SLOW MD CYBER RADIO • SÍGUEME Y COMENTA: Escucha [Canción]';
+        if (nowTag) nowTag.textContent = 'EN ESPERA DE PETICIONES';
+        if (trackTitle) trackTitle.textContent = 'ESPERANDO PETICIÓN...';
+        if (trackUser) trackUser.textContent = 'Sígueme y comenta: Escucha [Canción]';
       }
 
       // Panel Items (Mantiene control total del Streamer en el panel de control)
@@ -1901,18 +1838,18 @@
       }
     }
 
-    // ANIMACIÓN DE RESALTADO AL INGRESAR UN NUEVO TEMA (QUE MUESTRE SOLO CUANDO ALGUIEN ENTRE)
+    // ANIMACIÓN DE RESALTADO AL ENTRAR NUEVO TEMA (OVERLAY VERTICAL 9:16)
     let entranceTimer = null;
     function resaltarNuevoTema(song) {
       if (!song || !song.title) return;
-      const highlightEl = document.getElementById('radio-entrance-highlight');
-      const radioBox = document.getElementById('cyber-radio-box');
+      const banner = document.getElementById('vertical-entrance-banner');
+      const station = document.getElementById('vertical-music-station');
       const titleEl = document.getElementById('entrance-song-title');
       const userEl = document.getElementById('entrance-song-user');
       const tagEl = document.getElementById('entrance-status-tag');
       const fillEl = document.getElementById('entrance-progress-fill');
 
-      if (!highlightEl) return;
+      if (!banner) return;
 
       if (titleEl) titleEl.textContent = song.title.toUpperCase();
       if (userEl) userEl.textContent = `@${song.user || 'Espectador'}`;
@@ -1922,14 +1859,11 @@
         tagEl.className = 'entrance-status-tag ' + (isUnlocked ? 'tag-unlocked' : 'tag-locked');
       }
 
-      // Activar animación y resplandor neón en la radio
-      highlightEl.classList.add('active');
-      if (radioBox) radioBox.classList.add('radio-surge');
+      banner.classList.add('active');
+      if (station) station.classList.add('music-surge');
 
-      // Sonido de sintonizador synth futurista
       playRadioEntranceSweep();
 
-      // Barra de progreso temporal de 6 segundos
       if (fillEl) {
         fillEl.style.transition = 'none';
         fillEl.style.width = '100%';
@@ -1941,8 +1875,8 @@
 
       clearTimeout(entranceTimer);
       entranceTimer = setTimeout(() => {
-        highlightEl.classList.remove('active');
-        if (radioBox) radioBox.classList.remove('radio-surge');
+        banner.classList.remove('active');
+        if (station) station.classList.remove('music-surge');
       }, 6200);
     }
 
@@ -1955,8 +1889,8 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(160, now);
-        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.35);
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.35);
         osc.frequency.exponentialRampToValueAtTime(440, now + 0.65);
 
         gain.gain.setValueAtTime(0.01, now);
@@ -1983,19 +1917,71 @@
       } catch (e) {}
     }
 
-    // ESPECTRO DE AUDIO REAL DE LA RADIO Y PARLANTES REACTIVOS
-    let spectrumAnimId = null;
-    const numBars = 20;
-    const visualizerPeaks = new Array(numBars).fill(0);
-    const visualizerHeights = new Array(numBars).fill(6);
-    let audioBeatTick = 0;
+    // =============================================================
+    // CAPTURA REAL DE AUDIO (WEB AUDIO API - MICRÓFONO / MÚSICA EN VIVO)
+    // =============================================================
+    let realAudioCtx = null;
+    let realAnalyser = null;
+    let realAudioStream = null;
+    let realFreqData = null;
+    let isRealAudioActive = false;
 
-    function iniciarEspectroRadio() {
-      const canvas = document.getElementById('radio-spectrum-canvas');
+    async function activarCapturaAudioReal() {
+      try {
+        if (!realAudioCtx) {
+          realAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (realAudioCtx.state === 'suspended') {
+          await realAudioCtx.resume();
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          },
+          video: false
+        });
+
+        realAudioStream = stream;
+        const source = realAudioCtx.createMediaStreamSource(stream);
+        realAnalyser = realAudioCtx.createAnalyser();
+        realAnalyser.fftSize = 128; // 64 frequency bands
+        realAnalyser.smoothingTimeConstant = 0.75;
+        source.connect(realAnalyser);
+
+        realFreqData = new Uint8Array(realAnalyser.frequencyBinCount);
+        isRealAudioActive = true;
+
+        const micBtn = document.getElementById('btn-toggle-mic-audio');
+        const micIcon = document.getElementById('mic-icon-status');
+        const micText = document.getElementById('mic-text-status');
+        const promptOverlay = document.getElementById('audio-prompt-overlay');
+
+        if (micBtn) micBtn.classList.add('active');
+        if (micIcon) micIcon.textContent = '🟢';
+        if (micText) micText.textContent = 'Audio Sincronizado';
+        if (promptOverlay) promptOverlay.classList.add('hidden');
+      } catch (err) {
+        console.warn('Acceso de audio/micrófono no otorgado:', err);
+        const micText = document.getElementById('mic-text-status');
+        if (micText) micText.textContent = 'Clic para permitir audio';
+      }
+    }
+
+    // ESPECTRO DE AUDIO REAL REACTIVO AL RITMO DE LA MÚSICA
+    let spectrumAnimId = null;
+    const numBars = 32;
+    const visualizerPeaks = new Array(numBars).fill(0);
+    const visualizerHeights = new Array(numBars).fill(4);
+    let idleTick = 0;
+
+    function iniciarEspectroVertical() {
+      const canvas = document.getElementById('vertical-spectrum-canvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      const coneLeft = document.getElementById('speaker-cone-left');
-      const coneRight = document.getElementById('speaker-cone-right');
+      const vinyl = document.getElementById('vertical-vinyl-disc');
       const vuL = document.getElementById('vu-meter-l');
       const vuR = document.getElementById('vu-meter-r');
 
@@ -2006,70 +1992,96 @@
         const h = canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        audioBeatTick += 0.055;
+        let bassEnergy = 0;
+        let totalEnergy = 0;
 
-        // Generador armónico orgánico de frecuencias de música
-        const bass = (Math.sin(audioBeatTick * 3.4) + 1) * 0.5; // kick ~128 bpm
-        const mid = (Math.sin(audioBeatTick * 5.1 + 1.2) + 1) * 0.5;
-        const treble = (Math.sin(audioBeatTick * 8.6 + 2.5) + 1) * 0.5;
-        const isPlaying = state.queue.length > 0;
-        const energy = isPlaying ? 1.0 : 0.45;
+        if (isRealAudioActive && realAnalyser && realFreqData) {
+          // Lectura de frecuencias de audio REALES desde el micrófono o música del sistema
+          realAnalyser.getByteFrequencyData(realFreqData);
 
-        // Vibración de conos de parlantes con el bajo
-        const bassScale = 1 + (bass * 0.11 * energy);
-        if (coneLeft) coneLeft.style.transform = `scale(${bassScale.toFixed(3)})`;
-        if (coneRight) coneRight.style.transform = `scale(${bassScale.toFixed(3)})`;
+          // Energía de bajos (frecuencias 0 a 6)
+          let bassSum = 0;
+          for (let b = 0; b < 6; b++) {
+            bassSum += realFreqData[b];
+          }
+          bassEnergy = (bassSum / (6 * 255));
 
-        // Indicador de nivel VU stereo
-        const vuLevel = Math.min(100, (bass * 60 + mid * 40) * energy);
-        if (vuL) vuL.style.width = `${vuLevel}%`;
-        if (vuR) vuR.style.width = `${Math.min(100, vuLevel * (0.88 + Math.random() * 0.24))}%`;
+          // Energía total para los VU meters
+          let totalSum = 0;
+          for (let t = 0; t < realFreqData.length; t++) {
+            totalSum += realFreqData[t];
+          }
+          totalEnergy = totalSum / (realFreqData.length * 255);
 
-        const barWidth = (w - (numBars - 1) * 3) / numBars;
-
-        for (let i = 0; i < numBars; i++) {
-          let targetH = 4;
-          if (i < 4) {
-            targetH = 5 + (bass * 32 * (1 - i * 0.12)) * energy + Math.random() * 4 * energy;
-          } else if (i < 13) {
-            targetH = 4 + (mid * 30 * Math.sin(((i - 3) / 10) * Math.PI)) * energy + Math.random() * 5 * energy;
-          } else {
-            targetH = 3 + (treble * 24 * Math.random()) * energy + 3;
+          // Escalar vinilo con el bajo de la canción real
+          if (vinyl) {
+            const scale = 1 + (bassEnergy * 0.16);
+            vinyl.style.transform = `scale(${scale.toFixed(3)})`;
           }
 
-          visualizerHeights[i] += (targetH - visualizerHeights[i]) * 0.35;
-          const curH = Math.max(3, Math.min(h - 4, visualizerHeights[i]));
+          // Medidores VU stereo
+          const vuVal = Math.min(100, totalEnergy * 130);
+          if (vuL) vuL.style.width = `${vuVal}%`;
+          if (vuR) vuR.style.width = `${Math.min(100, vuVal * 0.95)}%`;
 
-          if (curH > visualizerPeaks[i]) {
-            visualizerPeaks[i] = curH;
-          } else {
-            visualizerPeaks[i] = Math.max(curH, visualizerPeaks[i] - 0.7);
+          // Mapear los 32 bins de frecuencia directamente a las 32 barras
+          const barWidth = (w - (numBars - 1) * 2.5) / numBars;
+          const step = Math.floor(realFreqData.length / numBars) || 1;
+
+          for (let i = 0; i < numBars; i++) {
+            const dataIdx = Math.min(realFreqData.length - 1, i * step);
+            const rawVal = realFreqData[dataIdx];
+            // Sensibilidad reforzada
+            const targetH = Math.max(3, (rawVal / 255) * (h - 4));
+
+            visualizerHeights[i] += (targetH - visualizerHeights[i]) * 0.45;
+            const curH = Math.max(3, Math.min(h - 3, visualizerHeights[i]));
+
+            if (curH > visualizerPeaks[i]) {
+              visualizerPeaks[i] = curH;
+            } else {
+              visualizerPeaks[i] = Math.max(curH, visualizerPeaks[i] - 0.8);
+            }
+
+            const x = i * (barWidth + 2.5);
+            const y = h - curH;
+
+            // Gradiente Neón: Cyan -> Magenta -> Red -> Gold
+            const grad = ctx.createLinearGradient(0, h, 0, 0);
+            grad.addColorStop(0, '#00e5ff');
+            grad.addColorStop(0.35, '#b347eb');
+            grad.addColorStop(0.75, '#ff0f3b');
+            grad.addColorStop(1, '#ffb800');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            const radius = Math.min(barWidth / 2, 2);
+            if (ctx.roundRect) {
+              ctx.roundRect(x, y, barWidth, curH, [radius, radius, 0, 0]);
+            } else {
+              ctx.rect(x, y, barWidth, curH);
+            }
+            ctx.fill();
+
+            // Marcador de pico superior flotante
+            const peakY = h - visualizerPeaks[i] - 2;
+            ctx.fillStyle = '#ffef9f';
+            ctx.fillRect(x, Math.max(0, peakY), barWidth, 2);
           }
 
-          const x = i * (barWidth + 3);
-          const y = h - curH;
+        } else {
+          // Modo Standby / Espera antes de que el usuario dé clic para conectar audio
+          idleTick += 0.04;
+          const barWidth = (w - (numBars - 1) * 2.5) / numBars;
+          for (let i = 0; i < numBars; i++) {
+            const wave = Math.sin(idleTick + i * 0.28) * 0.5 + 0.5;
+            const curH = 4 + wave * 10;
+            const x = i * (barWidth + 2.5);
+            const y = h - curH;
 
-          // Gradiente Neón: Cyan -> Purple -> Red -> Gold
-          const grad = ctx.createLinearGradient(0, h, 0, 0);
-          grad.addColorStop(0, '#00e5ff');
-          grad.addColorStop(0.38, '#b347eb');
-          grad.addColorStop(0.78, '#ff0f3b');
-          grad.addColorStop(1, '#ffb800');
-
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          const radius = Math.min(barWidth / 2, 2.5);
-          if (ctx.roundRect) {
-            ctx.roundRect(x, y, barWidth, curH, [radius, radius, 0, 0]);
-          } else {
-            ctx.rect(x, y, barWidth, curH);
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.4)';
+            ctx.fillRect(x, y, barWidth, curH);
           }
-          ctx.fill();
-
-          // Marcador de pico superior flotante
-          const peakY = h - visualizerPeaks[i] - 2;
-          ctx.fillStyle = '#ffef9f';
-          ctx.fillRect(x, Math.max(0, peakY), barWidth, 2);
         }
       }
 
@@ -2423,9 +2435,16 @@
       cambiarVista(viewMode);
 
       inicializarThreeJS();
-      iniciarEspectroRadio();
+      iniciarEspectroVertical();
       inicializarDragAndDropEmulador();
       conectarWebSocket();
+
+      // Permitir iniciar audio al hacer clic si el navegador requiere interacción del usuario
+      document.body.addEventListener('click', () => {
+        if (!isRealAudioActive) {
+          activarCapturaAudioReal();
+        }
+      }, { once: true });
 
       // Botón conectar/desconectar TikTok
       const btnConn = document.getElementById('btn-toggle-connection');
