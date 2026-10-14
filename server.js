@@ -114,26 +114,14 @@ const server = http.createServer((req, res) => {
   const params = new URLSearchParams(queryString || '');
   let reqUrl = pathname;
 
-  if (reqUrl === '/' || reqUrl === '/index.html') {
-    // Si la URL pide explícitamente vista overlay o panel, servir cola-slow-md.html
-    if (params.get('view') === 'overlay') {
-      reqUrl = '/studio-unified.html';
-    } else if (params.get('view') === 'panel') {
-      reqUrl = '/studio-unified.html';
-    } else {
-      // Por defecto, cargar el panel multiversal Slow MD Stream Studio
-      reqUrl = '/dashboard.html';
-    }
+  if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/panel' || reqUrl === '/studio-panel' || reqUrl === '/dashboard' || reqUrl === '/studio') {
+    reqUrl = '/studio-unified.html';
   } else if (reqUrl === '/overlay' || reqUrl === '/studio-overlay') {
     reqUrl = '/studio-unified.html';
-  } else if (reqUrl === '/panel' || reqUrl === '/studio-panel') {
-    reqUrl = '/studio-unified.html';
-  } else if (reqUrl === '/dashboard' || reqUrl === '/studio') {
-    reqUrl = '/dashboard.html';
   } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
-    reqUrl = '/cola-slow-md.html';
+    reqUrl = '/studio-unified.html';
   } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
-    reqUrl = '/comentarios-tts.html';
+    reqUrl = '/studio-unified.html';
   } else if (reqUrl.startsWith('/widgets/studio-unificado')) {
     reqUrl = '/studio-unified.html';
   } else if (reqUrl === '/api/tts') {

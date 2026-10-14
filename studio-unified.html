@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slow MD Studio | Suite Unificada TikTok Live</title>
-  <!-- Three.js para animación 3D de esferas y confeti volumétrico -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,17 +68,6 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
-    }
-
-    /* Lienzo 3D Three.js */
-    #three-canvas-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 5;
-      pointer-events: none;
     }
 
     /* Bordes de pantalla iluminados */
@@ -877,161 +864,36 @@
       background: rgba(255, 255, 255, 0.14);
     }
 
-    /* CONTENIDO DEL PANEL: 2 COLUMNAS (EMULADOR CELULAR A LA IZQUIERDA + CONTROLES A LA DERECHA) */
+    /* CONTENIDO DEL PANEL: WORKSPACE UNIFICADO Y CENTRADO */
     .studio-workspace-grid {
       flex: 1;
-      display: grid;
-      grid-template-columns: 460px 1fr;
-      gap: 24px;
-      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 24px 32px;
       overflow-y: auto;
-      max-width: 1680px;
+      max-width: 1150px;
       margin: 0 auto;
       width: 100%;
     }
 
-    @media (max-width: 1080px) {
-      .studio-workspace-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* COLUMNA 1: EL EMULADOR INTERACTIVO DE CELULAR */
-    .phone-emulator-column {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .emulator-instructions-banner {
-      background: rgba(0, 229, 255, 0.08);
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: 11.5px;
-      color: #e2e8f0;
-      line-height: 1.4;
-      width: 100%;
-    }
-    .emulator-instructions-banner strong {
-      color: var(--cyan-accent);
-    }
-
-    /* Chasis físico del teléfono (Proporción exacta 9:16) */
-    .phone-device-frame {
-      width: 380px;
-      height: 770px;
-      border-radius: 46px;
-      background: #111;
-      border: 10px solid #262936;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 15, 59, 0.15);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Dynamic Island / Notch superior */
-    .phone-notch {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 105px;
-      height: 24px;
-      background: #000;
-      border-radius: 14px;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .notch-camera {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #1e293b;
-    }
-
-    /* Pantalla interactiva dentro del teléfono con la captura de tu Live */
-    .phone-screen-canvas {
-      position: absolute;
-      inset: 0;
-      background-image: url('/media_1791953012537.png');
-      background-size: cover;
-      background-position: center;
-      overflow: hidden;
-    }
-
-    /* Filtro oscuro para resaltar los widgets */
-    .screen-scrim {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.38);
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    /* Elementos Arrastrables dentro del Emulador */
-    .draggable-module-item {
-      position: absolute;
-      border: 2px dashed rgba(255, 255, 255, 0.4);
-      border-radius: 8px;
-      background: rgba(22, 27, 46, 0.75);
-      backdrop-filter: blur(8px);
-      cursor: grab;
-      user-select: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      z-index: 10;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-    }
-    .draggable-module-item:hover, .draggable-module-item.active {
-      border: 2px solid var(--cyan-accent);
-      box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
-      z-index: 30;
-    }
-    .draggable-module-item.dragging {
-      cursor: grabbing;
-      opacity: 0.85;
-      transform: scale(1.02);
-      border-color: var(--gold-vip);
-      box-shadow: 0 0 20px rgba(255, 184, 0, 0.6);
-    }
-
-    .module-drag-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 9.5px;
-      font-weight: 800;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 3px 6px;
-      border-radius: 4px;
-      margin-bottom: 4px;
-    }
-
-    .module-drag-preview {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #cbd5e1;
-      padding: 4px;
-    }
-
-    /* COLUMNA 2: CONTROLES DEL STREAMER (COLA, TTS, SIMULADOR Y CONFIGURACIÓN) */
     .studio-controls-column {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+    }
+
+    .btn-pos-preset {
+      flex: 1;
+      justify-content: center;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .btn-pos-preset:hover {
+      border-color: var(--cyan-accent);
+      color: #fff;
     }
 
     /* Tabs de navegación de la columna derecha */
@@ -1205,9 +1067,6 @@
   <!-- ============================================================= -->
   <div id="overlay-view" class="view-container active">
     
-    <!-- Canvas 3D para esferas de avatar y confeti -->
-    <div id="three-canvas-container"></div>
-
     <!-- Bordes luminosos -->
     <div id="overlay-edge-glow" class="screen-edge-glow"></div>
 
@@ -1339,7 +1198,7 @@
         <div class="brand-logo">🔥</div>
         <div class="brand-titles">
           <h1>SLOW MD STREAM STUDIO</h1>
-          <p>Suite Unificada TikTok Live & Meld Studio</p>
+          <p>Bot Unificado TikTok Live</p>
         </div>
       </div>
 
@@ -1350,106 +1209,23 @@
         </div>
         <input type="text" id="streamer-username-input" placeholder="Usuario TikTok (ej. slowmdoficial)" style="padding: 7px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm); color: #fff; font-size: 12px; width: 170px;">
         <button class="btn-nav btn-nav-primary" id="btn-toggle-connection">Conectar Live</button>
-        <button class="btn-nav btn-nav-secondary" onclick="window.open('/studio-unified.html?view=overlay', 'SlowMD_Overlay', 'width=450,height=800')">📺 Abrir Overlay OBS</button>
+        <button class="btn-nav btn-nav-secondary" onclick="copiarOverlayUrl()">📋 Copiar Link Overlay</button>
+        <button class="btn-nav btn-nav-secondary" onclick="window.open('/?view=overlay', 'SlowMD_Overlay', 'width=450,height=800')">📺 Ver Overlay</button>
       </div>
     </header>
 
     <!-- Workspace Principal -->
     <main class="studio-workspace-grid">
       
-      <!-- COLUMNA 1: EMULADOR INTERACTIVO DRAG & DROP -->
-      <section class="phone-emulator-column">
-        <div class="emulator-instructions-banner">
-          <strong>📱 Emulador Interactivo en Vivo:</strong> Arrastra los recuadros directamente sobre la pantalla de tu celular para ubicarlos exactamente donde quieras sin tapar tu cara ni el chat.
-        </div>
-
-        <div class="phone-device-frame">
-          <div class="phone-notch">
-            <div class="notch-camera"></div>
-          </div>
-          
-          <div class="phone-screen-canvas" id="emulator-screen-canvas">
-            <div class="screen-scrim"></div>
-
-            <!-- Módulo Arrastrable 1: Estación Vertical & Espectro Real -->
-            <div class="draggable-module-item" id="drag-module-queue" data-module="queue">
-              <div class="module-drag-header">
-                <span>🎵 Estación Vertical & Espectro Real</span>
-                <span>Arrastrar ✥</span>
-              </div>
-              <div class="module-drag-preview">
-                Vinilo Neón + Espectro en Vivo + Alerta de Temas
-              </div>
-            </div>
-
-            <!-- Módulo Arrastrable 2: Now Playing -->
-            <div class="draggable-module-item" id="drag-module-nowplaying" data-module="nowPlaying">
-              <div class="module-drag-header">
-                <span>💿 Ahora Sonando</span>
-                <span>Arrastrar ✥</span>
-              </div>
-              <div class="module-drag-preview">
-                Banner Canción en Turno
-              </div>
-            </div>
-
-            <!-- Módulo Arrastrable 3: Comentarios TTS -->
-            <div class="draggable-module-item" id="drag-module-tts" data-module="tts">
-              <div class="module-drag-header">
-                <span>🎙️ Comentarios TTS</span>
-                <span>Arrastrar ✥</span>
-              </div>
-              <div class="module-drag-preview">
-                Subtítulo de Voz & Mensajes
-              </div>
-            </div>
-
-            <!-- Módulo Arrastrable 4: Alertas 3D / Manos Doradas -->
-            <div class="draggable-module-item" id="drag-module-alerts" data-module="alerts">
-              <div class="module-drag-header">
-                <span>👑 Alertas & Manos Doradas</span>
-                <span>Arrastrar ✥</span>
-              </div>
-              <div class="module-drag-preview">
-                Efectos 3D / Salto al #1
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 8px; width: 100%; max-width: 380px;">
-          <button class="btn-nav btn-nav-secondary" style="flex: 1; justify-content: center;" id="btn-reset-layout">↺ Restablecer Posiciones</button>
-          <button class="btn-nav btn-nav-primary" style="flex: 1; justify-content: center;" id="btn-save-layout">💾 Guardar Diseño</button>
-        </div>
-
-        <!-- Control de Tamaño y Zoom del Overlay en Vivo -->
-        <div style="width: 100%; max-width: 380px; background: #161a29; border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 14px; padding: 12px 16px; margin-top: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="font-size: 13px; font-weight: 800; color: #38bdf8;">🔍 Tamaño de Letras y Elementos (Zoom)</label>
-            <span id="label-zoom-val" style="font-size: 13px; font-weight: 900; color: #fde047; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px;">125%</span>
-          </div>
-          <input type="range" id="range-overlay-zoom" min="0.8" max="2.2" step="0.05" value="1.25" style="width: 100%; cursor: pointer;">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 6px;">
-            <span>80% (Pequeño)</span>
-            <span>125% (Recomendado)</span>
-            <span>220% (Gigante)</span>
-          </div>
-          <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.3;">
-            💡 <em>Desliza para agrandar o reducir el texto del overlay en tiempo real en TikTok Live Studio.</em>
-          </p>
-        </div>
-      </section>
-
-      <!-- COLUMNA 2: GESTIÓN DE COLA, CONFIGURACIÓN DE REGLAS Y SIMULADOR -->
       <section class="studio-controls-column">
         
         <!-- Tabs de control -->
         <div class="studio-tabs-row">
           <button class="studio-tab-btn active" data-tab="tab-queue">🎵 Cola de Canciones</button>
-          <button class="studio-tab-btn" data-tab="tab-simulator">🎮 Simulador TikTok</button>
-          <button class="studio-tab-btn" data-tab="tab-rules">⚙️ Reglas y Regalos</button>
+          <button class="studio-tab-btn" data-tab="tab-layout">⚙️ Ubicación & Zoom</button>
+          <button class="studio-tab-btn" data-tab="tab-rules">🎁 Reglas y Regalos</button>
           <button class="studio-tab-btn" data-tab="tab-tts">🎙️ Voz TTS</button>
+          <button class="studio-tab-btn" data-tab="tab-simulator">🎮 Simulador TikTok</button>
         </div>
 
         <!-- TAB 1: COLA DE CANCIONES -->
@@ -1475,7 +1251,73 @@
           </div>
         </div>
 
-        <!-- TAB 2: SIMULADOR DE PRUEBAS -->
+        <!-- TAB 2: UBICACIÓN Y ZOOM EN VIVO -->
+        <div class="tab-content-panel" id="tab-layout">
+          <div class="control-card">
+            <div class="card-title-row">
+              <h3>⚙️ Ubicación de Elementos & Tamaño en Vivo</h3>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-nav btn-nav-secondary" id="btn-reset-layout" onclick="restablecerLayoutDefecto()">↺ Restablecer Posiciones</button>
+              </div>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 16px;">
+              Ajusta la posición vertical de cada elemento para que no tape tu cámara ni el chat de TikTok. Los cambios se actualizan en tiempo real en tu pantalla sin reiniciar nada.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- 1. Posición de Estación Musical -->
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 15, 59, 0.3); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <label style="font-size: 13px; font-weight: 800; color: #ff0f3b;">
+                    🎵 Estación de Música (Vinilo neón + Espectro + Alertas)
+                  </label>
+                  <span id="label-pos-queue" style="font-size: 12px; font-weight: 800; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px;">14%</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('queue', 8)">⬆️ Arriba (8%)</button>
+                  <button type="button" class="btn-nav btn-nav-primary btn-pos-preset" onclick="cambiarPosicionModulo('queue', 14)">🎯 Recomendado (14%)</button>
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('queue', 35)">⏺️ Centro (35%)</button>
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('queue', 60)">⬇️ Abajo (60%)</button>
+                </div>
+              </div>
+
+              <!-- 2. Posición de Comentarios TTS -->
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <label style="font-size: 13px; font-weight: 800; color: #00e5ff;">
+                    💬 Caja de Comentarios TTS (Subtítulo en Pantalla)
+                  </label>
+                  <span id="label-pos-tts" style="font-size: 12px; font-weight: 800; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px;">64%</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('tts', 20)">⬆️ Arriba (20%)</button>
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('tts', 45)">⏺️ Centro (45%)</button>
+                  <button type="button" class="btn-nav btn-nav-primary btn-pos-preset" onclick="cambiarPosicionModulo('tts', 64)">🎯 Recomendado Abajo (64%)</button>
+                  <button type="button" class="btn-nav btn-nav-secondary btn-pos-preset" onclick="cambiarPosicionModulo('tts', 78)">⬇️ Muy Abajo (78%)</button>
+                </div>
+              </div>
+
+              <!-- 3. Control de Tamaño y Zoom del Overlay en Vivo -->
+              <div style="background: rgba(255,255,255,0.03); border: 1.5px solid rgba(253, 224, 71, 0.4); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <label style="font-size: 13px; font-weight: 800; color: #fde047;">🔍 Tamaño de Letras y Elementos (Zoom en Vivo)</label>
+                  <span id="label-zoom-val" style="font-size: 13px; font-weight: 900; color: #fde047; background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 6px;">125%</span>
+                </div>
+                <input type="range" id="range-overlay-zoom" min="0.8" max="2.2" step="0.05" value="1.25" style="width: 100%; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 6px;">
+                  <span>80% (Pequeño)</span>
+                  <span>125% (Recomendado)</span>
+                  <span>220% (Gigante)</span>
+                </div>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.3;">
+                  💡 <em>Al mover este deslizador las letras y tarjetas crecen en vivo en TikTok Live Studio.</em>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: SIMULADOR DE PRUEBAS -->
         <div class="tab-content-panel" id="tab-simulator">
           <div class="control-card">
             <div class="card-title-row">
@@ -1688,7 +1530,6 @@
               if (data.layout) {
                 state.layout = { ...state.layout, ...data.layout };
                 aplicarLayoutAOverlay();
-                actualizarPosicionesEnEmulador();
               }
             } else if (data.type === 'QUEUE_UPDATE') {
               const prevLen = state.queue.length;
@@ -1738,12 +1579,11 @@
               mostrarPopupTTS(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
               hablarTTS(`¡Gracias a ${data.user} por ${data.giftName}!`);
             } else if (data.type === 'FOLLOW') {
-              lanzarEsferasAvatar3D(data.avatarUrl);
+              activarBordeLuminoso('glow-gold');
               mostrarPopupTTS(data.user, '¡Comenzó a seguirte!', 'follow', data.avatarUrl);
               hablarTTS(`¡Bienvenido ${data.user}, gracias por seguirme!`);
             } else if (data.type === 'LIKE') {
               if (data.total && data.total % 10000 === 0) {
-                lanzarConfetiCorazones3D();
                 activarBordeLuminoso('glow-gold');
               }
             }
@@ -1814,77 +1654,51 @@
           slotEl.style.display = config.visible !== false ? 'flex' : 'none';
         }
       });
+
+      // 3. Sincronizar etiquetas de posición en el panel
+      const lblQueue = document.getElementById('label-pos-queue');
+      const lblTts = document.getElementById('label-pos-tts');
+      if (lblQueue && state.layout.queue) {
+        lblQueue.textContent = `${state.layout.queue.y}%`;
+      }
+      if (lblTts && state.layout.tts) {
+        lblTts.textContent = `${state.layout.tts.y}%`;
+      }
     }
 
-    // ACTUALIZAR POSICIONES EN EL EMULADOR DRAG & DROP
-    function actualizarPosicionesEnEmulador() {
-      const modules = ['queue', 'nowPlaying', 'tts', 'alerts'];
-      modules.forEach(modKey => {
-        const itemEl = document.getElementById(`drag-module-${modKey.toLowerCase()}`);
-        const config = state.layout[modKey];
-        if (itemEl && config) {
-          itemEl.style.left = `${config.x}%`;
-          itemEl.style.top = `${config.y}%`;
-          itemEl.style.width = `${config.width}%`;
-          itemEl.style.height = `${config.height}%`;
-        }
-      });
+    // CONTROL RÁPIDO DE POSICIÓN (ARRIBA, CENTRO, ABAJO)
+    function cambiarPosicionModulo(modulo, topPercent) {
+      if (state.layout[modulo]) {
+        state.layout[modulo].y = topPercent;
+        aplicarLayoutAOverlay();
+        guardarLayoutServidor();
+      }
     }
 
-    // IMPLEMENTACIÓN DRAG & DROP EN EL EMULADOR DE CELULAR
-    function inicializarDragAndDropEmulador() {
-      const canvas = document.getElementById('emulator-screen-canvas');
-      if (!canvas) return;
+    function restablecerLayoutDefecto() {
+      state.layout = {
+        zoom: 1.25,
+        queue: { x: 4, y: 14, width: 92, height: 22, visible: true },
+        nowPlaying: { x: 4, y: 45, width: 92, height: 9, visible: false },
+        tts: { x: 4, y: 64, width: 92, height: 18, visible: true },
+        alerts: { x: 4, y: 20, width: 92, height: 42, visible: true }
+      };
+      aplicarLayoutAOverlay();
+      guardarLayoutServidor();
+      alert('✅ Posiciones restablecidas al modo recomendado (Música arriba 14%, Comentarios TTS abajo 64%, Zoom 125%).');
+    }
 
-      let activeItem = null;
-      let startX = 0, startY = 0;
-      let initialLeft = 0, initialTop = 0;
-
-      const items = canvas.querySelectorAll('.draggable-module-item');
-      items.forEach(item => {
-        item.addEventListener('mousedown', (e) => {
-          activeItem = item;
-          item.classList.add('dragging');
-          
-          const rect = canvas.getBoundingClientRect();
-          startX = e.clientX;
-          startY = e.clientY;
-
-          const itemRect = item.getBoundingClientRect();
-          initialLeft = ((itemRect.left - rect.left) / rect.width) * 100;
-          initialTop = ((itemRect.top - rect.top) / rect.height) * 100;
-
-          e.preventDefault();
+    function copiarOverlayUrl() {
+      const url = `${window.location.origin}/?view=overlay`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('✅ Enlace copiado al portapapeles:\n\n' + url + '\n\nPégalo en TikTok Live Studio como Fuente de Navegador.');
+        }).catch(() => {
+          prompt('Copia este enlace para TikTok Live Studio:', url);
         });
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!activeItem) return;
-        const rect = canvas.getBoundingClientRect();
-        const deltaXPercent = ((e.clientX - startX) / rect.width) * 100;
-        const deltaYPercent = ((e.clientY - startY) / rect.height) * 100;
-
-        let newLeft = Math.max(0, Math.min(100 - parseFloat(activeItem.style.width || 90), initialLeft + deltaXPercent));
-        let newTop = Math.max(0, Math.min(100 - parseFloat(activeItem.style.height || 20), initialTop + deltaYPercent));
-
-        activeItem.style.left = `${newLeft.toFixed(2)}%`;
-        activeItem.style.top = `${newTop.toFixed(2)}%`;
-
-        const modName = activeItem.dataset.module;
-        if (modName && state.layout[modName]) {
-          state.layout[modName].x = parseFloat(newLeft.toFixed(2));
-          state.layout[modName].y = parseFloat(newTop.toFixed(2));
-          aplicarLayoutAOverlay();
-        }
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (activeItem) {
-          activeItem.classList.remove('dragging');
-          activeItem = null;
-          guardarLayoutServidor();
-        }
-      });
+      } else {
+        prompt('Copia este enlace para TikTok Live Studio:', url);
+      }
     }
 
     function guardarLayoutServidor() {
@@ -2422,115 +2236,6 @@
       } catch (e) {}
     }
 
-    // THREE.JS: ESFERAS 3D CAYENDO (SEGUIDORES) Y CONFETI (HITO 10K LIKES)
-    let scene, camera, renderer;
-    let sphereMeshes = [];
-    let confettiParticles = null;
-
-    function inicializarThreeJS() {
-      const container = document.getElementById('three-canvas-container');
-      if (!container || typeof THREE === 'undefined') return;
-
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.z = 25;
-
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
-
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-      scene.add(ambientLight);
-
-      const dirLight = new THREE.DirectionalLight(0xff0f3b, 1.2);
-      dirLight.position.set(5, 10, 7);
-      scene.add(dirLight);
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-
-      animarThreeJS();
-    }
-
-    function animarThreeJS() {
-      requestAnimationFrame(animarThreeJS);
-
-      // Físicas de esferas
-      for (let i = sphereMeshes.length - 1; i >= 0; i--) {
-        const s = sphereMeshes[i];
-        s.vy -= 0.35;
-        s.position.x += s.vx;
-        s.position.y += s.vy;
-        s.rotation.x += 0.05;
-
-        if (s.position.y <= -14) {
-          s.position.y = -14;
-          s.vy = -s.vy * 0.65;
-          s.bounces = (s.bounces || 0) + 1;
-        }
-
-        if (s.bounces > 4) {
-          s.material.opacity -= 0.03;
-          if (s.material.opacity <= 0) {
-            scene.remove(s);
-            sphereMeshes.splice(i, 1);
-          }
-        }
-      }
-
-      // Confeti
-      if (confettiParticles) {
-        confettiParticles.rotation.y += 0.01;
-        const pos = confettiParticles.geometry.attributes.position.array;
-        for (let i = 1; i < pos.length; i += 3) {
-          pos[i] -= 0.15;
-          if (pos[i] < -20) pos[i] = 20;
-        }
-        confettiParticles.geometry.attributes.position.needsUpdate = true;
-      }
-
-      if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-      }
-    }
-
-    function lanzarEsferasAvatar3D(avatarUrl) {
-      if (!scene) return;
-      const loader = new THREE.TextureLoader();
-      loader.load(avatarUrl || 'https://api.dicebear.com/7.x/identicon/svg?seed=SlowMD', (tex) => {
-        for (let i = 0; i < 14; i++) {
-          const geom = new THREE.SphereGeometry(1.2, 24, 24);
-          const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, opacity: 1 });
-          const mesh = new THREE.Mesh(geom, mat);
-          mesh.position.set((Math.random() - 0.5) * 16, 16 + Math.random() * 8, (Math.random() - 0.5) * 6);
-          mesh.vx = (Math.random() - 0.5) * 0.3;
-          mesh.vy = -0.2 - Math.random() * 0.3;
-          scene.add(mesh);
-          sphereMeshes.push(mesh);
-        }
-      });
-    }
-
-    function lanzarConfetiCorazones3D() {
-      if (!scene) return;
-      if (confettiParticles) scene.remove(confettiParticles);
-
-      const count = 180;
-      const geom = new THREE.BufferGeometry();
-      const pos = [];
-      for (let i = 0; i < count; i++) {
-        pos.push((Math.random() - 0.5) * 30, Math.random() * 25 - 5, (Math.random() - 0.5) * 15);
-      }
-      geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      const mat = new THREE.PointsMaterial({ color: 0xff0f3b, size: 0.6, transparent: true });
-      confettiParticles = new THREE.Points(geom, mat);
-      scene.add(confettiParticles);
-    }
-
     // SIMULADOR
     function simularEvento(tipo) {
       if (tipo === 'chat_comentario') {
@@ -2671,9 +2376,7 @@
       const viewMode = urlParams.get('view') || 'panel';
       cambiarVista(viewMode);
 
-      inicializarThreeJS();
       iniciarEspectroVertical();
-      inicializarDragAndDropEmulador();
       conectarWebSocket();
 
       // Permitir iniciar audio al hacer clic si el navegador requiere interacción del usuario
@@ -2731,7 +2434,6 @@
             alerts: { x: 4, y: 20, width: 92, height: 42, visible: true }
           };
           aplicarLayoutAOverlay();
-          actualizarPosicionesEnEmulador();
           guardarLayoutServidor();
         });
       }
