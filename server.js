@@ -834,19 +834,21 @@ let lastLikesMilestone = 0;
       if (!comment) return;
 
       addLog(`💬 ${info.chatName} (${info.handle}): ${comment}`, 'chat');
-      processServerChat(comment, info.chatName, info.handle, info.userId);
-      broadcast({
-        type: 'CHAT',
-        user: info.chatName,
-        displayId: info.displayId,
-        handle: info.handle,
-        nickname: info.nickname,
-        userId: info.userId,
-        avatarUrl: info.avatarUrl,
-        comment,
-        isFollower: info.isFollower,
-        timestamp: Date.now()
-      });
+      const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId);
+      if (!wasAction) {
+        broadcast({
+          type: 'CHAT',
+          user: info.chatName,
+          displayId: info.displayId,
+          handle: info.handle,
+          nickname: info.nickname,
+          userId: info.userId,
+          avatarUrl: info.avatarUrl,
+          comment,
+          isFollower: info.isFollower,
+          timestamp: Date.now()
+        });
+      }
     });
 
     // Escuchar cuando alguien sigue el canal en vivo
