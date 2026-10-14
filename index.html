@@ -630,11 +630,13 @@
           <div class="sim-buttons-grid">
             <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
             <button class="btn-sim" onclick="simular('song')">🎵 Pedir Canción</button>
-            <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Desbloq)</button>
-            <button class="btn-sim" onclick="simular('rosas10')">🌹 Rosa x10 (+1 Puesto)</button>
+            <button class="btn-sim" onclick="simular('taptap')">👆 1000 Tap Tap (Slow MD)</button>
+            <button class="btn-sim" onclick="simular('compartido')">🔁 10 Compartidos (Maria)</button>
+            <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Pedro)</button>
+            <button class="btn-sim" onclick="simular('rosas10')">🌹 Rosa x10 (Carlos +1)</button>
             <button class="btn-sim" onclick="simular('top3')">🎩 Sombrero (Puesto #3)</button>
             <button class="btn-sim" onclick="simular('top2')">🕶️ Gafas (Puesto #2)</button>
-            <button class="btn-sim" onclick="simular('top1')" style="grid-column: span 2; border-color: var(--gold-vip); color: #fde047;">🔫 Money Gun (Puesto #1 VIP)</button>
+            <button class="btn-sim" onclick="simular('moneygun')" style="grid-column: span 2; border-color: var(--gold-vip); color: #fde047;">🔫 Money Gun VIP (Andrés)</button>
           </div>
         </div>
 
@@ -762,19 +764,25 @@
 
             if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
               const pos = data.newPosition || 1;
-              mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos });
-              hablarTTS(`La canción de ${data.songUser} subió a la posición ${pos}`);
+              const msg = data.announcement || `¡La canción de ${data.songUser} subió a la posición ${pos}!`;
+              mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos, announcement: data.announcement });
+              hablarTTS(msg);
             } else if (data.eventType === 'unlock') {
-              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser });
-              hablarTTS(`¡Canción de ${data.songUser} desbloqueada!`);
+              const msg = data.announcement || `¡Canción de ${data.songUser} desbloqueada!`;
+              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: data.announcement });
+              hablarTTS(msg);
             } else if (data.eventType === 'new_song' || data.newSong) {
               const s = data.newSong || { title: data.songTitle, user: data.songUser };
-              mostrarAlertaOverlay('nueva', s);
-              hablarTTS(`Nueva canción en cola: ${s.title}`);
+              const msg = data.announcement || `¡${s.user} agregó "${s.title}" a la lista!`;
+              mostrarAlertaOverlay('nueva', { ...s, announcement: data.announcement });
+              hablarTTS(msg);
+            } else if (data.announcement) {
+              mostrarAlertaOverlay('info', { title: data.songTitle || 'AVISO', user: data.songUser, announcement: data.announcement });
+              hablarTTS(data.announcement);
             } else if (state.queue.length > prevLen) {
               const s = state.queue[state.queue.length - 1];
               mostrarAlertaOverlay('nueva', s);
-              hablarTTS(`Nueva canción en cola: ${s.title}`);
+              hablarTTS(`¡${s.user} agregó "${s.title}" a la lista!`);
             }
           } else if (data.type === 'CHAT') {
             mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
@@ -902,7 +910,17 @@
 
       if (title) title.textContent = (info.title || 'CANCIÓN').toUpperCase();
 
-      if (tipo === 'subio') {
+      if (info.announcement) {
+        if (desc) desc.textContent = info.announcement;
+        if (tipo === 'subio') {
+          const pos = info.position || 1;
+          if (label) label.textContent = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
+        } else if (tipo === 'desbloqueada') {
+          if (label) label.textContent = '🔓 ¡CANCIÓN DESBLOQUEADA! 🔓';
+        } else {
+          if (label) label.textContent = '🎵 ¡NUEVA CANCIÓN EN COLA! 🎵';
+        }
+      } else if (tipo === 'subio') {
         const pos = info.position || 1;
         if (label) label.textContent = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
         if (desc) desc.textContent = `¡La canción de @${info.user} avanzó al puesto #${pos}!`;
@@ -918,7 +936,7 @@
       clearTimeout(alertTimer);
       alertTimer = setTimeout(() => {
         box.classList.remove('show');
-      }, 6500);
+      }, 7000);
     }
 
     // CAJA DE COMENTARIOS TTS EN EL OVERLAY
@@ -953,44 +971,84 @@
       } else if (tipo === 'song') {
         const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
         const t = temas[Math.floor(Math.random() * temas.length)];
-        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked' };
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked' };
         state.queue.push(nuevo);
         sincronizarServidor();
-        mostrarAlertaOverlay('nueva', nuevo);
-        hablarTTS(`Nueva canción en cola: ${nuevo.title}`);
+        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista!`;
+        mostrarAlertaOverlay('nueva', { ...nuevo, announcement: msg });
+        hablarTTS(msg);
+      } else if (tipo === 'taptap') {
+        const user = 'Slow MD';
+        const cancion = 'Noche de Travesuras';
+        let s = state.queue.find(q => q.user === user) || state.queue[0];
+        if (!s) {
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          state.queue.push(s);
+        }
+        s.status = 'unlocked';
+        sincronizarServidor();
+        const msg = `${user} desbloqueó su canción con 1000 tap tap`;
+        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
+      } else if (tipo === 'compartido') {
+        const user = 'Maria';
+        const cancion = 'Provenza';
+        let s = state.queue.find(q => q.user === user) || state.queue[0];
+        if (!s) {
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          state.queue.push(s);
+        }
+        s.status = 'unlocked';
+        sincronizarServidor();
+        const msg = `${user} desbloqueó su canción con 10 veces compartido`;
+        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
       } else if (tipo === 'rosas5') {
-        if (state.queue[0]) {
-          state.queue[0].status = 'unlocked';
-          sincronizarServidor();
-          mostrarAlertaOverlay('desbloqueada', state.queue[0]);
-          hablarTTS(`Canción desbloqueada con 5 rosas`);
+        const user = 'Pedro';
+        const cancion = 'Ella Baila Sola';
+        let s = state.queue.find(q => q.user === user) || state.queue[0];
+        if (!s) {
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          state.queue.push(s);
         }
+        s.status = 'unlocked';
+        sincronizarServidor();
+        const msg = `${user} desbloqueó su canción con 5 rosas`;
+        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
       } else if (tipo === 'rosas10') {
-        if (state.queue.length > 1) {
-          const [song] = state.queue.splice(1, 1);
-          state.queue.unshift(song);
-          sincronizarServidor();
-          mostrarAlertaOverlay('subio', { title: song.title, user: song.user, position: 1 });
-          hablarTTS(`La canción de ${song.user} subió a la posición 1`);
-        }
+        const user = 'Carlos';
+        const cancion = 'La Bebe Remix';
+        let s = { id: 'sub_' + Date.now(), title: cancion, user: user, status: 'unlocked' };
+        state.queue.unshift(s);
+        sincronizarServidor();
+        const msg = `${user} subió su canción a la posición 1 con 10 rosas`;
+        mostrarAlertaOverlay('subio', { title: s.title, user: user, position: 1, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
       } else if (tipo === 'top3') {
-        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Puesto 3', user: 'Donador_Sombrero', status: 'unlocked' };
+        const user = 'Roberto';
+        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Sombrero', user: user, status: 'unlocked' };
         state.queue.splice(Math.min(2, state.queue.length), 0, nueva);
         sincronizarServidor();
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 3 });
-        hablarTTS(`La canción de ${nueva.user} subió a la posición 3`);
+        const msg = `${user} desbloqueó su canción y subió a la posición 3 con Sombrero y bigote`;
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 3, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
       } else if (tipo === 'top2') {
-        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Puesto 2', user: 'Donador_Gafas', status: 'unlocked' };
+        const user = 'Laura';
+        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Gafas', user: user, status: 'unlocked' };
         state.queue.splice(Math.min(1, state.queue.length), 0, nueva);
         sincronizarServidor();
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 2 });
-        hablarTTS(`La canción de ${nueva.user} subió a la posición 2`);
-      } else if (tipo === 'top1') {
-        const nueva = { id: 'top1_' + Date.now(), title: 'Tema Puesto 1 (Money Gun)', user: 'Donador_VIP', status: 'unlocked' };
+        const msg = `${user} desbloqueó su canción y subió a la posición 2 con Gafas de sol`;
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 2, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
+      } else if (tipo === 'moneygun' || tipo === 'top1') {
+        const user = 'Andrés';
+        const nueva = { id: 'top1_' + Date.now(), title: 'Columbia', user: user, status: 'unlocked', priority: 'vip' };
         state.queue.unshift(nueva);
         sincronizarServidor();
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: nueva.user, position: 1 });
-        hablarTTS(`¡La canción de ${nueva.user} subió a la posición 1 con Money Gun!`);
+        const msg = `${user} desbloqueó su canción y subió al puesto VIP con Money Gun`;
+        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 1, announcement: `¡${msg}!` });
+        hablarTTS(`¡${msg}!`);
       }
     }
 

@@ -360,13 +360,17 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
 
   queueState.queue.push(nuevaCancion);
   saveQueueData();
+  const announcement = status === 'unlocked'
+    ? `¡${chatName} agregó y desbloqueó "${cancionDetectada}"!`
+    : `¡${chatName} agregó "${cancionDetectada}" a la lista!`;
   broadcast({
     type: 'QUEUE_UPDATE',
     queue: queueState.queue,
     history: queueState.history,
     sound: status === 'unlocked' ? 'normal' : null,
     newSong: nuevaCancion,
-    eventType: 'new_song'
+    eventType: 'new_song',
+    announcement: announcement
   });
   addLog(`🎵 Canción agregada [${status === 'locked' ? '🔒 BLOQUEADA' : '🔓 LISTA'}]: "${cancionDetectada}" (${chatName})`, 'chat');
   return true;
@@ -391,8 +395,9 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
     const likesReq = Number(botConfig.rules?.likesReq) || 1000;
     if (s.status === 'locked' && s.likes >= likesReq) {
       s.status = 'unlocked';
-      s.unlockedReason = `${likesReq} Likes ❤️`;
+      s.unlockedReason = `${likesReq} Tap Tap`;
       saveQueueData();
+      const announcement = `¡${s.user} desbloqueó su canción con ${likesReq} tap tap!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -400,9 +405,11 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
         sound: 'normal',
         eventType: 'unlock',
         songTitle: s.title,
-        songUser: s.user
+        songUser: s.user,
+        unlockReason: `${likesReq} tap tap`,
+        announcement: announcement
       });
-      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${likesReq} likes!`, 'like');
+      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${likesReq} tap tap!`, 'like');
     } else {
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
@@ -429,8 +436,9 @@ function processServerShare(userIdentifier, extraInfo = {}) {
     const sharesReq = Number(botConfig.rules?.sharesReq) || 10;
     if (s.status === 'locked' && s.shares >= sharesReq) {
       s.status = 'unlocked';
-      s.unlockedReason = `${sharesReq} Compartidos 🔄`;
+      s.unlockedReason = `${sharesReq} Veces Compartido`;
       saveQueueData();
+      const announcement = `¡${s.user} desbloqueó su canción con ${sharesReq} veces compartido!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -438,9 +446,11 @@ function processServerShare(userIdentifier, extraInfo = {}) {
         sound: 'normal',
         eventType: 'unlock',
         songTitle: s.title,
-        songUser: s.user
+        songUser: s.user,
+        unlockReason: `${sharesReq} veces compartido`,
+        announcement: announcement
       });
-      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${sharesReq} compartidos!`, 'share');
+      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${sharesReq} veces compartido!`, 'share');
     } else {
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
@@ -498,6 +508,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.unshift(s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
+      const announcement = `¡${s.user} desbloqueó su canción y subió al puesto VIP con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -506,7 +517,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         eventType: 'hands_top1',
         songTitle: s.title,
         songUser: s.user,
-        newPosition: 1
+        newPosition: 1,
+        announcement: announcement
       });
       addLog(`🥇 ¡${s.user} catapultó "${s.title}" al PUESTO #1 con ${giftName}!`, 'gift');
     // 2. Desbloquea y pasa a Puesto #2 (Gafas de sol)
@@ -519,6 +531,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.splice(targetPos, 0, s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
+      const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 2 con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -527,7 +540,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         eventType: 'move_up',
         songTitle: s.title,
         songUser: s.user,
-        newPosition: 2
+        newPosition: 2,
+        announcement: announcement
       });
       addLog(`🥈 ¡${s.user} pasó "${s.title}" al PUESTO #2 con ${giftName}!`, 'gift');
     // 3. Desbloquea y pasa a Puesto #3 (Sombrero y bigote)
@@ -540,6 +554,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.splice(targetPos, 0, s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
+      const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 3 con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -548,7 +563,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         eventType: 'move_up',
         songTitle: s.title,
         songUser: s.user,
-        newPosition: 3
+        newPosition: 3,
+        announcement: announcement
       });
       addLog(`🥉 ¡${s.user} pasó "${s.title}" al PUESTO #3 con ${giftName}!`, 'gift');
     // 4. Subir 1 posición (Rosa x10, Corazón dedos x2, Mención x2)
@@ -562,6 +578,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       }
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
+      const announcement = `¡${s.user} subió su canción a la posición ${newPos} con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -570,7 +587,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         eventType: 'move_up',
         songTitle: s.title,
         songUser: s.user,
-        newPosition: newPos
+        newPosition: newPos,
+        announcement: announcement
       });
       addLog(`🚀 ¡${s.user} subió a la posición #${newPos} con "${s.title}" gracias a ${giftName}!`, 'gift');
     // 5. Desbloquear canción (Rosa x5, Corazón con los dedos x1, etc.)
@@ -579,6 +597,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       s.unlockedReason = `Desbloqueo: ${giftName}`;
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
+      const giftLabel = isRosa && totalRoses > 1 ? `${totalRoses} rosas` : giftName;
+      const announcement = `¡${s.user} desbloqueó su canción con ${giftLabel}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -586,7 +606,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         sound: 'normal',
         eventType: 'unlock',
         songTitle: s.title,
-        songUser: s.user
+        songUser: s.user,
+        announcement: announcement
       });
       addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${giftName}!`, 'gift');
     } else {
