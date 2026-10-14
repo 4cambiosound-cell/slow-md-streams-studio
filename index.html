@@ -515,6 +515,254 @@
       background: rgba(255, 255, 255, 0.12);
       border-color: var(--cyan-neon);
     }
+
+    /* REGLA 5: EFECTO DE FOTO Y POLAROID CRUSH */
+    .overlay-camera-flash {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1200;
+      transition: opacity 0.45s ease-out;
+    }
+    .overlay-camera-flash.flash {
+      opacity: 0.95;
+      transition: none;
+    }
+
+    .overlay-polaroid-card {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.6) rotate(-5deg);
+      width: clamp(520px, 80vw, 1550px);
+      background: #ffffff;
+      padding: clamp(24px, 2.5vw, 65px) clamp(24px, 2.5vw, 65px) clamp(45px, 4.5vw, 120px) clamp(24px, 2.5vw, 65px);
+      border-radius: clamp(16px, 1.8vw, 42px);
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.95), 0 0 80px rgba(255, 255, 255, 0.35);
+      color: #111827;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1250;
+    }
+    .overlay-polaroid-card.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+    }
+    .polaroid-photo-box {
+      width: 100%;
+      height: clamp(340px, 32vw, 750px);
+      background: linear-gradient(135deg, #18181b, #09090b);
+      border-radius: clamp(12px, 1.4vw, 32px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 1.5vw, 36px);
+      border: clamp(3px, 0.4vw, 8px) solid #e4e4e7;
+    }
+    .polaroid-camera-icon {
+      font-size: clamp(80px, 10vw, 220px);
+      filter: drop-shadow(0 10px 25px rgba(254, 44, 85, 0.6));
+      animation: cameraBounce 1.5s infinite ease-in-out;
+    }
+    .polaroid-caption {
+      margin-top: clamp(22px, 2.8vw, 70px);
+      font-size: clamp(32px, 3.8vw, 92px);
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+    .polaroid-subcaption {
+      font-size: clamp(24px, 2.6vw, 68px);
+      font-weight: 800;
+      color: var(--pink-tiktok);
+      margin-top: clamp(6px, 0.8vw, 18px);
+    }
+    @keyframes cameraBounce {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.08) rotate(3deg); }
+    }
+
+    /* REGLA 6: BANNER ELEGANTE DE APLAUSOS */
+    .overlay-applause-banner {
+      position: absolute;
+      top: 26%;
+      left: 5%;
+      right: 5%;
+      background: linear-gradient(135deg, rgba(20, 20, 28, 0.96), rgba(10, 10, 16, 0.98));
+      border: clamp(4px, 0.5vw, 10px) solid var(--gold-vip);
+      border-radius: clamp(24px, 2.5vw, 55px);
+      padding: clamp(35px, 4vw, 95px) clamp(30px, 3.5vw, 85px);
+      display: flex;
+      align-items: center;
+      gap: clamp(25px, 3vw, 75px);
+      box-shadow: 0 35px 100px rgba(0, 0, 0, 0.9), 0 0 80px rgba(253, 224, 71, 0.35);
+      opacity: 0;
+      transform: translateY(-50px) scale(0.92);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1150;
+    }
+    .overlay-applause-banner.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .applause-icon-col {
+      font-size: clamp(80px, 9vw, 220px);
+      animation: clapHands 0.6s infinite alternate ease-in-out;
+    }
+    @keyframes clapHands {
+      from { transform: scale(0.9) rotate(-10deg); }
+      to { transform: scale(1.15) rotate(10deg); }
+    }
+    .applause-text-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 1vw, 22px);
+    }
+    .applause-tag {
+      font-size: clamp(24px, 2.8vw, 68px);
+      font-weight: 900;
+      color: var(--gold-vip);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .applause-user-title {
+      font-size: clamp(38px, 4.5vw, 110px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO) */
+    .overlay-full-list-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 82%;
+      background: linear-gradient(180deg, rgba(17, 17, 24, 0.98), rgba(9, 9, 13, 0.99));
+      border-top: clamp(6px, 0.6vw, 12px) solid var(--cyan-neon);
+      border-radius: clamp(32px, 3.5vw, 75px) clamp(32px, 3.5vw, 75px) 0 0;
+      padding: clamp(40px, 4vw, 95px) clamp(35px, 3.5vw, 85px) clamp(60px, 6vw, 140px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(20px, 2vw, 45px);
+      box-shadow: 0 -40px 140px rgba(0, 0, 0, 0.95), 0 0 90px rgba(0, 242, 254, 0.3);
+      transform: translateY(105%);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1100;
+    }
+    .overlay-full-list-sheet.show {
+      transform: translateY(0%);
+      opacity: 1;
+    }
+    .full-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: clamp(2px, 0.3vw, 5px) solid rgba(255, 255, 255, 0.1);
+      padding-bottom: clamp(16px, 1.8vw, 40px);
+    }
+    .full-list-title {
+      font-size: clamp(34px, 4vw, 98px);
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+    }
+    .full-list-badge {
+      background: rgba(0, 242, 254, 0.15);
+      border: clamp(2px, 0.3vw, 5px) solid var(--cyan-neon);
+      color: var(--cyan-neon);
+      border-radius: 999px;
+      padding: clamp(8px, 1vw, 24px) clamp(20px, 2.2vw, 50px);
+      font-size: clamp(24px, 2.5vw, 60px);
+      font-weight: 900;
+    }
+    .full-list-items {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(14px, 1.5vw, 32px);
+      overflow-y: auto;
+      max-height: 100%;
+      padding-right: 10px;
+    }
+    .full-list-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border: clamp(2px, 0.25vw, 4px) solid rgba(255, 255, 255, 0.08);
+      border-radius: clamp(16px, 1.8vw, 36px);
+      padding: clamp(18px, 2vw, 44px) clamp(22px, 2.5vw, 55px);
+      gap: clamp(16px, 2vw, 40px);
+    }
+    .full-list-item-row.unlocked {
+      background: rgba(34, 197, 94, 0.08);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .full-list-item-row.locked {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .full-list-item-info {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2vw, 45px);
+      flex: 1;
+      min-width: 0;
+    }
+    .full-list-pos {
+      font-size: clamp(32px, 3.6vw, 84px);
+      font-weight: 900;
+      color: var(--cyan-neon);
+      min-width: clamp(55px, 6vw, 130px);
+    }
+    .full-list-meta {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.5vw, 12px);
+      flex: 1;
+      min-width: 0;
+    }
+    .full-list-song {
+      font-size: clamp(28px, 3.2vw, 76px);
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .full-list-user {
+      font-size: clamp(20px, 2.3vw, 56px);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .full-list-tag {
+      padding: clamp(8px, 0.9vw, 22px) clamp(16px, 1.8vw, 40px);
+      border-radius: clamp(10px, 1.2vw, 26px);
+      font-size: clamp(18px, 2.1vw, 50px);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .full-list-tag.unlocked {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: clamp(2px, 0.2vw, 4px) solid #22c55e;
+    }
+    .full-list-tag.locked {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: clamp(2px, 0.2vw, 4px) solid #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -524,6 +772,38 @@
   <!-- ========================================================= -->
   <div id="overlay-view" class="view-mode">
     
+    <!-- Efecto Flash de Cámara (Regla 5) -->
+    <div class="overlay-camera-flash" id="overlay-camera-flash"></div>
+
+    <!-- Tarjeta Polaroid Foto Crush (Regla 5) -->
+    <div class="overlay-polaroid-card" id="overlay-polaroid-card">
+      <div class="polaroid-photo-box">
+        <div class="polaroid-camera-icon">📸</div>
+      </div>
+      <div class="polaroid-caption" id="polaroid-caption-text">¡Foto tomada al Live!</div>
+      <div class="polaroid-subcaption" id="polaroid-subcaption-text">Mandó este live a su crush</div>
+    </div>
+
+    <!-- Banner Elegante de Aplausos (Regla 6) -->
+    <div class="overlay-applause-banner" id="overlay-applause-banner">
+      <div class="applause-icon-col">👏</div>
+      <div class="applause-text-col">
+        <span class="applause-tag">🌟 ¡NUEVO SEGUIDOR! 🌟</span>
+        <div class="applause-user-title" id="applause-user-text">@Usuario se sumó a la comunidad</div>
+      </div>
+    </div>
+
+    <!-- Modal Lista Completa que Sube desde Abajo (Regla 4) -->
+    <div class="overlay-full-list-sheet" id="overlay-full-list-sheet">
+      <div class="full-list-header">
+        <div class="full-list-title">📋 COLA DE CANCIONES</div>
+        <div class="full-list-badge" id="full-list-badge-count">0 TEMAS</div>
+      </div>
+      <div class="full-list-items" id="full-list-items-container">
+        <!-- Renderizado dinámico -->
+      </div>
+    </div>
+
     <!-- 1. Tarjeta Superior: Canción en Turno -->
     <div class="overlay-top-card">
       <div class="disc-icon-box" id="disc-record">💿</div>
@@ -630,6 +910,10 @@
           <div class="sim-buttons-grid">
             <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
             <button class="btn-sim" onclick="simular('song')">🎵 Pedir Canción</button>
+            <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (Regla 4)</button>
+            <button class="btn-sim" onclick="simular('share_crush')">📸 Compartir Crush (Regla 5)</button>
+            <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos (Regla 6)</button>
+            <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción (Regla 1)</button>
             <button class="btn-sim" onclick="simular('taptap')">👆 1000 Tap Tap (Slow MD)</button>
             <button class="btn-sim" onclick="simular('compartido')">🔁 10 Compartidos (Maria)</button>
             <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Pedro)</button>
@@ -784,6 +1068,11 @@
               mostrarAlertaOverlay('nueva', s);
               hablarTTS(`¡${s.user} agregó "${s.title}" a la lista!`);
             }
+          } else if (data.type === 'SHOW_LIST') {
+            mostrarListaCompletaOverlay(data.queue || state.queue);
+          } else if (data.type === 'CHAT_WARNING') {
+            mostrarAlertaOverlay('warning', { title: 'REGLA DE COLA', user: data.user, announcement: data.message });
+            hablarTTS(data.message);
           } else if (data.type === 'CHAT') {
             mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
             hablarTTS(`${data.user} dice: ${data.comment}`);
@@ -791,8 +1080,16 @@
             mostrarTTSOverlay(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
             hablarTTS(`¡Gracias a ${data.user} por ${data.giftName}!`);
           } else if (data.type === 'FOLLOW') {
-            mostrarTTSOverlay(data.user, '¡Comenzó a seguirte!', 'follow', data.avatarUrl);
-            hablarTTS(`¡Bienvenido ${data.user}, gracias por seguirme!`);
+            reproducirSonidoAplausos();
+            mostrarAplausosSeguidorOverlay(data.user);
+            const msg = data.announcement || `${data.user} se sumó a la comunidad`;
+            hablarTTS(msg);
+          } else if (data.type === 'SHARE') {
+            reproducirSonidoObturador();
+            const primerNombre = data.primerNombre || (data.user || '').trim().split(/[\s_.-]+/)[0] || 'Alguien';
+            mostrarFotoCrushOverlay(primerNombre);
+            const msg = data.announcement || `${primerNombre} mandó este live a su crush`;
+            hablarTTS(msg);
           }
         } catch(e) {}
       };
@@ -910,7 +1207,10 @@
 
       if (title) title.textContent = (info.title || 'CANCIÓN').toUpperCase();
 
-      if (info.announcement) {
+      if (tipo === 'warning') {
+        if (label) label.textContent = '⚠️ ¡AVISO DE LA COLA! ⚠️';
+        if (desc) desc.textContent = info.announcement || `Aviso para @${info.user}`;
+      } else if (info.announcement) {
         if (desc) desc.textContent = info.announcement;
         if (tipo === 'subio') {
           const pos = info.position || 1;
@@ -937,6 +1237,174 @@
       alertTimer = setTimeout(() => {
         box.classList.remove('show');
       }, 7000);
+    }
+
+    // REGLA 5: EFECTO DE CÁMARA (OBTURADOR Y FOTO CRUSH)
+    let photoTimer = null;
+    function reproducirSonidoObturador() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        // Clic 1 (Obturador espejo)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(850, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.85, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+
+        // Clic 2 (Cortinilla obturador)
+        setTimeout(() => {
+          try {
+            const bufSize = Math.floor(ctx.sampleRate * 0.07);
+            const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 1600;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.7, ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+            src.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            src.start(ctx.currentTime);
+          } catch(e) {}
+        }, 55);
+      } catch(e) {}
+    }
+
+    function mostrarFotoCrushOverlay(primerNombre) {
+      const flash = document.getElementById('overlay-camera-flash');
+      const polaroid = document.getElementById('overlay-polaroid-card');
+      const cap = document.getElementById('polaroid-caption-text');
+      const sub = document.getElementById('polaroid-subcaption-text');
+      if (!polaroid) return;
+
+      if (cap) cap.textContent = `¡${primerNombre} tomó una foto al Live!`;
+      if (sub) sub.textContent = `Mandó este live a su crush ❤️`;
+
+      // Flashazo blanco
+      if (flash) {
+        flash.classList.add('flash');
+        setTimeout(() => {
+          flash.classList.remove('flash');
+        }, 400);
+      }
+
+      // Mostrar polaroid
+      polaroid.classList.add('show');
+      clearTimeout(photoTimer);
+      photoTimer = setTimeout(() => {
+        polaroid.classList.remove('show');
+      }, 4800);
+    }
+
+    // REGLA 6: BANNER ELEGANTE DE APLAUSOS + SONIDO
+    let applauseTimer = null;
+    function reproducirSonidoAplausos() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const duration = 2.6;
+        const bufSize = Math.floor(ctx.sampleRate * duration);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+          const envelope = Math.sin((i / bufSize) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * envelope;
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1300;
+        filter.Q.value = 1.0;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.65, ctx.currentTime + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(ctx.currentTime);
+      } catch(e) {}
+    }
+
+    function mostrarAplausosSeguidorOverlay(nombre) {
+      const banner = document.getElementById('overlay-applause-banner');
+      const userText = document.getElementById('applause-user-text');
+      if (!banner) return;
+
+      if (userText) userText.textContent = `¡@${nombre} se sumó a la comunidad!`;
+      banner.classList.add('show');
+      clearTimeout(applauseTimer);
+      applauseTimer = setTimeout(() => {
+        banner.classList.remove('show');
+      }, 5500);
+    }
+
+    // REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO)
+    let fullListTimer = null;
+    let lastListTriggerTime = 0;
+    function mostrarListaCompletaOverlay(cola) {
+      const now = Date.now();
+      // Enfriamiento de 10 segundos para prevenir spam
+      if (now - lastListTriggerTime < 10000) return;
+      lastListTriggerTime = now;
+
+      const sheet = document.getElementById('overlay-full-list-sheet');
+      const container = document.getElementById('full-list-items-container');
+      const badgeCount = document.getElementById('full-list-badge-count');
+      if (!sheet || !container) return;
+
+      const items = cola || state.queue || [];
+      if (badgeCount) badgeCount.textContent = `${items.length} TEMAS`;
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding: clamp(40px, 4vw, 80px); color: var(--text-muted); font-size: clamp(24px, 2.5vw, 60px); font-weight: 700;">
+            No hay canciones en la cola.<br>Comenta: <strong>Escucha [Canción]</strong>
+          </div>
+        `;
+      } else {
+        container.innerHTML = items.map((song, idx) => {
+          const isUnlocked = song.status === 'unlocked';
+          const rebasadas = song.overtakenCount || 0;
+          const tagLabel = isUnlocked ? '🔓 Desbloqueada' : `🔒 Bloqueada (${rebasadas}/4 rebasadas)`;
+          return `
+            <div class="full-list-item-row ${isUnlocked ? 'unlocked' : 'locked'}">
+              <div class="full-list-item-info">
+                <span class="full-list-pos">#${idx + 1}</span>
+                <div class="full-list-meta">
+                  <div class="full-list-song">${escapeHtml(song.title)}</div>
+                  <div class="full-list-user">@${escapeHtml(song.user)}</div>
+                </div>
+              </div>
+              <div class="full-list-tag ${isUnlocked ? 'unlocked' : 'locked'}">${tagLabel}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      sheet.classList.add('show');
+      clearTimeout(fullListTimer);
+      fullListTimer = setTimeout(() => {
+        sheet.classList.remove('show');
+      }, 8000);
     }
 
     // CAJA DE COMENTARIOS TTS EN EL OVERLAY
@@ -971,18 +1439,34 @@
       } else if (tipo === 'song') {
         const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
         const t = temas[Math.floor(Math.random() * temas.length)];
-        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked' };
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked', overtakenCount: 0 };
         state.queue.push(nuevo);
         sincronizarServidor();
         const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista!`;
         mostrarAlertaOverlay('nueva', { ...nuevo, announcement: msg });
+        hablarTTS(msg);
+      } else if (tipo === 'verlista') {
+        lastListTriggerTime = 0; // Reset cooldown para probar
+        mostrarListaCompletaOverlay(state.queue);
+      } else if (tipo === 'share_crush') {
+        reproducirSonidoObturador();
+        mostrarFotoCrushOverlay('Alejandro');
+        hablarTTS('Alejandro mandó este live a su crush');
+      } else if (tipo === 'follow_comunidad') {
+        reproducirSonidoAplausos();
+        mostrarAplausosSeguidorOverlay('Carlos');
+        hablarTTS('Carlos se sumó a la comunidad');
+      } else if (tipo === 'segunda_cancion') {
+        const user = state.queue[0]?.user || 'Slow MD';
+        const msg = `${user}, ya tienes una canción en la lista`;
+        mostrarAlertaOverlay('warning', { title: 'REGLA DE LA COLA', user: user, announcement: msg });
         hablarTTS(msg);
       } else if (tipo === 'taptap') {
         const user = 'Slow MD';
         const cancion = 'Noche de Travesuras';
         let s = state.queue.find(q => q.user === user) || state.queue[0];
         if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
           state.queue.push(s);
         }
         s.status = 'unlocked';
@@ -995,7 +1479,7 @@
         const cancion = 'Provenza';
         let s = state.queue.find(q => q.user === user) || state.queue[0];
         if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
           state.queue.push(s);
         }
         s.status = 'unlocked';
@@ -1008,7 +1492,7 @@
         const cancion = 'Ella Baila Sola';
         let s = state.queue.find(q => q.user === user) || state.queue[0];
         if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked' };
+          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
           state.queue.push(s);
         }
         s.status = 'unlocked';
@@ -1019,7 +1503,7 @@
       } else if (tipo === 'rosas10') {
         const user = 'Carlos';
         const cancion = 'La Bebe Remix';
-        let s = { id: 'sub_' + Date.now(), title: cancion, user: user, status: 'unlocked' };
+        let s = { id: 'sub_' + Date.now(), title: cancion, user: user, status: 'unlocked', overtakenCount: 0 };
         state.queue.unshift(s);
         sincronizarServidor();
         const msg = `${user} subió su canción a la posición 1 con 10 rosas`;
@@ -1027,7 +1511,7 @@
         hablarTTS(`¡${msg}!`);
       } else if (tipo === 'top3') {
         const user = 'Roberto';
-        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Sombrero', user: user, status: 'unlocked' };
+        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Sombrero', user: user, status: 'unlocked', overtakenCount: 0 };
         state.queue.splice(Math.min(2, state.queue.length), 0, nueva);
         sincronizarServidor();
         const msg = `${user} desbloqueó su canción y subió a la posición 3 con Sombrero y bigote`;
@@ -1035,7 +1519,7 @@
         hablarTTS(`¡${msg}!`);
       } else if (tipo === 'top2') {
         const user = 'Laura';
-        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Gafas', user: user, status: 'unlocked' };
+        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Gafas', user: user, status: 'unlocked', overtakenCount: 0 };
         state.queue.splice(Math.min(1, state.queue.length), 0, nueva);
         sincronizarServidor();
         const msg = `${user} desbloqueó su canción y subió a la posición 2 con Gafas de sol`;
@@ -1043,7 +1527,7 @@
         hablarTTS(`¡${msg}!`);
       } else if (tipo === 'moneygun' || tipo === 'top1') {
         const user = 'Andrés';
-        const nueva = { id: 'top1_' + Date.now(), title: 'Columbia', user: user, status: 'unlocked', priority: 'vip' };
+        const nueva = { id: 'top1_' + Date.now(), title: 'Columbia', user: user, status: 'unlocked', priority: 'vip', overtakenCount: 0 };
         state.queue.unshift(nueva);
         sincronizarServidor();
         const msg = `${user} desbloqueó su canción y subió al puesto VIP con Money Gun`;

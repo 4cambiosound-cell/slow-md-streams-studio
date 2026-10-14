@@ -283,8 +283,61 @@ function registrarAliasServidor(chatName, displayId, nickname, userId) {
   return canonical;
 }
 
+// REGLAS 2 Y 3: Reubicar canción y contar rebases sobre canciones bloqueadas
+function moverCancionConRebase(fromIdx, targetIdx) {
+  if (fromIdx === targetIdx || fromIdx < 0 || fromIdx >= queueState.queue.length) return fromIdx;
+  const song = queueState.queue[fromIdx];
+  queueState.queue.splice(fromIdx, 1);
+  queueState.queue.splice(targetIdx, 0, song);
+
+  // Si la canción subió (targetIdx < fromIdx), pasó por encima de las que quedaron entre targetIdx + 1 y fromIdx
+  if (targetIdx < fromIdx) {
+    const eliminadas = [];
+    for (let i = targetIdx + 1; i <= fromIdx; i++) {
+      const s = queueState.queue[i];
+      if (s && s.status === 'locked') {
+        s.overtakenCount = (s.overtakenCount || 0) + 1;
+        if (s.overtakenCount >= 4) {
+          eliminadas.push(s);
+        }
+      }
+    }
+    if (eliminadas.length > 0) {
+      queueState.queue = queueState.queue.filter(s => !eliminadas.includes(s));
+      for (const e of eliminadas) {
+        addLog(`❌ "${e.title}" (@${e.user}) fue eliminada automáticamente tras ser rebasada por 4 canciones`, 'queue');
+      }
+    }
+  }
+  return targetIdx;
+}
+
+// Encuentra la posición inmediatamente tras la última canción desbloqueada
+function encontrarPosicionDesbloqueada(excluirId = null) {
+  let lastUnlockedIdx = -1;
+  for (let i = 0; i < queueState.queue.length; i++) {
+    if (queueState.queue[i].status === 'unlocked' && queueState.queue[i].id !== excluirId) {
+      lastUnlockedIdx = i;
+    }
+  }
+  return lastUnlockedIdx + 1;
+}
+
 function processServerChat(comment, userChatName, userHandle = '', userId = '') {
   const text = (comment || '').trim();
+
+  // Regla 4: Alguien comenta "Lista" en el chat
+  if (/^lista\b/i.test(text)) {
+    const chatUser = (userChatName || 'Usuario').trim();
+    broadcast({
+      type: 'SHOW_LIST',
+      queue: queueState.queue,
+      requestedBy: chatUser
+    });
+    addLog(`📋 ${chatUser} comentó "Lista" -> Mostrando lista completa en el overlay`, 'chat');
+    return true;
+  }
+
   let cancionDetectada = '';
 
   const escuchaMatch = text.match(/^\s*(?:[!/]?escucha(?:te)?|puedes\s+escuchar)\s*:?\s+(.+)$/i);
@@ -319,7 +372,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
   const sharesActuales = serverUserShares.get(userKey) || (handleKey ? serverUserShares.get(handleKey) : 0) || 0;
   const rosesActuales = serverUserRoses.get(userKey) || (handleKey ? serverUserRoses.get(handleKey) : 0) || 0;
 
-  // Buscar si ya tiene canción en la cola
+  // REGLA 1: Quien ya tenga 1 canción en la lista no podrá agregar otra hasta que salga
   const idx = queueState.queue.findIndex(s => {
     const k = normalizarUserKey(s.user);
     const kh = s.handle ? normalizarUserKey(s.handle) : '';
@@ -328,12 +381,15 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
   });
 
   if (idx !== -1) {
-    if (queueState.queue[idx].status === 'locked') {
-      queueState.queue[idx].title = cancionDetectada;
-      saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
-      addLog(`📝 ${chatName} actualizó el nombre de su canción pendiente a "${cancionDetectada}"`, 'chat');
-    }
+    const yaTiene = queueState.queue[idx];
+    const aviso = `${chatName}, ya tienes una canción en la lista`;
+    broadcast({
+      type: 'CHAT_WARNING',
+      user: chatName,
+      message: aviso,
+      existingSong: yaTiene.title
+    });
+    addLog(`⚠️ ${chatName} intentó agregar otra canción pero ya tiene "${yaTiene.title}" en lista`, 'chat');
     return true;
   }
 
@@ -355,10 +411,33 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
     likes: likesActuales,
     shares: sharesActuales,
     roses: rosesActuales,
+    overtakenCount: 0,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
 
-  queueState.queue.push(nuevaCancion);
+  // REGLAS 2 Y 3: Si entra desbloqueada sube por encima de las bloqueadas
+  if (status === 'unlocked') {
+    const targetIdx = encontrarPosicionDesbloqueada();
+    queueState.queue.splice(targetIdx, 0, nuevaCancion);
+    const eliminadas = [];
+    for (let i = targetIdx + 1; i < queueState.queue.length; i++) {
+      const s = queueState.queue[i];
+      if (s && s.status === 'locked') {
+        s.overtakenCount = (s.overtakenCount || 0) + 1;
+        if (s.overtakenCount >= 4) eliminadas.push(s);
+      }
+    }
+    if (eliminadas.length > 0) {
+      queueState.queue = queueState.queue.filter(s => !eliminadas.includes(s));
+      for (const e of eliminadas) {
+        addLog(`❌ Canción eliminada [4 canciones le pasaron por encima]: "${e.title}" de @${e.user}`, 'queue');
+      }
+    }
+  } else {
+    nuevaCancion.overtakenCount = 0;
+    queueState.queue.push(nuevaCancion);
+  }
+
   saveQueueData();
   const announcement = status === 'unlocked'
     ? `¡${chatName} agregó y desbloqueó "${cancionDetectada}"!`
@@ -396,6 +475,8 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
     if (s.status === 'locked' && s.likes >= likesReq) {
       s.status = 'unlocked';
       s.unlockedReason = `${likesReq} Tap Tap`;
+      const targetPos = encontrarPosicionDesbloqueada(s.id);
+      moverCancionConRebase(idx, targetPos);
       saveQueueData();
       const announcement = `¡${s.user} desbloqueó su canción con ${likesReq} tap tap!`;
       broadcast({
@@ -437,6 +518,8 @@ function processServerShare(userIdentifier, extraInfo = {}) {
     if (s.status === 'locked' && s.shares >= sharesReq) {
       s.status = 'unlocked';
       s.unlockedReason = `${sharesReq} Veces Compartido`;
+      const targetPos = encontrarPosicionDesbloqueada(s.id);
+      moverCancionConRebase(idx, targetPos);
       saveQueueData();
       const announcement = `¡${s.user} desbloqueó su canción con ${sharesReq} veces compartido!`;
       broadcast({
@@ -504,9 +587,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       s.status = 'unlocked';
       s.priority = 'vip';
       s.unlockedReason = `Puesto #1: ${giftName}`;
-      queueState.queue.splice(idx, 1);
-      queueState.queue.unshift(s);
-      verificarEliminacionServidor(queueState.queue);
+      moverCancionConRebase(idx, 0);
       saveQueueData();
       const announcement = `¡${s.user} desbloqueó su canción y subió al puesto VIP con ${giftName}!`;
       broadcast({
@@ -526,10 +607,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       s.status = 'unlocked';
       s.priority = 'vip';
       s.unlockedReason = `Puesto #2: ${giftName}`;
-      queueState.queue.splice(idx, 1);
-      const targetPos = Math.min(1, queueState.queue.length);
-      queueState.queue.splice(targetPos, 0, s);
-      verificarEliminacionServidor(queueState.queue);
+      const targetPos = Math.min(1, Math.max(0, queueState.queue.length - 1));
+      moverCancionConRebase(idx, targetPos);
       saveQueueData();
       const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 2 con ${giftName}!`;
       broadcast({
@@ -549,10 +628,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       s.status = 'unlocked';
       s.priority = 'vip';
       s.unlockedReason = `Puesto #3: ${giftName}`;
-      queueState.queue.splice(idx, 1);
-      const targetPos = Math.min(2, queueState.queue.length);
-      queueState.queue.splice(targetPos, 0, s);
-      verificarEliminacionServidor(queueState.queue);
+      const targetPos = Math.min(2, Math.max(0, queueState.queue.length - 1));
+      moverCancionConRebase(idx, targetPos);
       saveQueueData();
       const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 3 con ${giftName}!`;
       broadcast({
@@ -570,13 +647,9 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     // 4. Subir 1 posición (Rosa x10, Corazón dedos x2, Mención x2)
     } else if (isSubir) {
       if (s.priority !== 'vip') s.priority = 'medium';
-      let newPos = 1;
-      if (idx > 0) {
-        queueState.queue.splice(idx, 1);
-        queueState.queue.splice(idx - 1, 0, s);
-        newPos = idx; // idx-1 en array 0-indexed corresponde al puesto idx humano (1-indexed)
-      }
-      verificarEliminacionServidor(queueState.queue);
+      const targetPos = Math.max(0, idx - 1);
+      moverCancionConRebase(idx, targetPos);
+      const newPos = targetPos + 1;
       saveQueueData();
       const announcement = `¡${s.user} subió su canción a la posición ${newPos} con ${giftName}!`;
       broadcast({
@@ -595,7 +668,8 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     } else if (isDesbloquear) {
       s.status = 'unlocked';
       s.unlockedReason = `Desbloqueo: ${giftName}`;
-      verificarEliminacionServidor(queueState.queue);
+      const targetPos = encontrarPosicionDesbloqueada(s.id);
+      moverCancionConRebase(idx, targetPos);
       saveQueueData();
       const giftLabel = isRosa && totalRoses > 1 ? `${totalRoses} rosas` : giftName;
       const announcement = `¡${s.user} desbloqueó su canción con ${giftLabel}!`;
@@ -782,6 +856,7 @@ let lastLikesMilestone = 0;
       knownFollowers.add(normalizarUserKey(info.handle));
       if (info.displayId) knownFollowers.add(normalizarUserKey(info.displayId));
       addLog(`➕ ${info.chatName} comenzó a seguirte`, 'follow');
+      const announcement = `${info.chatName} se sumó a la comunidad`;
       broadcast({
         type: 'FOLLOW',
         user: info.chatName,
@@ -790,6 +865,7 @@ let lastLikesMilestone = 0;
         nickname: info.nickname,
         userId: info.userId,
         avatarUrl: info.avatarUrl,
+        announcement: announcement,
         timestamp: Date.now()
       });
     });
@@ -837,14 +913,18 @@ let lastLikesMilestone = 0;
         nickname: info.nickname,
         userId: info.userId
       });
+      const primerNombre = (info.chatName || 'Alguien').trim().split(/[\s_.-]+/)[0] || info.chatName;
+      const announcement = `${primerNombre} mandó este live a su crush`;
       broadcast({
         type: 'SHARE',
         user: info.chatName,
+        primerNombre: primerNombre,
         displayId: info.displayId,
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
         avatarUrl: info.avatarUrl,
+        announcement: announcement,
         timestamp: Date.now()
       });
     };
