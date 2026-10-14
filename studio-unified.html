@@ -153,33 +153,51 @@
       100% { transform: scale(1.02); filter: brightness(1.2); }
     }
 
-    /* Pop-in Entrance Highlight Overlay */
+    /* Pop-in Highlight Banner con LETRAS GRANDES (Nueva Canción, Desbloqueada, Subió Posición) */
     .vertical-entrance-banner {
       position: absolute;
-      top: -80px;
+      top: -125px;
       left: 0;
       right: 0;
-      background: linear-gradient(135deg, rgba(22, 10, 15, 0.98) 0%, rgba(12, 12, 18, 0.98) 100%);
+      background: linear-gradient(135deg, rgba(14, 10, 20, 0.98) 0%, rgba(5, 5, 10, 0.98) 100%);
       border: 2px solid var(--gold-vip);
-      border-radius: 16px;
-      padding: 10px 16px;
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 184, 0, 0.7);
+      border-radius: 20px;
+      padding: 12px 18px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 184, 0, 0.55);
       display: flex;
       flex-direction: column;
       gap: 6px;
       opacity: 0;
-      transform: translateY(18px) scale(0.9);
+      transform: translateY(22px) scale(0.92);
       pointer-events: none;
-      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 50;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .vertical-entrance-banner.active {
       opacity: 1;
       transform: translateY(0) scale(1);
       pointer-events: auto;
+    }
+
+    .vertical-entrance-banner.banner-theme-nueva {
+      border-color: #00e5ff;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 229, 255, 0.6);
+    }
+    .vertical-entrance-banner.banner-theme-desbloqueada {
+      border-color: #10b981;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 40px rgba(16, 185, 129, 0.7);
+    }
+    .vertical-entrance-banner.banner-theme-subio {
+      border-color: #ffb800;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 45px rgba(255, 184, 0, 0.85);
+      animation: pulseSubio 1.4s infinite alternate;
+    }
+    @keyframes pulseSubio {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(0) scale(1.02); }
     }
 
     .entrance-header {
@@ -189,41 +207,41 @@
     }
 
     .entrance-badge {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       color: #fff;
       text-transform: uppercase;
-      text-shadow: 0 0 12px var(--gold-vip);
+      text-shadow: 0 0 14px currentColor;
     }
 
     .entrance-timer-dot {
-      width: 9px;
-      height: 9px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: var(--gold-vip);
-      box-shadow: 0 0 10px var(--gold-vip);
+      box-shadow: 0 0 12px var(--gold-vip);
       animation: pulseDot 0.6s infinite alternate;
     }
 
     .entrance-content {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .entrance-disc-icon {
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: #111;
-      border: 2px solid var(--gold-vip);
+      border: 2.5px solid var(--gold-vip);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 22px;
       animation: spinDisc 2.5s linear infinite;
-      box-shadow: 0 0 16px rgba(255, 184, 0, 0.6);
+      box-shadow: 0 0 20px rgba(255, 184, 0, 0.6);
       flex-shrink: 0;
     }
 
@@ -232,59 +250,69 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
+    /* LETRAS GRANDES PARA EL TÍTULO */
     .entrance-song-title {
-      font-size: 13.5px;
+      font-size: 24px;
       font-weight: 900;
       color: #fff;
       text-transform: uppercase;
-      white-space: nowrap;
+      line-height: 1.15;
+      letter-spacing: 0.5px;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.9);
     }
 
     .entrance-song-meta {
-      font-size: 10.5px;
-      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .entrance-status-tag {
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 800;
-      padding: 1px 6px;
-      border-radius: 4px;
+      padding: 2px 8px;
+      border-radius: 6px;
       text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
     .entrance-status-tag.tag-unlocked {
-      background: rgba(34, 197, 94, 0.25);
+      background: rgba(34, 197, 94, 0.3);
       color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.4);
+      border: 1px solid rgba(34, 197, 94, 0.6);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
     }
     .entrance-status-tag.tag-locked {
-      background: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.3);
       color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+      border: 1px solid rgba(239, 68, 68, 0.6);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
     }
 
     .entrance-progress-bar {
       width: 100%;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
       overflow: hidden;
-      margin-top: 2px;
+      margin-top: 3px;
     }
     .entrance-progress-fill {
       height: 100%;
       width: 100%;
       background: linear-gradient(90deg, var(--gold-vip), var(--blood-red));
-      box-shadow: 0 0 8px var(--gold-vip);
+      box-shadow: 0 0 10px var(--gold-vip);
     }
 
     /* Header Superior de la Estación */
@@ -1172,14 +1200,14 @@
     <!-- MÓDULO 1: ESTACIÓN VERTICAL DE MÚSICA & ESPECTRO DE AUDIO REAL -->
     <div id="module-overlay-queue" class="overlay-module-slot">
       <div class="vertical-music-station" id="vertical-music-station">
-        <!-- Pop-in Entrance Highlight Overlay (Se activa al entrar un nuevo tema) -->
+        <!-- Pop-in Entrance Highlight Overlay (LETRAS GRANDES: Nueva Canción, Desbloqueada, Subió Posición) -->
         <div class="vertical-entrance-banner" id="vertical-entrance-banner">
           <div class="entrance-header">
-            <span class="entrance-badge">🔥 ¡NUEVO TEMA INGRESÓ! 🔥</span>
+            <span class="entrance-badge" id="entrance-badge-text">🎵 ¡NUEVA CANCIÓN EN COLA! 🎵</span>
             <span class="entrance-timer-dot"></span>
           </div>
           <div class="entrance-content">
-            <div class="entrance-disc-icon">💿</div>
+            <div class="entrance-disc-icon" id="entrance-disc-icon">💿</div>
             <div class="entrance-text">
               <div class="entrance-song-title" id="entrance-song-title">TÍTULO DEL TEMA</div>
               <div class="entrance-song-meta">
@@ -1638,11 +1666,28 @@
               if (data.sound) playTone(data.sound);
               if (data.eventType === 'hands_top1') {
                 mostrarManosDoradas(data.songTitle || 'CANCIÓN TOP 1', data.songUser || '@VIP');
-              }
-              if (data.newSong) {
-                resaltarNuevoTema(data.newSong);
+                mostrarAlertaGrande('subio', {
+                  title: data.songTitle || 'CANCIÓN TOP 1',
+                  user: data.songUser || '@VIP',
+                  position: 1
+                });
+              } else if (data.eventType === 'move_up') {
+                const pos = data.newPosition || 1;
+                mostrarAlertaGrande('subio', {
+                  title: data.songTitle || 'CANCIÓN',
+                  user: data.songUser || '@Usuario',
+                  position: pos
+                });
+              } else if (data.eventType === 'unlock') {
+                mostrarAlertaGrande('desbloqueada', {
+                  title: data.songTitle || 'CANCIÓN',
+                  user: data.songUser || '@Usuario'
+                });
+              } else if (data.eventType === 'new_song' || data.newSong) {
+                const song = data.newSong || { title: data.songTitle, user: data.songUser, status: 'locked' };
+                mostrarAlertaGrande('nueva', song);
               } else if (state.queue.length > prevLen) {
-                resaltarNuevoTema(state.queue[state.queue.length - 1]);
+                mostrarAlertaGrande('nueva', state.queue[state.queue.length - 1]);
               }
             } else if (data.type === 'RULES_UPDATE') {
               if (data.rules) {
@@ -1865,6 +1910,13 @@
       const [item] = state.queue.splice(index, 1);
       state.queue.splice(newIdx, 0, item);
       sincronizarColaServidor();
+      if (dir < 0) {
+        mostrarAlertaGrande('subio', {
+          title: item.title,
+          user: item.user,
+          position: newIdx + 1
+        });
+      }
     }
 
     function eliminarCancion(index) {
@@ -1883,37 +1935,85 @@
       }
     }
 
-    // ANIMACIÓN DE RESALTADO AL ENTRAR NUEVO TEMA (OVERLAY VERTICAL 9:16)
+    // ANIMACIÓN DE ALERTAS EN LETRAS GRANDES (NUEVA CANCIÓN, DESBLOQUEADA, SUBIÓ POSICIÓN)
     let entranceTimer = null;
-    function resaltarNuevoTema(song) {
-      if (!song || !song.title) return;
+    function mostrarAlertaGrande(tipo, info) {
+      if (!info) return;
+      const title = info.title || 'CANCIÓN';
+      const user = info.user || 'Espectador';
+      const pos = info.position || 1;
+
       const banner = document.getElementById('vertical-entrance-banner');
       const station = document.getElementById('vertical-music-station');
+      const badgeEl = document.getElementById('entrance-badge-text');
       const titleEl = document.getElementById('entrance-song-title');
       const userEl = document.getElementById('entrance-song-user');
       const tagEl = document.getElementById('entrance-status-tag');
       const fillEl = document.getElementById('entrance-progress-fill');
+      const iconEl = document.getElementById('entrance-disc-icon');
 
       if (!banner) return;
 
-      if (titleEl) titleEl.textContent = song.title.toUpperCase();
-      if (userEl) userEl.textContent = `@${song.user || 'Espectador'}`;
-      if (tagEl) {
-        const isUnlocked = song.status === 'unlocked';
-        tagEl.textContent = isUnlocked ? '🔓 LISTA' : '🔒 BLOQUEADA';
-        tagEl.className = 'entrance-status-tag ' + (isUnlocked ? 'tag-unlocked' : 'tag-locked');
+      // Limpiar clases de tema previo
+      banner.className = 'vertical-entrance-banner';
+
+      if (titleEl) titleEl.textContent = title.toUpperCase();
+
+      if (tipo === 'nueva') {
+        banner.classList.add('banner-theme-nueva');
+        if (badgeEl) badgeEl.innerHTML = '🎵 ¡NUEVA CANCIÓN EN COLA! 🎵';
+        if (userEl) userEl.textContent = `Pedida por: @${user}`;
+        if (tagEl) {
+          const isUnlocked = info.status === 'unlocked';
+          tagEl.textContent = isUnlocked ? '🔓 LISTA' : '🔒 BLOQUEADA';
+          tagEl.className = 'entrance-status-tag ' + (isUnlocked ? 'tag-unlocked' : 'tag-locked');
+        }
+        if (iconEl) iconEl.textContent = '💿';
+        playRadioEntranceSweep();
+      } else if (tipo === 'desbloqueada') {
+        banner.classList.add('banner-theme-desbloqueada');
+        if (badgeEl) badgeEl.innerHTML = '🔓 ¡CANCIÓN DESBLOQUEADA! 🔓';
+        if (userEl) userEl.textContent = `¡@${user} cumplió la meta de apoyo!`;
+        if (tagEl) {
+          tagEl.textContent = '🔓 DESBLOQUEADA';
+          tagEl.className = 'entrance-status-tag tag-unlocked';
+        }
+        if (iconEl) iconEl.textContent = '🔓';
+        playTone('top1');
+        activarBordeLuminoso('glow-gold');
+      } else if (tipo === 'subio') {
+        banner.classList.add('banner-theme-subio');
+        if (badgeEl) badgeEl.innerHTML = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
+        if (userEl) userEl.textContent = `¡La canción de @${user} avanzó al puesto #${pos}!`;
+        if (tagEl) {
+          tagEl.textContent = `PUESTO #${pos}`;
+          tagEl.className = 'entrance-status-tag tag-unlocked';
+        }
+        if (iconEl) iconEl.textContent = pos === 1 ? '👑' : (pos === 2 ? '🥈' : (pos === 3 ? '🥉' : '🚀'));
+        playTone('subir');
+        activarBordeLuminoso('glow-gold');
+        // VOZ TTS: "La canción de X subió a la posición X"
+        hablarTTS(`La canción de ${user} subió a la posición ${pos}`);
+      }
+
+      // Evitar que quede cortado arriba si la estación está muy pegada al borde superior
+      const queueSlot = document.getElementById('module-overlay-queue');
+      if (queueSlot && parseFloat(queueSlot.style.top) < 12) {
+        banner.style.top = '102%';
+        banner.style.bottom = 'auto';
+      } else {
+        banner.style.top = '-125px';
+        banner.style.bottom = 'auto';
       }
 
       banner.classList.add('active');
       if (station) station.classList.add('music-surge');
 
-      playRadioEntranceSweep();
-
       if (fillEl) {
         fillEl.style.transition = 'none';
         fillEl.style.width = '100%';
         setTimeout(() => {
-          fillEl.style.transition = 'width 6s linear';
+          fillEl.style.transition = 'width 6.5s linear';
           fillEl.style.width = '0%';
         }, 50);
       }
@@ -1922,7 +2022,11 @@
       entranceTimer = setTimeout(() => {
         banner.classList.remove('active');
         if (station) station.classList.remove('music-surge');
-      }, 6200);
+      }, 6800);
+    }
+
+    function resaltarNuevoTema(song) {
+      mostrarAlertaGrande('nueva', song);
     }
 
     function playRadioEntranceSweep() {
@@ -2412,23 +2516,20 @@
         if (state.queue.length > 0) {
           state.queue[0].status = 'unlocked';
           sincronizarColaServidor();
-          resaltarNuevoTema(state.queue[0]);
+          mostrarAlertaGrande('desbloqueada', state.queue[0]);
           mostrarPopupTTS('DonadorRosa', 'Envió 5 Rosas 🌹 (¡Canción Desbloqueada!)', 'gift');
-          hablarTTS('¡DonadorRosa desbloqueó su canción con 5 rosas!');
         }
       } else if (tipo === 'corazon_x1') {
         if (state.queue.length > 0) {
           state.queue[0].status = 'unlocked';
           sincronizarColaServidor();
-          resaltarNuevoTema(state.queue[0]);
+          mostrarAlertaGrande('desbloqueada', state.queue[0]);
           mostrarPopupTTS('FanCorazon', 'Envió Corazón con los dedos 🫰 (¡Desbloqueada!)', 'gift');
-          hablarTTS('¡Canción desbloqueada con un corazón con los dedos!');
         }
       } else if (tipo === 'rosas_10') {
         if (state.queue.length > 1) {
           moverCancion(1, -1);
           mostrarPopupTTS('FanVeloz', 'Envió 10 Rosas 🌹 (¡Subió 1 Puesto!)', 'gift');
-          hablarTTS('¡10 rosas enviadas, subió una posición!');
         }
       } else if (tipo === 'posicion_3') {
         const itemPos3 = {
@@ -2440,9 +2541,8 @@
         };
         state.queue.splice(Math.min(2, state.queue.length), 0, itemPos3);
         sincronizarColaServidor();
-        resaltarNuevoTema(itemPos3);
+        mostrarAlertaGrande('subio', { title: itemPos3.title, user: itemPos3.user, position: 3 });
         mostrarPopupTTS('VIP_Tercero', 'Envió Sombrero y Bigote 🎩 (¡Pasa al Puesto #3!)', 'gift');
-        hablarTTS('¡VIP_Tercero envió sombrero y pasó al puesto 3!');
       } else if (tipo === 'posicion_2') {
         const itemPos2 = {
           id: 'sim_pos2_' + Date.now(),
@@ -2453,9 +2553,8 @@
         };
         state.queue.splice(Math.min(1, state.queue.length), 0, itemPos2);
         sincronizarColaServidor();
-        resaltarNuevoTema(itemPos2);
+        mostrarAlertaGrande('subio', { title: itemPos2.title, user: itemPos2.user, position: 2 });
         mostrarPopupTTS('VIP_Segundo', 'Envió Gafas de Sol 🕶️ (¡Pasa al Puesto #2!)', 'gift');
-        hablarTTS('¡VIP_Segundo envió gafas y pasó al puesto 2!');
       } else if (tipo === 'posicion_1') {
         const nueva = {
           id: 'sim_pos1_' + Date.now(),
@@ -2466,10 +2565,9 @@
         };
         state.queue.unshift(nueva);
         sincronizarColaServidor();
-        resaltarNuevoTema(nueva);
+        mostrarAlertaGrande('subio', { title: nueva.title, user: nueva.user, position: 1 });
         mostrarManosDoradas(nueva.title, nueva.user);
         mostrarPopupTTS('Donador_MVP', '¡Envió Money Gun 🔫 y saltó al Puesto #1!', 'gift');
-        hablarTTS('¡Increíble! ¡Donador_MVP envió Money Gun y saltó al puesto número 1!');
       } else if (tipo === 'likes_10000') {
         lanzarConfetiCorazones3D();
         activarBordeLuminoso('glow-gold');

@@ -405,7 +405,15 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
       s.status = 'unlocked';
       s.unlockedReason = `${likesReq} Likes ❤️`;
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal' });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'normal',
+        eventType: 'unlock',
+        songTitle: s.title,
+        songUser: s.user
+      });
       addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${likesReq} likes!`, 'like');
     } else {
       saveQueueData();
@@ -435,7 +443,15 @@ function processServerShare(userIdentifier, extraInfo = {}) {
       s.status = 'unlocked';
       s.unlockedReason = `${sharesReq} Compartidos 🔄`;
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal' });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'normal',
+        eventType: 'unlock',
+        songTitle: s.title,
+        songUser: s.user
+      });
       addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${sharesReq} compartidos!`, 'share');
     } else {
       saveQueueData();
@@ -494,7 +510,16 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.unshift(s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', eventType: 'hands_top1', songTitle: s.title });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'top1',
+        eventType: 'hands_top1',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: 1
+      });
       addLog(`🥇 ¡${s.user} catapultó "${s.title}" al PUESTO #1 con ${giftName}!`, 'gift');
     // 2. Desbloquea y pasa a Puesto #2 (Gafas de sol)
     } else if (isPuesto2) {
@@ -506,7 +531,16 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.splice(targetPos, 0, s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', songTitle: s.title });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'top1',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: 2
+      });
       addLog(`🥈 ¡${s.user} pasó "${s.title}" al PUESTO #2 con ${giftName}!`, 'gift');
     // 3. Desbloquea y pasa a Puesto #3 (Sombrero y bigote)
     } else if (isPuesto3) {
@@ -518,26 +552,54 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       queueState.queue.splice(targetPos, 0, s);
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'top1', songTitle: s.title });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'top1',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: 3
+      });
       addLog(`🥉 ¡${s.user} pasó "${s.title}" al PUESTO #3 con ${giftName}!`, 'gift');
     // 4. Subir 1 posición (Rosa x10, Corazón dedos x2, Mención x2)
     } else if (isSubir) {
       if (s.priority !== 'vip') s.priority = 'medium';
+      let newPos = 1;
       if (idx > 0) {
         queueState.queue.splice(idx, 1);
         queueState.queue.splice(idx - 1, 0, s);
+        newPos = idx; // idx-1 en array 0-indexed corresponde al puesto idx humano (1-indexed)
       }
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'subir', eventType: 'move_up', songTitle: s.title });
-      addLog(`🚀 ¡${s.user} subió una posición con "${s.title}" gracias a ${giftName}!`, 'gift');
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'subir',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: newPos
+      });
+      addLog(`🚀 ¡${s.user} subió a la posición #${newPos} con "${s.title}" gracias a ${giftName}!`, 'gift');
     // 5. Desbloquear canción (Rosa x5, Corazón con los dedos x1, etc.)
     } else if (isDesbloquear) {
       s.status = 'unlocked';
       s.unlockedReason = `Desbloqueo: ${giftName}`;
       verificarEliminacionServidor(queueState.queue);
       saveQueueData();
-      broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history, sound: 'normal', eventType: 'unlock', songTitle: s.title });
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'normal',
+        eventType: 'unlock',
+        songTitle: s.title,
+        songUser: s.user
+      });
       addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${giftName}!`, 'gift');
     } else {
       verificarEliminacionServidor(queueState.queue);
