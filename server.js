@@ -369,7 +369,9 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '') 
     type: 'QUEUE_UPDATE',
     queue: queueState.queue,
     history: queueState.history,
-    sound: status === 'unlocked' ? 'normal' : null
+    sound: status === 'unlocked' ? 'normal' : null,
+    newSong: nuevaCancion,
+    eventType: 'new_song'
   });
   addLog(`🎵 Canción agregada [${status === 'locked' ? '🔒 BLOQUEADA' : '🔓 LISTA'}]: "${cancionDetectada}" (${chatName})`, 'chat');
   return true;
