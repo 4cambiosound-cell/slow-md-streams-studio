@@ -27,7 +27,6 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      user-select: none;
     }
 
     body {
@@ -35,6 +34,7 @@
       background: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
+      overflow-y: auto;
       min-height: 100vh;
     }
 
@@ -288,6 +288,9 @@
     #panel-view {
       flex-direction: column;
       background: #0a0c13;
+      width: 100%;
+      min-height: 100vh;
+      overflow-y: visible;
     }
 
     .streamer-navbar {
@@ -375,15 +378,14 @@
 
     /* CONTENEDOR PRINCIPAL DEL PANEL */
     .streamer-container {
-      flex: 1;
-      max-width: 1200px;
       width: 100%;
+      max-width: 1300px;
       margin: 0 auto;
-      padding: 28px;
+      padding: 28px 24px 80px 24px;
       display: grid;
       grid-template-columns: 1.3fr 1fr;
       gap: 24px;
-      overflow-y: auto;
+      overflow: visible;
     }
 
     @media (max-width: 900px) {
@@ -1387,6 +1389,10 @@
           <span class="tts-user-name" id="overlay-tts-user">@Usuario</span>
           <span class="tts-badge-type" id="overlay-tts-badge">💬 Chat</span>
         </div>
+        <div class="tts-text-message" id="overlay-tts-message">Mensaje del chat aquí...</div>
+      </div>
+    </div>
+
     <!-- 4. WIDGET ÉPICO DE VOTACIÓN / JURADO (2160x3840) -->
     <div class="overlay-voting-modal" id="overlay-voting-modal">
       <div class="voting-modal-header">
