@@ -914,6 +914,8 @@
             <button class="btn-sim" onclick="simular('share_crush')">📸 Compartir Crush (Regla 5)</button>
             <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos (Regla 6)</button>
             <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción (Regla 1)</button>
+            <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego canción?"</button>
+            <button class="btn-sim" onclick="simular('spam')">🚫 Probar Filtro Spam (>2 rep)</button>
             <button class="btn-sim" onclick="simular('taptap')">👆 1000 Tap Tap (Slow MD)</button>
             <button class="btn-sim" onclick="simular('compartido')">🔁 10 Compartidos (Maria)</button>
             <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Pedro)</button>
@@ -1070,6 +1072,9 @@
             }
           } else if (data.type === 'SHOW_LIST') {
             mostrarListaCompletaOverlay(data.queue || state.queue);
+          } else if (data.type === 'HOW_TO_ADD_HELP') {
+            mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: data.user, announcement: data.bannerText });
+            hablarTTS(data.voiceText);
           } else if (data.type === 'CHAT_WARNING') {
             mostrarAlertaOverlay('warning', { title: 'REGLA DE COLA', user: data.user, announcement: data.message });
             hablarTTS(data.message);
@@ -1207,7 +1212,10 @@
 
       if (title) title.textContent = (info.title || 'CANCIÓN').toUpperCase();
 
-      if (tipo === 'warning') {
+      if (tipo === 'help') {
+        if (label) label.textContent = '💡 ¿CÓMO PEDIR CANCIÓN? 💡';
+        if (desc) desc.textContent = info.announcement || 'Comenta: Escucha [Canción] - [Artista]';
+      } else if (tipo === 'warning') {
         if (label) label.textContent = '⚠️ ¡AVISO DE LA COLA! ⚠️';
         if (desc) desc.textContent = info.announcement || `Aviso para @${info.user}`;
       } else if (info.announcement) {
@@ -1461,6 +1469,13 @@
         const msg = `${user}, ya tienes una canción en la lista`;
         mostrarAlertaOverlay('warning', { title: 'REGLA DE LA COLA', user: user, announcement: msg });
         hablarTTS(msg);
+      } else if (tipo === 'pregunta_ayuda') {
+        const banner = "Comenta: Escucha [Canción] - [Artista]";
+        const voice = "Para agregar una canción a la lista debes poner la palabra escucha más el nombre de la canción más el nombre del artista y se agrega automáticamente a la lista.";
+        mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
+        hablarTTS(voice);
+      } else if (tipo === 'spam') {
+        alert('Simulación de Filtro Spam Activo:\n\nSi un usuario repite el mismo comentario más de 2 veces en menos de 10 segundos, el servidor lo detecta automáticamente, lo silencia y no lo lee en voz alta.');
       } else if (tipo === 'taptap') {
         const user = 'Slow MD';
         const cancion = 'Noche de Travesuras';

@@ -323,8 +323,44 @@ function encontrarPosicionDesbloqueada(excluirId = null) {
   return lastUnlockedIdx + 1;
 }
 
+// FILTRO DE SPAM: Filtra comentarios que se repitan más de 2 veces en menos de 10 segundos
+const userRecentComments = new Map();
+function esComentarioSpam(userKey, comment) {
+  const now = Date.now();
+  const cleanComment = (comment || '').trim().toLowerCase();
+  if (!cleanComment) return false;
+
+  let history = userRecentComments.get(userKey) || [];
+  history = history.filter(item => (now - item.time) <= 10000);
+
+  const repetidos = history.filter(item => item.text === cleanComment).length;
+  history.push({ text: cleanComment, time: now });
+  userRecentComments.set(userKey, history);
+
+  return repetidos >= 2;
+}
+
 function processServerChat(comment, userChatName, userHandle = '', userId = '') {
   const text = (comment || '').trim();
+
+  // Detección de preguntas de cómo agregar canción a la lista
+  const ayudaRegex = /(?:c[oó]mo|como)\s+(?:agrego|entro|pongo|hago|a[nñ]ado|pido|meter|subir|estar|anotar)\b.*(?:canci[oó]n|cancion|lista|cola|tema|musica)/i;
+  const ayudaCortaRegex = /^(?:c[oó]mo|como)\s+(?:entro|estar|entrar)\s+(?:a\s+)?(?:la\s+)?(?:lista|cola)\??$/i;
+  const ayudaPedirRegex = /^(?:c[oó]mo|como)\s+(?:pido|pedir|agregar|poner)\s+(?:una\s+)?(?:canci[oó]n|cancion|tema)\??$/i;
+
+  if (ayudaRegex.test(text) || ayudaCortaRegex.test(text) || ayudaPedirRegex.test(text)) {
+    const chatUser = (userChatName || 'Usuario').trim();
+    const voiceMsg = "Para agregar una canción a la lista debes poner la palabra escucha más el nombre de la canción más el nombre del artista y se agrega automáticamente a la lista.";
+    const bannerMsg = "Comenta: Escucha [Canción] - [Artista]";
+    broadcast({
+      type: 'HOW_TO_ADD_HELP',
+      user: chatUser,
+      bannerText: bannerMsg,
+      voiceText: voiceMsg
+    });
+    addLog(`💡 ${chatUser} preguntó cómo agregar canción -> Bot respondió con instrucciones`, 'chat');
+    return true;
+  }
 
   // Regla 4: Alguien comenta "Lista" en el chat
   if (/^lista\b/i.test(text)) {
@@ -832,6 +868,12 @@ let lastLikesMilestone = 0;
       const info = extractUserInfo(data);
       const comment = (data.content || data.comment || '').trim();
       if (!comment) return;
+
+      const userKey = normalizarUserKey(info.chatName);
+      if (esComentarioSpam(userKey, comment)) {
+        addLog(`🚫 Comentario silenciado por spam (>2 repetidos en 10s): "${comment}" (@${info.chatName})`, 'chat');
+        return;
+      }
 
       addLog(`💬 ${info.chatName} (${info.handle}): ${comment}`, 'chat');
       const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId);
