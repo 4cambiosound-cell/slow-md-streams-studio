@@ -51,9 +51,16 @@
     /* ========================================================= */
     /* VISTA 1: OVERLAY TRANSPARENTE 9:16 (TIKTOK LIVE STUDIO 2160x3840 / OBS) */
     /* ========================================================= */
+    html.overlay-mode, body.overlay-mode {
+      background: transparent !important;
+      background-color: transparent !important;
+      overflow: hidden !important;
+    }
+
     #overlay-view {
       position: relative;
       background: transparent !important;
+      background-color: transparent !important;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
@@ -64,18 +71,18 @@
       padding: clamp(30px, 4.5vh, 160px) clamp(20px, 3.5vw, 90px);
     }
 
-    /* TARJETA SUPERIOR: MÚSICA EN TURNO */
+    /* TARJETA SUPERIOR: MÚSICA EN TURNO (TRANSLÚCIDA TIPO CRISTAL AHUMADO) */
     .overlay-top-card {
-      background: rgba(8, 9, 14, 0.95);
-      border: clamp(4px, 0.5vw, 12px) solid var(--blood-red);
+      background: rgba(12, 16, 28, 0.68) !important;
+      border: clamp(3px, 0.45vw, 10px) solid var(--blood-red) !important;
       border-radius: clamp(24px, 3.5vw, 64px);
       padding: clamp(20px, 3.2vw, 68px) clamp(24px, 3.8vw, 80px);
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.98), 0 0 clamp(30px, 4vw, 80px) var(--blood-red-glow);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 clamp(20px, 3vw, 55px) var(--blood-red-glow) !important;
       display: flex;
       align-items: center;
       gap: clamp(18px, 3vw, 60px);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       width: 94%;
       max-width: 2000px;
       margin: 0 auto;
@@ -913,6 +920,39 @@
       font-weight: 900;
       white-space: nowrap;
     }
+    .full-list-item-row.my-position-row {
+      background: rgba(0, 229, 255, 0.2) !important;
+      border: clamp(3px, 0.4vw, 8px) solid var(--cyan-neon) !important;
+      box-shadow: 0 0 clamp(30px, 4vw, 80px) var(--cyan-glow), inset 0 0 25px rgba(0, 229, 255, 0.25) !important;
+      transform: scale(1.02);
+      animation: pulseMyPos 1.5s infinite alternate;
+    }
+    @keyframes pulseMyPos {
+      from { border-color: var(--cyan-neon); box-shadow: 0 0 30px var(--cyan-glow); }
+      to { border-color: #fde047; box-shadow: 0 0 60px rgba(253, 224, 71, 0.6); }
+    }
+    .full-list-tag.my-pos {
+      background: linear-gradient(90deg, #00e5ff, #fde047) !important;
+      color: #000 !important;
+      font-weight: 900 !important;
+      border: none !important;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
+    }
+    .user-position-header-badge {
+      background: linear-gradient(90deg, #00e5ff, #38bdf8);
+      color: #000;
+      border-radius: 999px;
+      padding: clamp(6px, 0.8vw, 20px) clamp(16px, 1.8vw, 40px);
+      font-size: clamp(20px, 2.2vw, 54px);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+      animation: bouncePos 1s infinite alternate;
+    }
+    @keyframes bouncePos {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
     /* WIDGET ÉPICO DE VOTACIÓN / JURADO (OVERLAY 2160x3840) */
     .overlay-voting-modal {
       position: absolute;
@@ -1194,6 +1234,90 @@
       line-height: 1.2;
     }
 
+    /* 7. MODAL DE ANIMACIÓN ÉPICA DE REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME) */
+    .overlay-epic-gift-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1500;
+    }
+    .overlay-epic-gift-modal.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .epic-gift-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .epic-gift-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(20, 10, 28, 0.95), rgba(10, 6, 16, 0.98));
+      border: clamp(4px, 0.6vw, 12px) solid #ec4899;
+      border-radius: clamp(32px, 4vw, 85px);
+      padding: clamp(35px, 4.5vw, 100px) clamp(30px, 4vw, 90px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: clamp(16px, 2vw, 40px);
+      box-shadow: 0 0 120px rgba(236, 72, 153, 0.7), 0 30px 90px rgba(0,0,0,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      max-width: 90%;
+      z-index: 2;
+    }
+    .overlay-epic-gift-modal.quiereme .epic-gift-card {
+      border-color: #f43f5e;
+      box-shadow: 0 0 140px rgba(244, 63, 94, 0.8), 0 30px 90px rgba(0,0,0,0.9);
+    }
+    .epic-gift-icon {
+      font-size: clamp(65px, 9vw, 200px);
+      line-height: 1;
+      animation: epicHeartBeat 0.8s infinite alternate;
+    }
+    @keyframes epicHeartBeat {
+      0% { transform: scale(0.9); filter: drop-shadow(0 0 20px #ec4899); }
+      100% { transform: scale(1.2); filter: drop-shadow(0 0 60px #f43f5e); }
+    }
+    .epic-gift-title {
+      font-size: clamp(32px, 4.5vw, 105px);
+      font-weight: 900;
+      background: linear-gradient(90deg, #f472b6, #fb7185, #fde047);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .epic-gift-user {
+      font-size: clamp(26px, 3.5vw, 84px);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+    }
+    .epic-gift-subtext {
+      font-size: clamp(18px, 2.2vw, 52px);
+      font-weight: 800;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      border: clamp(2px, 0.25vw, 5px) solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: clamp(8px, 1.2vw, 22px) clamp(22px, 2.5vw, 60px);
+    }
+
     /* FILA DE CONTROLES SLIDER EN PANEL */
     .slider-control-group {
       display: flex;
@@ -1444,6 +1568,17 @@
       </div>
     </div>
 
+    <!-- 7. MODAL DE ANIMACIÓN ÉPICA DE REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME) -->
+    <div class="overlay-epic-gift-modal" id="overlay-epic-gift-modal">
+      <canvas id="epic-gift-canvas" class="epic-gift-canvas"></canvas>
+      <div class="epic-gift-card" id="epic-gift-card">
+        <div class="epic-gift-icon" id="epic-gift-icon">🫰❤️</div>
+        <div class="epic-gift-title" id="epic-gift-title">¡CORAZÓN CON LOS DEDOS!</div>
+        <div class="epic-gift-user" id="epic-gift-user">@Usuario</div>
+        <div class="epic-gift-subtext" id="epic-gift-subtext">¡Paso completado para entrar a la lista!</div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ========================================================= -->
@@ -1527,14 +1662,15 @@
         <!-- Tarjeta de Reglas Activas -->
         <div class="panel-card">
           <div class="card-title-bar">
-            <h2>⚙️ Reglas de Desbloqueo y Salto</h2>
+            <h2>⚙️ Reglas de Entrada (Secuencia de 3 Pasos)</h2>
           </div>
           <div style="font-size: 12.5px; line-height: 1.6; color: #cbd5e1;">
-            <div>🔓 <strong>Desbloqueo:</strong> Rosa x5, Compartir x10, Likes x1000 o Corazón x1</div>
-            <div>⬆️ <strong>Subir 1 Puesto:</strong> Rosa x10, Corazón x2 o Mención x2</div>
-            <div>🥉 <strong>Puesto #3:</strong> Sombrero y bigote x1</div>
-            <div>🥈 <strong>Puesto #2:</strong> Gafas de sol x1</div>
-            <div>🥇 <strong>Puesto #1:</strong> Money Gun x1</div>
+            <div>1️⃣ <strong>Paso 1:</strong> Seguir al streamer (@slowmdoficial)</div>
+            <div>2️⃣ <strong>Paso 2:</strong> Compartir el Live</div>
+            <div>3️⃣ <strong>Paso 3:</strong> Enviar regalo <strong>Corazón con los dedos (🫰)</strong></div>
+            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha [Canción] - [Artista]</code></div>
+            <div>💖 <strong>Regalo Quiéreme:</strong> Sube 1 puesto en la cola con animación épica</div>
+            <div>📋 <strong>Comando "Lista":</strong> Muestra la cola destacando tu puesto exacto</div>
           </div>
         </div>
 
@@ -1544,23 +1680,18 @@
             <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
           </div>
           <div class="sim-buttons-grid">
-            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
-            <button class="btn-sim" onclick="simular('song')">🎵 Pedir Canción</button>
-            <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (Regla 4)</button>
-            <button class="btn-sim" onclick="simular('share_crush')">📸 Compartir Crush (Regla 5)</button>
-            <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos (Regla 6)</button>
-            <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción (Regla 1)</button>
-            <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego canción?"</button>
-            <button class="btn-sim" onclick="simular('spam')">🚫 Probar Filtro Spam (>2 rep)</button>
-            <button class="btn-sim" onclick="simular('sin_seguir')">🚨 Probar Intento Sin Seguir</button>
+            <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Paso 3)</button>
+            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (+1 Puesto)</button>
+            <button class="btn-sim" onclick="simular('pedir_escucha')">📝 Comentar "Escucha..."</button>
+            <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
+            <button class="btn-sim" onclick="simular('share_crush')">📸 Compartir Crush</button>
+            <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos</button>
+            <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción</button>
+            <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
+            <button class="btn-sim" onclick="simular('sin_seguir')">🚨 Intento Sin Seguir</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
-            <button class="btn-sim" onclick="simular('taptap')">👆 1000 Tap Tap (Slow MD)</button>
-            <button class="btn-sim" onclick="simular('compartido')">🔁 10 Compartidos (Maria)</button>
-            <button class="btn-sim" onclick="simular('rosas5')">🌹 Rosa x5 (Pedro)</button>
-            <button class="btn-sim" onclick="simular('rosas10')">🌹 Rosa x10 (Carlos +1)</button>
-            <button class="btn-sim" onclick="simular('top3')">🎩 Sombrero (Puesto #3)</button>
-            <button class="btn-sim" onclick="simular('top2')">🕶️ Gafas (Puesto #2)</button>
-            <button class="btn-sim" onclick="simular('moneygun')" style="grid-column: span 2; border-color: var(--gold-vip); color: #fde047;">🔫 Money Gun VIP (Andrés)</button>
+            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
+            <button class="btn-sim" onclick="simular('spam')">🚫 Filtro Spam (>2 rep)</button>
           </div>
         </div>
 
@@ -1622,8 +1753,11 @@
                   💡 Explicar Reglas (...)
                 </button>
               </div>
-              <button type="button" class="btn-action btn-primary" onclick="iniciarEncuestaDesdePanel()" style="width: 100%; font-size: 12.5px; padding: 10px; background: linear-gradient(90deg, #f59e0b, #d97706); box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);">
-                ⚖️ Iniciar Votación Jurado (25s)
+              <button type="button" class="btn-action btn-primary" id="btn-start-voting" onclick="iniciarEncuestaDesdePanel()" style="width: 100%; font-size: 12.5px; padding: 10px; background: linear-gradient(90deg, #f59e0b, #d97706); box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);">
+                ⚖️ Iniciar Votación Jurado (2 min)
+              </button>
+              <button type="button" class="btn-action btn-secondary" id="btn-stop-voting" onclick="terminarVotacionDesdePanel()" style="display:none; width: 100%; font-size: 12.5px; padding: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5;">
+                ⏹️ Finalizar Votación Temprano
               </button>
             </div>
 
@@ -1688,9 +1822,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('view') === 'overlay') {
       isOverlay = true;
+      document.documentElement.classList.add('overlay-mode');
+      document.body.classList.add('overlay-mode');
       document.getElementById('overlay-view').classList.add('active');
       document.getElementById('panel-view').classList.remove('active');
     } else {
+      document.documentElement.classList.remove('overlay-mode');
+      document.body.classList.remove('overlay-mode');
       document.getElementById('panel-view').classList.add('active');
       document.getElementById('overlay-view').classList.remove('active');
     }
@@ -1818,10 +1956,14 @@
               const msg = data.announcement || `¡Canción de ${data.songUser} desbloqueada!`;
               mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: data.announcement });
               hablarTTS(msg);
+            } else if (data.eventType === 'update_song') {
+              const msg = data.announcement || `¡${data.songUser} actualizó su tema a "${data.songTitle}"!`;
+              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: msg });
+              hablarTTS(msg);
             } else if (data.eventType === 'new_song' || data.newSong) {
               const s = data.newSong || { title: data.songTitle, user: data.songUser };
-              const msg = data.announcement || `¡${s.user} agregó "${s.title}" a la lista!`;
-              const desc = data.newSongDesc || (s.status === 'locked' ? 'Desbloquea con: 1000 Tap Tap • 10 Compartidos • 5 Rosas' : `Pedida por: @${s.user}`);
+              const msg = data.announcement || `¡${s.user} entró a la lista!`;
+              const desc = data.newSongDesc || `Turno asignado a @${s.user}`;
               mostrarAlertaOverlay('nueva', { ...s, announcement: desc });
               hablarTTS(msg);
             } else if (data.announcement) {
@@ -1832,8 +1974,10 @@
               mostrarAlertaOverlay('nueva', s);
               hablarTTS(`¡${s.user} agregó "${s.title}" a la lista!`);
             }
+          } else if (data.type === 'EPIC_GIFT_ANIMATION') {
+            mostrarAnimacionEpicaRegalo(data.giftType, data.user);
           } else if (data.type === 'SHOW_LIST') {
-            mostrarListaCompletaOverlay(data.queue || state.queue);
+            mostrarListaCompletaOverlay(data.queue || state.queue, data.requestedBy, data.userPosition);
           } else if (data.type === 'HOW_TO_ADD_HELP') {
             mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: data.user, announcement: data.bannerText });
             hablarTTS(data.voiceText);
@@ -2249,33 +2393,46 @@
     // REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO)
     let fullListTimer = null;
     let lastListTriggerTime = 0;
-    function mostrarListaCompletaOverlay(cola) {
+    function mostrarListaCompletaOverlay(cola, requestedBy, userPosition) {
       const now = Date.now();
-      // Enfriamiento de 10 segundos para prevenir spam
-      if (now - lastListTriggerTime < 10000) return;
+      // Enfriamiento de 4 segundos para prevenir spam
+      if (now - lastListTriggerTime < 4000) return;
       lastListTriggerTime = now;
 
       const sheet = document.getElementById('overlay-full-list-sheet');
       const container = document.getElementById('full-list-items-container');
       const badgeCount = document.getElementById('full-list-badge-count');
+      const titleEl = document.querySelector('.full-list-title');
       if (!sheet || !container) return;
 
       const items = cola || state.queue || [];
       if (badgeCount) badgeCount.textContent = `${items.length} TEMAS`;
 
+      if (titleEl) {
+        if (userPosition && requestedBy) {
+          titleEl.innerHTML = `📋 COLA <span class="user-position-header-badge">🎯 @${escapeHtml(requestedBy)}: PUESTO #${userPosition}</span>`;
+        } else {
+          titleEl.innerHTML = `📋 COLA DE CANCIONES`;
+        }
+      }
+
       if (items.length === 0) {
         container.innerHTML = `
           <div style="text-align:center; padding: clamp(40px, 4vw, 80px); color: var(--text-muted); font-size: clamp(24px, 2.5vw, 60px); font-weight: 700;">
-            No hay canciones en la cola.<br>Comenta: <strong>Escucha [Canción]</strong>
+            No hay canciones en la cola.<br>Paso 1: Sígueme • Paso 2: Comparte • Paso 3: Corazón con los dedos 🫰
           </div>
         `;
       } else {
         container.innerHTML = items.map((song, idx) => {
           const isUnlocked = song.status === 'unlocked';
-          const rebasadas = song.overtakenCount || 0;
-          const tagLabel = isUnlocked ? '🔓 Desbloqueada' : `🔒 Bloqueada (${rebasadas}/4 rebasadas)`;
+          const isMyPosition = Boolean(userPosition && (idx + 1 === userPosition));
+          const rowClass = isMyPosition ? 'my-position-row' : (isUnlocked ? 'unlocked' : 'locked');
+          const tagHtml = isMyPosition 
+            ? `<div class="full-list-tag my-pos">🎯 TU POSICIÓN #${userPosition}</div>`
+            : `<div class="full-list-tag ${isUnlocked ? 'unlocked' : 'locked'}">${isUnlocked ? '🔓 Desbloqueada' : '🔒 En Espera'}</div>`;
+
           return `
-            <div class="full-list-item-row ${isUnlocked ? 'unlocked' : 'locked'}">
+            <div class="full-list-item-row ${rowClass}">
               <div class="full-list-item-info">
                 <span class="full-list-pos">#${idx + 1}</span>
                 <div class="full-list-meta">
@@ -2283,7 +2440,7 @@
                   <div class="full-list-user">@${escapeHtml(song.user)}</div>
                 </div>
               </div>
-              <div class="full-list-tag ${isUnlocked ? 'unlocked' : 'locked'}">${tagLabel}</div>
+              ${tagHtml}
             </div>
           `;
         }).join('');
@@ -2293,7 +2450,7 @@
       clearTimeout(fullListTimer);
       fullListTimer = setTimeout(() => {
         sheet.classList.remove('show');
-      }, 8000);
+      }, 8500);
     }
 
     // CAJA DE COMENTARIOS TTS EN EL OVERLAY
@@ -2318,9 +2475,188 @@
       }, 7000);
     }
 
+    // ANIMACIÓN ÉPICA Y SONIDOS PARA REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME)
+    let epicGiftModalTimer = null;
+    let epicGiftCanvasAnim = null;
+
+    function reproducirSonidoCorazonDedos() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.45 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+        let t = ctx.currentTime;
+        freqs.forEach((f, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(vol * (0.8 + (i * 0.1)), t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.4);
+          t += 0.08;
+        });
+      } catch(e) {}
+    }
+
+    function reproducirSonidoQuiereme() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.5 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const chords = [
+          { notes: [349.23, 440.00, 523.25], start: 0, dur: 0.6 },
+          { notes: [392.00, 493.88, 587.33], start: 0.28, dur: 0.7 },
+          { notes: [440.00, 554.37, 659.25, 880.00], start: 0.62, dur: 1.5 }
+        ];
+        const baseTime = ctx.currentTime;
+        chords.forEach(c => {
+          c.notes.forEach(f => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            const noteStart = baseTime + c.start;
+            osc.frequency.setValueAtTime(f, noteStart);
+            gain.gain.setValueAtTime(0.01, noteStart);
+            gain.gain.linearRampToValueAtTime(vol / c.notes.length, noteStart + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteStart + c.dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(noteStart);
+            osc.stop(noteStart + c.dur + 0.1);
+          });
+        });
+      } catch(e) {}
+    }
+
+    function lanzarCorazonesCanvas(canvas, giftType) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const emojis = giftType === 'quiereme' ? ['💖', '💕', '👑', '💗', '✨'] : ['🫰', '❤️', '✨', '💖', '🔥'];
+      const particles = [];
+      const count = 55;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: canvas.width * 0.5 + (Math.random() - 0.5) * canvas.width * 0.75,
+          y: canvas.height * 0.85 + (Math.random() * 150),
+          vx: (Math.random() - 0.5) * 6,
+          vy: -(Math.random() * 8 + 6),
+          size: Math.random() * 45 + 30,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          rot: (Math.random() - 0.5) * 30,
+          vrot: (Math.random() - 0.5) * 4,
+          wobbleOffset: Math.random() * Math.PI * 2,
+          alpha: 1,
+          scale: 0.2 + Math.random() * 0.5
+        });
+      }
+
+      const startTime = Date.now();
+      if (epicGiftCanvasAnim) cancelAnimationFrame(epicGiftCanvasAnim);
+
+      function anim() {
+        const elapsed = (Date.now() - startTime) / 1000;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx + Math.sin(elapsed * 4 + p.wobbleOffset) * 2;
+          p.y += p.vy;
+          p.vy *= 0.99;
+          p.scale = Math.min(1.2, p.scale + 0.02);
+          p.alpha = Math.max(0, 1 - (elapsed / 4.8));
+
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.scale(p.scale, p.scale);
+            ctx.globalAlpha = p.alpha;
+            ctx.font = `${p.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = giftType === 'quiereme' ? '#f43f5e' : '#ec4899';
+            ctx.shadowBlur = 30;
+            ctx.fillText(p.emoji, 0, 0);
+            ctx.restore();
+          }
+        });
+
+        if (alive && elapsed < 5.0) {
+          epicGiftCanvasAnim = requestAnimationFrame(anim);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      epicGiftCanvasAnim = requestAnimationFrame(anim);
+    }
+
+    function mostrarAnimacionEpicaRegalo(giftType, user) {
+      const modal = document.getElementById('overlay-epic-gift-modal');
+      const icon = document.getElementById('epic-gift-icon');
+      const title = document.getElementById('epic-gift-title');
+      const userEl = document.getElementById('epic-gift-user');
+      const subtext = document.getElementById('epic-gift-subtext');
+      const canvas = document.getElementById('epic-gift-canvas');
+      if (!modal) return;
+
+      const userName = user || 'Usuario';
+      if (userEl) userEl.textContent = `@${userName}`;
+
+      if (giftType === 'quiereme') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '💖👑';
+        if (title) title.textContent = '¡REGALO QUIÉREME!';
+        if (subtext) subtext.textContent = '¡Sube +1 posición en la lista de espera!';
+        reproducirSonidoQuiereme();
+      } else {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🫰✨';
+        if (title) title.textContent = '¡CORAZÓN CON LOS DEDOS!';
+        if (subtext) subtext.textContent = '¡Paso completado para entrar a la lista!';
+        reproducirSonidoCorazonDedos();
+      }
+
+      modal.classList.add('show');
+      if (canvas) lanzarCorazonesCanvas(canvas, giftType);
+
+      clearTimeout(epicGiftModalTimer);
+      epicGiftModalTimer = setTimeout(() => {
+        modal.classList.remove('show');
+      }, 5500);
+    }
+
     // SIMULADOR DE PRUEBAS
     function simular(tipo) {
-      if (tipo === 'chat') {
+      if (tipo === 'corazon_dedos') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón con los dedos', user: 'Maria_Gamer' }));
+        } else {
+          mostrarAnimacionEpicaRegalo('corazon_dedos', 'Maria_Gamer');
+          hablarTTS('¡Gracias a Maria Gamer por enviar Corazón con los dedos!');
+        }
+      } else if (tipo === 'quiereme') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: 'Carlos_VIP' }));
+        } else {
+          mostrarAnimacionEpicaRegalo('quiereme', 'Carlos_VIP');
+          hablarTTS('¡Carlos VIP envió Quiéreme y sube 1 posición en la lista!');
+        }
+      } else if (tipo === 'pedir_escucha') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: 'Maria_Gamer', comment: 'Escucha Provenza - Karol G' }));
+        } else {
+          mostrarAlertaOverlay('desbloqueada', { title: 'Provenza - Karol G', user: 'Maria_Gamer', announcement: '¡Maria_Gamer actualizó su tema!' });
+          hablarTTS('¡Maria Gamer actualizó su tema a Provenza Karol G!');
+        }
+      } else if (tipo === 'chat') {
         const msgs = ['¡Saludos mi pana activo aquí!', 'Tremenda música suelta más!', 'Rómpela en ese Live bro'];
         const m = msgs[Math.floor(Math.random() * msgs.length)];
         mostrarTTSOverlay('Fan_TikTok', m, 'chat');
@@ -2328,16 +2664,16 @@
       } else if (tipo === 'song') {
         const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
         const t = temas[Math.floor(Math.random() * temas.length)];
-        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked', overtakenCount: 0 };
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked', overtakenCount: 0 };
         state.queue.push(nuevo);
         sincronizarServidor();
-        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista! Para desbloquearla envía 1000 tap tap, comparte 10 veces el live o envía 5 rosas.`;
-        const desc = 'Desbloquea con: 1000 Tap Tap • 10 Compartidos • 5 Rosas';
-        mostrarAlertaOverlay('nueva', { ...nuevo, announcement: desc });
+        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista!`;
+        mostrarAlertaOverlay('nueva', nuevo);
         hablarTTS(msg);
       } else if (tipo === 'verlista') {
         lastListTriggerTime = 0; // Reset cooldown para probar
-        mostrarListaCompletaOverlay(state.queue);
+        const myPos = state.queue.length > 0 ? 1 : 0;
+        mostrarListaCompletaOverlay(state.queue, 'Usuario_Live', myPos);
       } else if (tipo === 'share_crush') {
         reproducirSonidoObturador();
         mostrarFotoCrushOverlay('Alejandro');
@@ -2358,78 +2694,6 @@
         hablarTTS(voice);
       } else if (tipo === 'spam') {
         alert('Simulación de Filtro Spam Activo:\n\nSi un usuario repite el mismo comentario más de 2 veces en menos de 10 segundos, el servidor lo detecta automáticamente, lo silencia y no lo lee en voz alta.');
-      } else if (tipo === 'taptap') {
-        const user = 'Slow MD';
-        const cancion = 'Noche de Travesuras';
-        let s = state.queue.find(q => q.user === user) || state.queue[0];
-        if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
-          state.queue.push(s);
-        }
-        s.status = 'unlocked';
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción con 1000 tap tap`;
-        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'compartido') {
-        const user = 'Maria';
-        const cancion = 'Provenza';
-        let s = state.queue.find(q => q.user === user) || state.queue[0];
-        if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
-          state.queue.push(s);
-        }
-        s.status = 'unlocked';
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción con 10 veces compartido`;
-        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'rosas5') {
-        const user = 'Pedro';
-        const cancion = 'Ella Baila Sola';
-        let s = state.queue.find(q => q.user === user) || state.queue[0];
-        if (!s) {
-          s = { id: 'sim_' + Date.now(), title: cancion, user: user, status: 'locked', overtakenCount: 0 };
-          state.queue.push(s);
-        }
-        s.status = 'unlocked';
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción con 5 rosas`;
-        mostrarAlertaOverlay('desbloqueada', { title: s.title, user: user, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'rosas10') {
-        const user = 'Carlos';
-        const cancion = 'La Bebe Remix';
-        let s = { id: 'sub_' + Date.now(), title: cancion, user: user, status: 'unlocked', overtakenCount: 0 };
-        state.queue.unshift(s);
-        sincronizarServidor();
-        const msg = `${user} subió su canción a la posición 1 con 10 rosas`;
-        mostrarAlertaOverlay('subio', { title: s.title, user: user, position: 1, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'top3') {
-        const user = 'Roberto';
-        const nueva = { id: 'top3_' + Date.now(), title: 'Tema Sombrero', user: user, status: 'unlocked', overtakenCount: 0 };
-        state.queue.splice(Math.min(2, state.queue.length), 0, nueva);
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción y subió a la posición 3 con Sombrero y bigote`;
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 3, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'top2') {
-        const user = 'Laura';
-        const nueva = { id: 'top2_' + Date.now(), title: 'Tema Gafas', user: user, status: 'unlocked', overtakenCount: 0 };
-        state.queue.splice(Math.min(1, state.queue.length), 0, nueva);
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción y subió a la posición 2 con Gafas de sol`;
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 2, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
-      } else if (tipo === 'moneygun' || tipo === 'top1') {
-        const user = 'Andrés';
-        const nueva = { id: 'top1_' + Date.now(), title: 'Columbia', user: user, status: 'unlocked', priority: 'vip', overtakenCount: 0 };
-        state.queue.unshift(nueva);
-        sincronizarServidor();
-        const msg = `${user} desbloqueó su canción y subió al puesto VIP con Money Gun`;
-        mostrarAlertaOverlay('subio', { title: nueva.title, user: user, position: 1, announcement: `¡${msg}!` });
-        hablarTTS(`¡${msg}!`);
       } else if (tipo === 'sin_seguir') {
         const user = 'PedroNoFollower';
         reproducirSonidoSirena();
@@ -2525,8 +2789,16 @@
       if (bg) bg.style.background = state.requireFollowerToRequest ? 'var(--cyan-neon)' : 'rgba(255,255,255,0.2)';
     }
 
-    // GESTIÓN DE VOTACIÓN DEL JURADO (25s)
+    // GESTIÓN DE VOTACIÓN DEL JURADO (2 MINUTOS / 120s)
     let votingInterval = null;
+
+    function formatTimerMMSS(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}:${rem < 10 ? '0' : ''}${rem}`;
+    }
+
     function iniciarEncuestaDesdePanel() {
       let song = null;
       if (state.queue.length > 0) {
@@ -2537,9 +2809,17 @@
         song = { title: 'Tema en Vivo', user: 'Streamer' };
       }
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action: 'startVoting', song: song, duration: 25 }));
+        ws.send(JSON.stringify({ action: 'startVoting', song: song, duration: 120 }));
       } else {
-        iniciarUIEncuesta(song, 25);
+        iniciarUIEncuesta(song, 120);
+      }
+    }
+
+    function terminarVotacionDesdePanel() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'stopVoting' }));
+      } else {
+        cerrarUIEncuesta();
       }
     }
 
@@ -2553,12 +2833,18 @@
       const pctEl = document.getElementById('voting-pct-score');
       const countEl = document.getElementById('voting-count');
       const chipsEl = document.getElementById('voting-recent-chips');
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
 
+      if (btnStart) btnStart.style.display = 'none';
+      if (btnStop) btnStop.style.display = 'block';
+
+      const dur = duration || 120;
       state.voting = {
         active: true,
         song: song,
-        duration: duration || 25,
-        remaining: duration || 25,
+        duration: dur,
+        remaining: dur,
         avg: 0,
         pct: 0,
         votes: 0,
@@ -2572,14 +2858,14 @@
       if (pctEl) pctEl.textContent = '0%';
       if (countEl) countEl.textContent = '0';
       if (chipsEl) chipsEl.innerHTML = '';
-      if (timerEl) timerEl.textContent = state.voting.remaining;
+      if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
 
       if (modal) modal.classList.add('show');
 
       clearInterval(votingInterval);
       votingInterval = setInterval(() => {
         state.voting.remaining--;
-        if (timerEl) timerEl.textContent = Math.max(0, state.voting.remaining);
+        if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
         if (state.voting.remaining <= 0) {
           clearInterval(votingInterval);
         }
@@ -2618,6 +2904,11 @@
       clearInterval(votingInterval);
       const modal = document.getElementById('overlay-voting-modal');
       if (modal) modal.classList.remove('show');
+
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
+      if (btnStart) btnStart.style.display = 'block';
+      if (btnStop) btnStop.style.display = 'none';
 
       const banner = document.getElementById('overlay-certificate-banner');
       const trophy = document.getElementById('cert-trophy-icon');
@@ -2664,6 +2955,10 @@
       clearInterval(votingInterval);
       const modal = document.getElementById('overlay-voting-modal');
       if (modal) modal.classList.remove('show');
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
+      if (btnStart) btnStart.style.display = 'block';
+      if (btnStop) btnStop.style.display = 'none';
     }
 
     // CONFETI CANVAS PARA CERTIFICADOS

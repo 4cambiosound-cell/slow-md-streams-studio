@@ -119,7 +119,7 @@ function parseScore(comment) {
   return null;
 }
 
-function startVoting(duration = 25, songOverride = null) {
+function startVoting(duration = 120, songOverride = null) {
   const song = songOverride || queueState.queue[0] || { title: 'Canción en Turno', user: 'Artista' };
   votingState.active = true;
   votingState.song = song;
@@ -132,7 +132,9 @@ function startVoting(duration = 25, songOverride = null) {
     finishVoting();
   }, duration * 1000);
 
-  const voiceMsg = `¡Inicia la votación para la canción ${song.title}! ¿Cuánto le damos del 1 al 10? Tienen ${duration} segundos para calificar.`;
+  const mins = Math.floor(duration / 60);
+  const durText = mins >= 1 ? `${mins} minuto${mins > 1 ? 's' : ''}` : `${duration} segundos`;
+  const voiceMsg = `¡Inicia la votación para la canción ${song.title}! ¿Cuánto le damos del 1 al 10? Tienen ${durText} para calificar mientras la escuchamos.`;
   broadcast({
     type: 'VOTING_STARTED',
     song: song,
@@ -390,6 +392,85 @@ const serverUserShares = new Map();
 const serverUserRoses = new Map();
 const serverAliasMap = new Map();
 
+// RASTREO DE LA SECUENCIA DE 3 PASOS:
+// 1. Seguirme
+// 2. Compartir el Live
+// 3. Enviar Corazón con los Dedos
+const userSteps = new Map();
+
+function getUserStepData(userKey, name, handle, avatarUrl) {
+  let data = userSteps.get(userKey);
+  if (!data) {
+    data = {
+      followed: false,
+      shared: false,
+      giftedHeart: false,
+      name: name || userKey,
+      handle: handle || '',
+      avatarUrl: avatarUrl || ''
+    };
+    userSteps.set(userKey, data);
+  }
+  if (name) data.name = name;
+  if (handle) data.handle = handle;
+  if (avatarUrl) data.avatarUrl = avatarUrl;
+  return data;
+}
+
+function verificarCompletitudPasos(userKey, extraInfo = {}) {
+  const data = userSteps.get(userKey);
+  if (!data) return false;
+
+  const userIsFollower = Boolean(
+    data.followed ||
+    knownFollowers.has(userKey) ||
+    (data.handle && knownFollowers.has(normalizarUserKey(data.handle)))
+  );
+
+  const isComplete = userIsFollower && data.shared && data.giftedHeart;
+  if (isComplete) {
+    // Verificar si ya tiene disco o canción en la cola
+    const idx = queueState.queue.findIndex(s => {
+      const k = normalizarUserKey(s.user);
+      const kh = s.handle ? normalizarUserKey(s.handle) : '';
+      return k === userKey || (kh && kh === userKey);
+    });
+
+    if (idx === -1) {
+      // Agregar disco nuevo a la lista en estado listo esperando tema
+      const nuevoDisco = {
+        id: 'disk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        title: 'Esperando canción...',
+        user: data.name,
+        handle: data.handle || '',
+        avatarUrl: data.avatarUrl || extraInfo.avatarUrl || '',
+        gift: 'Corazón con los dedos',
+        status: 'unlocked',
+        priority: 'normal',
+        overtakenCount: 0,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      queueState.queue.push(nuevoDisco);
+      saveQueueData();
+
+      const announcement = `¡${data.name} completó los 3 pasos y ya tiene su disco en la lista! Comenta: Escucha más el nombre de tu tema para asignarlo.`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        newSong: nuevoDisco,
+        newSongDesc: `3 Pasos Completados • Comenta: Escucha [Canción]`,
+        sound: 'normal',
+        eventType: 'new_song',
+        announcement: announcement
+      });
+      addLog(`⭐ ${data.name} completó los 3 pasos (Seguir + Compartir + Corazón) -> Disco añadido a la lista`, 'queue');
+      return true;
+    }
+  }
+  return false;
+}
+
 function normalizarUserKey(u) {
   if (!u) return '';
   const clean = String(u).toLowerCase().replace(/^@/, '').trim();
@@ -570,7 +651,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
 
     // 5. Comando "calificar" o "encuesta" para iniciar votación
     if (text.toLowerCase() === 'calificar' || text.toLowerCase() === 'encuesta') {
-      startVoting(25);
+      startVoting(120);
       return true;
     }
   }
@@ -582,27 +663,40 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
 
   if (ayudaRegex.test(text) || ayudaCortaRegex.test(text) || ayudaPedirRegex.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
-    const voiceMsg = "Para agregar una canción a la lista debes poner la palabra escucha más el nombre de la canción más el nombre del artista y se agrega automáticamente a la lista.";
-    const bannerMsg = "Comenta: Escucha [Canción] - [Artista]";
+    const voiceMsg = "Para tener tu disco en la lista debes cumplir 3 pasos: seguirme, compartir el live y enviar un corazón con los dedos. Luego comentas Escucha más tu tema.";
+    const bannerMsg = "1. Seguirme • 2. Compartir • 3. Corazón con los dedos";
     broadcast({
       type: 'HOW_TO_ADD_HELP',
       user: chatUser,
       bannerText: bannerMsg,
       voiceText: voiceMsg
     });
-    addLog(`💡 ${chatUser} preguntó cómo agregar canción -> Bot respondió con instrucciones`, 'chat');
+    addLog(`💡 ${chatUser} preguntó cómo agregar canción -> Bot respondió con instrucciones de 3 pasos`, 'chat');
     return true;
   }
 
-  // Regla 4: Alguien comenta "Lista" en el chat
+  // Regla 4: Alguien comenta "Lista" en el chat -> Mostrar lista destacando su posición
   if (/^lista\b/i.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
+    const chatKey = normalizarUserKey(chatUser);
+    const chatHandleKey = userHandle ? normalizarUserKey(userHandle) : '';
+
+    const userIdx = queueState.queue.findIndex(s => {
+      const k = normalizarUserKey(s.user);
+      const kh = s.handle ? normalizarUserKey(s.handle) : '';
+      return (k && (k === chatKey || (chatHandleKey && k === chatHandleKey))) ||
+             (kh && (kh === chatKey || (chatHandleKey && kh === chatHandleKey)));
+    });
+
+    const userPosition = userIdx !== -1 ? userIdx + 1 : null;
+
     broadcast({
       type: 'SHOW_LIST',
       queue: queueState.queue,
-      requestedBy: chatUser
+      requestedBy: chatUser,
+      userPosition: userPosition
     });
-    addLog(`📋 ${chatUser} comentó "Lista" -> Mostrando lista completa en el overlay`, 'chat');
+    addLog(`📋 ${chatUser} comentó "Lista" -> Mostrando lista (Posición: ${userPosition ? '#' + userPosition : 'No en lista'})`, 'chat');
     return true;
   }
 
@@ -684,11 +778,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     return true;
   }
 
-  const likesActuales = serverUserLikes.get(userKey) || (handleKey ? serverUserLikes.get(handleKey) : 0) || 0;
-  const sharesActuales = serverUserShares.get(userKey) || (handleKey ? serverUserShares.get(handleKey) : 0) || 0;
-  const rosesActuales = serverUserRoses.get(userKey) || (handleKey ? serverUserRoses.get(handleKey) : 0) || 0;
-
-  // REGLA 1: Quien ya tenga 1 canción en la lista no podrá agregar otra hasta que salga
+  // BUSCAR SI EL USUARIO YA TIENE SU DISCO EN LA LISTA
   const idx = queueState.queue.findIndex(s => {
     const k = normalizarUserKey(s.user);
     const kh = s.handle ? normalizarUserKey(s.handle) : '';
@@ -697,82 +787,40 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   });
 
   if (idx !== -1) {
-    const yaTiene = queueState.queue[idx];
-    const aviso = `${chatName}, ya tienes "${yaTiene.title}" en la lista`;
+    // YA TIENE DISCO EN LA COLA: Asignar el nombre de la canción a su disco
+    const s = queueState.queue[idx];
+    const prevTitle = s.title;
+    s.title = cancionDetectada;
+    s.status = 'unlocked';
+    saveQueueData();
+
+    const announcement = `¡${chatName} asignó su tema: "${cancionDetectada}"!`;
+    broadcast({
+      type: 'QUEUE_UPDATE',
+      queue: queueState.queue,
+      history: queueState.history,
+      sound: 'normal',
+      eventType: 'update_song',
+      songTitle: s.title,
+      songUser: s.user,
+      announcement: announcement
+    });
+    addLog(`🎵 ${chatName} asignó canción: "${cancionDetectada}" (antes "${prevTitle}") en posición #${idx + 1}`, 'chat');
+    return true;
+  } else {
+    // NO TIENE DISCO EN LA LISTA: Explicar los 3 pasos obligatorios
+    const stepData = getUserStepData(userKey, chatName, userHandle);
+    const voiceMsg = `${chatName}, para que tu disco entre a la lista debes cumplir los 3 pasos: seguirme, compartir el live y enviar un corazón con los dedos.`;
+    const bannerMsg = `3 Pasos para entrar: 1. Seguirme • 2. Compartir • 3. Corazón con los dedos`;
     broadcast({
       type: 'CHAT_WARNING',
       user: chatName,
-      message: aviso,
-      existingSong: yaTiene.title
+      message: voiceMsg,
+      bannerText: bannerMsg
     });
-    addLog(`⚠️ ${chatName} intentó agregar otra canción pero ya tiene "${yaTiene.title}" en lista`, 'chat');
+    addLog(`⚠️ ${chatName} comentó Escucha pero aún no tiene disco en la lista.`, 'chat');
     return true;
   }
-
-  const likesReq = Number(botConfig.rules?.likesReq) || 1000;
-  const sharesReq = Number(botConfig.rules?.sharesReq) || 10;
-  const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
-
-  const yaCumple = (likesActuales >= likesReq || sharesActuales >= sharesReq || rosesActuales >= rosesReq);
-  const status = yaCumple ? 'unlocked' : 'locked';
-
-  const nuevaCancion = {
-    id: 'song_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-    title: cancionDetectada,
-    user: chatName, // Nombre que tiene en el chat de TikTok
-    handle: userHandle || '',
-    gift: null,
-    priority: 'normal',
-    status: status,
-    likes: likesActuales,
-    shares: sharesActuales,
-    roses: rosesActuales,
-    overtakenCount: 0,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-
-  // REGLAS 2 Y 3: Si entra desbloqueada sube por encima de las bloqueadas
-  if (status === 'unlocked') {
-    const targetIdx = encontrarPosicionDesbloqueada();
-    queueState.queue.splice(targetIdx, 0, nuevaCancion);
-    const eliminadas = [];
-    for (let i = targetIdx + 1; i < queueState.queue.length; i++) {
-      const s = queueState.queue[i];
-      if (s && s.status === 'locked') {
-        s.overtakenCount = (s.overtakenCount || 0) + 1;
-        if (s.overtakenCount >= 4) eliminadas.push(s);
-      }
-    }
-    if (eliminadas.length > 0) {
-      queueState.queue = queueState.queue.filter(s => !eliminadas.includes(s));
-      for (const e of eliminadas) {
-        addLog(`❌ Canción eliminada [4 canciones le pasaron por encima]: "${e.title}" de @${e.user}`, 'queue');
-      }
-    }
-  } else {
-    nuevaCancion.overtakenCount = 0;
-    queueState.queue.push(nuevaCancion);
-  }
-
-  saveQueueData();
-  const announcement = status === 'unlocked'
-    ? `¡${chatName} agregó y desbloqueó "${cancionDetectada}"!`
-    : `¡${chatName} agregó "${cancionDetectada}" a la lista! Para desbloquearla envía 1000 tap tap, comparte 10 veces el live o envía 5 rosas.`;
-  const bannerDesc = status === 'unlocked'
-    ? `Desbloqueada por @${chatName}`
-    : `Desbloquea con: ${likesReq} Tap Tap • ${sharesReq} Compartidos • ${rosesReq} Rosas`;
-  broadcast({
-    type: 'QUEUE_UPDATE',
-    queue: queueState.queue,
-    history: queueState.history,
-    sound: status === 'unlocked' ? 'normal' : null,
-    newSong: nuevaCancion,
-    newSongDesc: bannerDesc,
-    eventType: 'new_song',
-    announcement: announcement
-  });
-  addLog(`🎵 Canción agregada [${status === 'locked' ? '🔒 BLOQUEADA' : '🔓 LISTA'}]: "${cancionDetectada}" (${chatName})`, 'chat');
-  return true;
 }
 
 function processServerLike(userIdentifier, count, extraInfo = {}) {
@@ -871,26 +919,124 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   const totalRoses = (serverUserRoses.get(userKey) || 0) + (isRosa ? repeatCount : 0);
   if (isRosa) serverUserRoses.set(userKey, totalRoses);
 
+  // DETECCIÓN DE REGALOS ESPECIALES
+  const isCorazonDedos = (r.includes('coraz') && (r.includes('dedo') || r.includes('finger'))) || r.includes('finger heart');
+  const isQuiereme = r.includes('quiéreme') || r.includes('quiereme') || r.includes('love me') || r.includes('love you') || r.includes('cuddle');
+
   const cats = botConfig.rules?.giftCategories || {};
   const puesto1Keywords = (cats.puesto1 || ['money gun', 'moneygun']).map(k => k.toLowerCase().trim()).filter(Boolean);
   const puesto2Keywords = (cats.puesto2 || ['gafas', 'lentes']).map(k => k.toLowerCase().trim()).filter(Boolean);
   const puesto3Keywords = (cats.puesto3 || ['sombrero', 'bigote']).map(k => k.toLowerCase().trim()).filter(Boolean);
-  const subirKeywords = (cats.subirPosicion || ['rosa x10', 'corazón dedos x2', 'mención x2', 'mencion', 'dedo x2']).map(k => k.toLowerCase().trim()).filter(Boolean);
-  const desbloquearKeywords = (cats.desbloquear || ['rosa', 'corazón con los dedos', 'dedo', 'tik tok']).map(k => k.toLowerCase().trim()).filter(Boolean);
+  const subirKeywords = (cats.subirPosicion || ['rosa x10', 'mención x2', 'mencion']).map(k => k.toLowerCase().trim()).filter(Boolean);
 
   const vipMinDiamonds = Number(botConfig.rules?.vipMinDiamonds) || 100;
-  const rosesReq = Number(botConfig.rules?.rosesReq) || 5;
 
   const isPuesto1 = puesto1Keywords.some(kw => r.includes(kw)) || r.includes('money gun') || diamondCount >= vipMinDiamonds;
   const isPuesto2 = puesto2Keywords.some(kw => r.includes(kw)) || r.includes('gafas') || r.includes('lentes');
   const isPuesto3 = puesto3Keywords.some(kw => r.includes(kw)) || r.includes('sombrero') || r.includes('bigote');
-  const isSubir = subirKeywords.some(kw => r.includes(kw)) || (isRosa && (repeatCount >= 10 || totalRoses >= 10)) || r.includes('x10') || r.includes('x2');
-  const isDesbloquear = desbloquearKeywords.some(kw => r.includes(kw)) || (isRosa && totalRoses >= rosesReq) || diamondCount >= 5;
+  const isSubir = isQuiereme || subirKeywords.some(kw => r.includes(kw)) || (isRosa && (repeatCount >= 10 || totalRoses >= 10));
 
   if (comment) {
     processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
   }
 
+  // 1. CASO REGALO: CORAZÓN CON LOS DEDOS (PASO 3 DE ENTRADA A LA LISTA)
+  if (isCorazonDedos) {
+    const stepData = getUserStepData(userKey, userIdentifier, extraInfo.handle, extraInfo.avatarUrl);
+    stepData.giftedHeart = true;
+
+    // Disparar animación épica en el overlay
+    broadcast({
+      type: 'EPIC_GIFT_ANIMATION',
+      giftType: 'corazon_dedos',
+      user: userIdentifier,
+      avatarUrl: extraInfo.avatarUrl || ''
+    });
+
+    // Verificar si completó los 3 pasos (Seguir + Compartir + Corazón con los dedos)
+    const completado = verificarCompletitudPasos(userKey, extraInfo);
+    if (!completado) {
+      const userIsFollower = Boolean(
+        stepData.followed ||
+        knownFollowers.has(userKey) ||
+        (extraInfo.handle && knownFollowers.has(normalizarUserKey(extraInfo.handle)))
+      );
+      let faltantes = [];
+      if (!userIsFollower) faltantes.push('seguirme');
+      if (!stepData.shared) faltantes.push('compartir el live');
+
+      const txtFaltantes = faltantes.join(' y ');
+      const msg = `${userIdentifier}, ¡gracias por el corazón con los dedos! Ya solo te falta ${txtFaltantes} para asegurar tu disco en la lista.`;
+      broadcast({
+        type: 'CHAT_WARNING',
+        user: userIdentifier,
+        message: msg,
+        bannerText: `¡Corazón recibido! Te falta: ${txtFaltantes}`
+      });
+      addLog(`🫰 ${userIdentifier} envió Corazón con los dedos. Pasos pendientes: ${txtFaltantes}`, 'gift');
+    }
+    return;
+  }
+
+  // 2. CASO REGALO: QUIÉREME (SUBE 1 PUESTO EN LA LISTA + ANIMACIÓN ÉPICA)
+  if (isQuiereme) {
+    // Disparar animación épica romántica en el overlay
+    broadcast({
+      type: 'EPIC_GIFT_ANIMATION',
+      giftType: 'quiereme',
+      user: userIdentifier,
+      avatarUrl: extraInfo.avatarUrl || ''
+    });
+
+    const idx = queueState.queue.findIndex(s => {
+      const k = normalizarUserKey(s.user);
+      const kh = s.handle ? normalizarUserKey(s.handle) : '';
+      return k === userKey || (kh && kh === userKey);
+    });
+
+    if (idx !== -1) {
+      const s = queueState.queue[idx];
+      if (idx > 0) {
+        const targetPos = idx - 1;
+        moverCancionConRebase(idx, targetPos);
+        saveQueueData();
+        const newPos = targetPos + 1;
+        const announcement = `¡${s.user} envió Quiéreme y subió a la posición #${newPos} de la lista!`;
+        broadcast({
+          type: 'QUEUE_UPDATE',
+          queue: queueState.queue,
+          history: queueState.history,
+          sound: 'top1',
+          eventType: 'move_up',
+          songTitle: s.title,
+          songUser: s.user,
+          newPosition: newPos,
+          announcement: announcement
+        });
+        addLog(`💖 ¡${s.user} subió a la posición #${newPos} con Quiéreme!`, 'gift');
+      } else {
+        const announcement = `¡${s.user} envió Quiéreme y se consolida en el Puesto #1!`;
+        broadcast({
+          type: 'QUEUE_UPDATE',
+          queue: queueState.queue,
+          history: queueState.history,
+          announcement: announcement
+        });
+      }
+    } else {
+      const announcement = `¡${userIdentifier} envió Quiéreme con mucho amor para el live!`;
+      broadcast({
+        type: 'CHAT_WARNING',
+        user: userIdentifier,
+        message: announcement,
+        bannerText: '💖 ¡QUIÉREME RECIBIDO CON AMOR! 💖'
+      });
+      addLog(`💖 ${userIdentifier} envió Quiéreme al live`, 'gift');
+    }
+    return;
+  }
+
+  // OTROS REGALOS VIP O DE SALTO
   const idx = queueState.queue.findIndex(s => {
     const k = normalizarUserKey(s.user);
     const kh = s.handle ? normalizarUserKey(s.handle) : '';
@@ -902,14 +1048,14 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     s.roses = totalRoses;
     s.gift = giftName + (repeatCount > 1 ? ` x${repeatCount}` : '');
 
-    // 1. Desbloquea y pasa a Puesto #1 (Money Gun o VIP alto)
+    // Desbloquea y pasa a Puesto #1 (Money Gun o VIP alto)
     if (isPuesto1) {
       s.status = 'unlocked';
       s.priority = 'vip';
       s.unlockedReason = `Puesto #1: ${giftName}`;
       moverCancionConRebase(idx, 0);
       saveQueueData();
-      const announcement = `¡${s.user} desbloqueó su canción y subió al puesto VIP con ${giftName}!`;
+      const announcement = `¡${s.user} subió al puesto VIP #1 con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -922,7 +1068,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         announcement: announcement
       });
       addLog(`🥇 ¡${s.user} catapultó "${s.title}" al PUESTO #1 con ${giftName}!`, 'gift');
-    // 2. Desbloquea y pasa a Puesto #2 (Gafas de sol)
+    // Desbloquea y pasa a Puesto #2 (Gafas de sol)
     } else if (isPuesto2) {
       s.status = 'unlocked';
       s.priority = 'vip';
@@ -930,7 +1076,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       const targetPos = Math.min(1, Math.max(0, queueState.queue.length - 1));
       moverCancionConRebase(idx, targetPos);
       saveQueueData();
-      const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 2 con ${giftName}!`;
+      const announcement = `¡${s.user} subió a la posición 2 con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -943,7 +1089,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         announcement: announcement
       });
       addLog(`🥈 ¡${s.user} pasó "${s.title}" al PUESTO #2 con ${giftName}!`, 'gift');
-    // 3. Desbloquea y pasa a Puesto #3 (Sombrero y bigote)
+    // Desbloquea y pasa a Puesto #3 (Sombrero y bigote)
     } else if (isPuesto3) {
       s.status = 'unlocked';
       s.priority = 'vip';
@@ -951,7 +1097,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       const targetPos = Math.min(2, Math.max(0, queueState.queue.length - 1));
       moverCancionConRebase(idx, targetPos);
       saveQueueData();
-      const announcement = `¡${s.user} desbloqueó su canción y subió a la posición 3 con ${giftName}!`;
+      const announcement = `¡${s.user} subió a la posición 3 con ${giftName}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -964,7 +1110,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         announcement: announcement
       });
       addLog(`🥉 ¡${s.user} pasó "${s.title}" al PUESTO #3 con ${giftName}!`, 'gift');
-    // 4. Subir 1 posición (Rosa x10, Corazón dedos x2, Mención x2)
+    // Subir 1 posición
     } else if (isSubir) {
       if (s.priority !== 'vip') s.priority = 'medium';
       const targetPos = Math.max(0, idx - 1);
@@ -984,28 +1130,7 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         announcement: announcement
       });
       addLog(`🚀 ¡${s.user} subió a la posición #${newPos} con "${s.title}" gracias a ${giftName}!`, 'gift');
-    // 5. Desbloquear canción (Rosa x5, Corazón con los dedos x1, etc.)
-    } else if (isDesbloquear) {
-      s.status = 'unlocked';
-      s.unlockedReason = `Desbloqueo: ${giftName}`;
-      const targetPos = encontrarPosicionDesbloqueada(s.id);
-      moverCancionConRebase(idx, targetPos);
-      saveQueueData();
-      const giftLabel = isRosa && totalRoses > 1 ? `${totalRoses} rosas` : giftName;
-      const announcement = `¡${s.user} desbloqueó su canción con ${giftLabel}!`;
-      broadcast({
-        type: 'QUEUE_UPDATE',
-        queue: queueState.queue,
-        history: queueState.history,
-        sound: 'normal',
-        eventType: 'unlock',
-        songTitle: s.title,
-        songUser: s.user,
-        announcement: announcement
-      });
-      addLog(`🔓 ¡${s.user} desbloqueó su canción "${s.title}" con ${giftName}!`, 'gift');
     } else {
-      verificarEliminacionServidor(queueState.queue);
       saveQueueData();
       broadcast({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history });
     }
@@ -1222,9 +1347,15 @@ async function connectToTikTok(rawUsername) {
       if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
 
       const info = extractUserInfo(data);
-      knownFollowers.add(normalizarUserKey(info.chatName));
+      const userKey = normalizarUserKey(info.chatName);
+      knownFollowers.add(userKey);
       knownFollowers.add(normalizarUserKey(info.handle));
       if (info.displayId) knownFollowers.add(normalizarUserKey(info.displayId));
+
+      const stepData = getUserStepData(userKey, info.chatName, info.handle, info.avatarUrl);
+      stepData.followed = true;
+      verificarCompletitudPasos(userKey, { avatarUrl: info.avatarUrl });
+
       addLog(`➕ ${info.chatName} comenzó a seguirte`, 'follow');
       const announcement = `${info.chatName} se sumó a la comunidad`;
       broadcast({
@@ -1256,7 +1387,8 @@ async function connectToTikTok(rawUsername) {
         displayId: info.displayId,
         handle: info.handle,
         nickname: info.nickname,
-        userId: info.userId
+        userId: info.userId,
+        avatarUrl: info.avatarUrl
       });
       broadcast({
         type: 'GIFT',
@@ -1279,13 +1411,20 @@ async function connectToTikTok(rawUsername) {
       if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
 
       const info = extractUserInfo(data);
-      addLog(`🔄 ${info.chatName} compartió el En Vivo`, 'share');
+      const userKey = normalizarUserKey(info.chatName);
+
       processServerShare(info.chatName, {
         displayId: info.displayId,
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId
       });
+
+      const stepData = getUserStepData(userKey, info.chatName, info.handle, info.avatarUrl);
+      stepData.shared = true;
+      verificarCompletitudPasos(userKey, { avatarUrl: info.avatarUrl });
+
+      addLog(`🔄 ${info.chatName} compartió el En Vivo`, 'share');
       const primerNombre = (info.chatName || 'Alguien').trim().split(/[\s_.-]+/)[0] || info.chatName;
       const announcement = `${primerNombre} mandó este live a su crush`;
       broadcast({
@@ -1490,9 +1629,20 @@ wss.on('connection', (ws) => {
           }
         }
       } else if (payload.action === 'startVoting') {
-        startVoting(payload.duration || 25, payload.song);
+        startVoting(payload.duration || 120, payload.song);
+      } else if (payload.action === 'finishVoting' || payload.action === 'stopVoting') {
+        finishVoting();
       } else if (payload.action === 'cancelVoting') {
         cancelVoting();
+      } else if (payload.action === 'testEpicGift') {
+        const giftType = payload.giftType || 'corazon_dedos';
+        const testUser = payload.user || 'Usuario VIP';
+        broadcast({
+          type: 'EPIC_GIFT_ANIMATION',
+          giftType: giftType,
+          user: testUser,
+          avatarUrl: ''
+        });
       } else if (payload.action === 'getPlaylist') {
         ws.send(JSON.stringify({ type: 'PLAYLIST_UPDATE', playlist: certifiedPlaylist }));
       } else if (payload.action === 'deleteFromPlaylist') {
