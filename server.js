@@ -4,9 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const { TikTokLiveConnection, WebcastEvent } = require('tiktok-live-connector');
+const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 
 const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
+
+// Pack de Voces Neuronales Realistas (Microsoft Azure / Edge Neural HD) - Cero voces robóticas de TikTok
+const NATURAL_NEURAL_VOICES = [
+  { id: 'es-CO-GonzaloNeural', name: '🇨🇴 Gonzalo (Colombia - Masculina Natural)', gender: 'M' },
+  { id: 'es-CO-SalomeNeural', name: '🇨🇴 Salomé (Colombia - Femenina Natural)', gender: 'F' },
+  { id: 'es-DO-EmilioNeural', name: '🇩🇴 Emilio (Rep. Dominicana - Masculina Urbana)', gender: 'M' },
+  { id: 'es-DO-RamonaNeural', name: '🇩🇴 Ramona (Rep. Dominicana - Femenina Caribeña)', gender: 'F' },
+  { id: 'es-PR-VictorNeural', name: '🇵🇷 Víctor (Puerto Rico - Masculina Natural)', gender: 'M' },
+  { id: 'es-PR-KarinaNeural', name: '🇵🇷 Karina (Puerto Rico - Femenina Natural)', gender: 'F' },
+  { id: 'es-MX-JorgeNeural', name: '🇲🇽 Jorge (México - Masculina Locutor)', gender: 'M' },
+  { id: 'es-MX-DaliaNeural', name: '🇲🇽 Dalia (México - Femenina Cálida)', gender: 'F' },
+  { id: 'es-AR-TomasNeural', name: '🇦🇷 Tomás (Argentina - Masculina Natural)', gender: 'M' },
+  { id: 'es-AR-ElenaNeural', name: '🇦🇷 Elena (Argentina - Femenina Natural)', gender: 'F' },
+  { id: 'es-VE-SebastianNeural', name: '🇻🇪 Sebastián (Venezuela - Masculina Natural)', gender: 'M' },
+  { id: 'es-VE-PaolaNeural', name: '🇻🇪 Paola (Venezuela - Femenina Natural)', gender: 'F' },
+  { id: 'es-US-AlonsoNeural', name: '🇺🇸 Alonso (Latino USA - Masculina Estudio)', gender: 'M' },
+  { id: 'es-US-PalomaNeural', name: '🇺🇸 Paloma (Latino USA - Femenina Estudio)', gender: 'F' },
+  { id: 'es-ES-AlvaroNeural', name: '🇪🇸 Álvaro (España - Masculina Narrador)', gender: 'M' },
+  { id: 'es-ES-ElviraNeural', name: '🇪🇸 Elvira (España - Femenina Natural)', gender: 'F' }
+];
 
 // Cargar configuración guardada
 const PLAYLIST_FILE = path.join(__dirname, 'certified-playlist.json');
@@ -35,9 +56,9 @@ let botConfig = {
     alerts: { x: 5, y: 20, width: 90, height: 40, visible: true }
   },
   tts: {
-    voiceURI: 'google_hd_es',
-    voiceName: 'Google Español (HD)',
-    voiceLang: 'es',
+    voiceURI: 'es-CO-GonzaloNeural',
+    voiceName: '🇨🇴 Gonzalo (Colombia - Masculina Natural)',
+    voiceLang: 'es-CO',
     volume: 1.0,
     rate: 1.0,
     pitch: 1.0,
@@ -53,8 +74,14 @@ try {
     botConfig = {
       ...botConfig,
       ...loaded,
-      rules: { ...botConfig.rules, ...(loaded.rules || {}) }
+      rules: { ...botConfig.rules, ...(loaded.rules || {}) },
+      tts: { ...botConfig.tts, ...(loaded.tts || {}), tiktokVoice: false }
     };
+    // Si tenía una voz robótica antigua o de TikTok, migrar automáticamente a voz neuronal realista
+    if (!botConfig.tts.voiceURI || !botConfig.tts.voiceURI.endsWith('Neural')) {
+      botConfig.tts.voiceURI = 'es-CO-GonzaloNeural';
+      botConfig.tts.voiceName = '🇨🇴 Gonzalo (Colombia - Masculina Natural)';
+    }
   }
 } catch (e) {
   console.error('[Config] Error leyendo bot-config.json:', e.message);
@@ -339,10 +366,15 @@ const server = http.createServer((req, res) => {
     reqUrl = '/index.html';
   } else if (reqUrl.startsWith('/widgets/studio-unificado')) {
     reqUrl = '/index.html';
+  } else if (reqUrl === '/api/voices') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify({ voices: NATURAL_NEURAL_VOICES, currentVoice: botConfig.tts?.voiceURI || 'es-CO-GonzaloNeural' }));
+    return;
   } else if (reqUrl === '/api/tts') {
     let text = (params.get('q') || params.get('text') || '').slice(0, 350);
     // Filtrar todos los emojis y símbolos para que NUNCA se lean en voz alta
     text = text
+      .replace(/https?:\/\/\S+/gi, '')
       .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{200D}\u{FE0F}]/gu, '')
       .replace(/\p{Extended_Pictographic}/gu, '')
       .replace(/\s+/g, ' ')
@@ -353,23 +385,70 @@ const server = http.createServer((req, res) => {
       res.end();
       return;
     }
-    const lang = params.get('tl') || params.get('lang') || 'es';
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodeURIComponent(text)}`;
-    https.get(ttsUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://translate.google.com/'
+
+    // Determinar la voz neuronal seleccionada (por parámetro o por configuración global del bot)
+    let requestedVoice = (params.get('voice') || botConfig.tts?.voiceURI || 'es-CO-GonzaloNeural').trim();
+    const isValidNeural = NATURAL_NEURAL_VOICES.some(v => v.id === requestedVoice) || /^[a-z]{2}-[A-Z]{2}-[A-Za-z]+Neural$/.test(requestedVoice);
+    if (!isValidNeural) {
+      requestedVoice = 'es-CO-GonzaloNeural';
+    }
+
+    // Escapar caracteres XML para el SSML de Microsoft Neural TTS
+    const xmlSafeText = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+
+    (async () => {
+      let ttsInstance = null;
+      try {
+        ttsInstance = new MsEdgeTTS({ connectionTimeoutMs: 7000, synthesisTimeoutMs: 12000 });
+        await ttsInstance.setMetadata(requestedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+        const { audioStream } = ttsInstance.toStream(xmlSafeText);
+        const chunks = [];
+        await new Promise((resolve, reject) => {
+          audioStream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+          audioStream.on('end', resolve);
+          audioStream.on('close', resolve);
+          audioStream.on('error', reject);
+        });
+        try { ttsInstance.close(); } catch (e) {}
+
+        const audioBuffer = Buffer.concat(chunks);
+        if (audioBuffer.length > 0) {
+          res.writeHead(200, {
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': audioBuffer.length,
+            'Cache-Control': 'no-cache',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(audioBuffer);
+          return;
+        }
+        throw new Error('Buffer de audio vacío');
+      } catch (err) {
+        try { if (ttsInstance) ttsInstance.close(); } catch (e) {}
+        // Respaldo de emergencia en caso de corte de red hacia Azure
+        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=es&client=tw-ob&q=${encodeURIComponent(text)}`;
+        https.get(ttsUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://translate.google.com/'
+          }
+        }, (ttsRes) => {
+          res.writeHead(ttsRes.statusCode, {
+            'Content-Type': 'audio/mpeg',
+            'Access-Control-Allow-Origin': '*'
+          });
+          ttsRes.pipe(res);
+        }).on('error', () => {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Error TTS');
+        });
       }
-    }, (ttsRes) => {
-      res.writeHead(ttsRes.statusCode, {
-        'Content-Type': 'audio/mpeg',
-        'Access-Control-Allow-Origin': '*'
-      });
-      ttsRes.pipe(res);
-    }).on('error', (err) => {
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Error TTS');
-    });
+    })();
     return;
   }
 

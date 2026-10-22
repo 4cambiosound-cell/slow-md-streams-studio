@@ -1714,14 +1714,46 @@
         <!-- Ajustes de Voz TTS y Controles de Streamer -->
         <div class="panel-card">
           <div class="card-title-bar">
-            <h2>🎙️ Voz TTS, Volumen y Reglas de Entrada</h2>
+            <h2>🎙️ Voz Natural Neural HD, Volumen y Reglas</h2>
           </div>
           <div style="display: flex; flex-direction: column; gap: 14px;">
+
+            <!-- Selector de Pack de Voces Neuronales Realistas (Cero Voz Robótica de TikTok) -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 12px; font-weight: 800; color: #38bdf8;">🎭 Selector de Voz Humana Realista (Pack Neural HD):</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="tts-voice-selector" onchange="cambiarVozNatural(this.value)" style="flex: 1; padding: 9px 12px; background: rgba(15,23,42,0.9); border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600;">
+                  <optgroup label="🔥 Caribe y Urbano (Muy Naturales)">
+                    <option value="es-CO-GonzaloNeural" selected>🇨🇴 Gonzalo — Colombia (Masculina Natural)</option>
+                    <option value="es-CO-SalomeNeural">🇨🇴 Salomé — Colombia (Femenina Natural)</option>
+                    <option value="es-DO-EmilioNeural">🇩🇴 Emilio — Rep. Dominicana (Masculina Urbana)</option>
+                    <option value="es-DO-RamonaNeural">🇩🇴 Ramona — Rep. Dominicana (Femenina Caribeña)</option>
+                    <option value="es-PR-VictorNeural">🇵🇷 Víctor — Puerto Rico (Masculina Natural)</option>
+                    <option value="es-PR-KarinaNeural">🇵🇷 Karina — Puerto Rico (Femenina Natural)</option>
+                    <option value="es-VE-SebastianNeural">🇻🇪 Sebastián — Venezuela (Masculina Natural)</option>
+                    <option value="es-VE-PaolaNeural">🇻🇪 Paola — Venezuela (Femenina Natural)</option>
+                  </optgroup>
+                  <optgroup label="🎙️ Locución Estudio (Latinoamérica y España)">
+                    <option value="es-MX-JorgeNeural">🇲🇽 Jorge — México (Masculina Locutor)</option>
+                    <option value="es-MX-DaliaNeural">🇲🇽 Dalia — México (Femenina Cálida)</option>
+                    <option value="es-US-AlonsoNeural">🇺🇸 Alonso — Latino USA (Masculina Estudio)</option>
+                    <option value="es-US-PalomaNeural">🇺🇸 Paloma — Latino USA (Femenina Estudio)</option>
+                    <option value="es-AR-TomasNeural">🇦🇷 Tomás — Argentina (Masculina Natural)</option>
+                    <option value="es-AR-ElenaNeural">🇦🇷 Elena — Argentina (Femenina Natural)</option>
+                    <option value="es-ES-AlvaroNeural">🇪🇸 Álvaro — España (Masculina Narrador)</option>
+                    <option value="es-ES-ElviraNeural">🇪🇸 Elvira — España (Femenina Natural)</option>
+                  </optgroup>
+                </select>
+                <button type="button" class="btn-action btn-secondary" onclick="probarVozNatural()" style="padding: 8px 12px; font-size: 12px; border-color: rgba(56,189,248,0.5); color: #7dd3fc; white-space: nowrap;" title="Escuchar prueba de la voz seleccionada aquí mismo">
+                  🔊 Probar Voz
+                </button>
+              </div>
+            </div>
             
             <!-- Salida de Audio -->
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
-              <select id="tts-audio-output" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+              <select id="tts-audio-output" onchange="cambiarSalidaAudioTTS(this.value)" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
                 <option value="overlay" selected>Solo en Overlay (TikTok Live Studio)</option>
                 <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
                 <option value="none">Silenciar Voz</option>
@@ -1820,6 +1852,8 @@
       currentLikes: 0,
       requireFollowerToRequest: true,
       certifiedPlaylist: [],
+      ttsVoice: localStorage.getItem('tts_voice') || 'es-CO-GonzaloNeural',
+      ttsAudioOutput: localStorage.getItem('tts_audio_output') || 'overlay',
       ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
       ttsSpeed: parseFloat(localStorage.getItem('tts_speed') || '1.0'),
       voting: {
@@ -1873,11 +1907,13 @@
     const ttsAudioQueue = [];
     let isPlayingAudio = false;
 
-    function hablarTTS(texto) {
+    function hablarTTS(texto, forcePlayInPanel = false) {
       if (!texto) return;
-      const outputSetting = document.getElementById('tts-audio-output')?.value || 'overlay';
-      if (outputSetting === 'none') return;
-      if (!isOverlay && outputSetting === 'overlay') return; // En el panel no suena para evitar eco
+      const outputSetting = state.ttsAudioOutput || document.getElementById('tts-audio-output')?.value || 'overlay';
+      if (!forcePlayInPanel) {
+        if (outputSetting === 'none') return;
+        if (!isOverlay && outputSetting === 'overlay') return; // En el panel no suena para evitar eco a menos que sea prueba
+      }
 
       // #4 El bot NUNCA lee links en voz alta
       if (contieneLinkCliente(texto)) return;
@@ -1894,7 +1930,8 @@
 
       if (!limpio) return;
 
-      const audioUrl = `/api/tts?q=${encodeURIComponent(limpio)}&lang=es`;
+      const selectedVoice = state.ttsVoice || document.getElementById('tts-voice-selector')?.value || 'es-CO-GonzaloNeural';
+      const audioUrl = `/api/tts?q=${encodeURIComponent(limpio)}&voice=${encodeURIComponent(selectedVoice)}`;
       ttsAudioQueue.push(audioUrl);
       procesarColaAudio();
     }
@@ -1937,6 +1974,7 @@
         ws.send(JSON.stringify({ action: 'getStatus' }));
         ws.send(JSON.stringify({ action: 'getQueue' }));
         ws.send(JSON.stringify({ action: 'getPlaylist' }));
+        ws.send(JSON.stringify({ action: 'getTTSConfig' }));
       };
 
       ws.onmessage = (event) => {
@@ -1946,6 +1984,34 @@
             state.status = data.status;
             state.username = data.username || state.username;
             actualizarUIConexion(data.status, data.username);
+          } else if (data.type === 'TTS_CONFIG_UPDATE') {
+            const cfg = data.config || {};
+            if (cfg.voiceURI && cfg.voiceURI.endsWith('Neural')) {
+              state.ttsVoice = cfg.voiceURI;
+              localStorage.setItem('tts_voice', cfg.voiceURI);
+              const sel = document.getElementById('tts-voice-selector');
+              if (sel) sel.value = cfg.voiceURI;
+            }
+            if (cfg.audioOutput) {
+              state.ttsAudioOutput = cfg.audioOutput;
+              localStorage.setItem('tts_audio_output', cfg.audioOutput);
+              const outSel = document.getElementById('tts-audio-output');
+              if (outSel) outSel.value = cfg.audioOutput;
+            }
+            if (cfg.volume !== undefined) {
+              state.ttsVolume = Number(cfg.volume);
+              const volSlider = document.getElementById('tts-volume-slider');
+              const volBadge = document.getElementById('tts-volume-val');
+              if (volSlider) volSlider.value = Math.round(state.ttsVolume * 100);
+              if (volBadge) volBadge.textContent = Math.round(state.ttsVolume * 100) + '%';
+            }
+            if (cfg.rate !== undefined) {
+              state.ttsSpeed = Number(cfg.rate);
+              const spdSlider = document.getElementById('tts-speed-slider');
+              const spdBadge = document.getElementById('tts-speed-val');
+              if (spdSlider) spdSlider.value = state.ttsSpeed;
+              if (spdBadge) spdBadge.textContent = state.ttsSpeed.toFixed(2) + 'x';
+            }
           } else if (data.type === 'EXTRA_CONFIG') {
             if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
             if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
@@ -2817,13 +2883,55 @@
       }
     }
 
-    // AJUSTES TTS Y CONTROLES DEL STREAMER
+    // AJUSTES TTS Y CONTROLES DEL STREAMER (PACK DE VOCES NEURONALES REALISTAS)
+    function cambiarVozNatural(voiceId) {
+      if (!voiceId) return;
+      state.ttsVoice = voiceId;
+      localStorage.setItem('tts_voice', voiceId);
+      const sel = document.getElementById('tts-voice-selector');
+      const voiceName = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : voiceId;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: {
+            voiceURI: voiceId,
+            voiceName: voiceName,
+            tiktokVoice: false
+          }
+        }));
+      }
+    }
+
+    function probarVozNatural() {
+      const sel = document.getElementById('tts-voice-selector');
+      const voiceId = sel ? sel.value : (state.ttsVoice || 'es-CO-GonzaloNeural');
+      state.ttsVoice = voiceId;
+      hablarTTS('Hola, soy tu nueva voz natural en alta definición para el Live de Slow MD.', true);
+    }
+
+    function cambiarSalidaAudioTTS(val) {
+      state.ttsAudioOutput = val || 'overlay';
+      localStorage.setItem('tts_audio_output', state.ttsAudioOutput);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { audioOutput: state.ttsAudioOutput }
+        }));
+      }
+    }
+
     function cambiarVolumenTTS(val) {
       const v = Math.max(0, Math.min(100, parseFloat(val) || 0));
       state.ttsVolume = v / 100;
       localStorage.setItem('tts_volume', state.ttsVolume);
       const badge = document.getElementById('tts-volume-val');
       if (badge) badge.textContent = Math.round(v) + '%';
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { volume: state.ttsVolume }
+        }));
+      }
     }
 
     function cambiarVelocidadTTS(val) {
@@ -2832,6 +2940,12 @@
       localStorage.setItem('tts_speed', state.ttsSpeed);
       const badge = document.getElementById('tts-speed-val');
       if (badge) badge.textContent = s.toFixed(2) + 'x';
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { rate: state.ttsSpeed }
+        }));
+      }
     }
 
     function toggleRequerirSeguidor(activo) {
@@ -3355,6 +3469,16 @@
     // INICIALIZAR
     window.addEventListener('DOMContentLoaded', () => {
       conectarWS();
+
+      // Selector de Voz Natural y Salida de Audio
+      const voiceSel = document.getElementById('tts-voice-selector');
+      if (voiceSel && state.ttsVoice) {
+        voiceSel.value = state.ttsVoice;
+      }
+      const outSel = document.getElementById('tts-audio-output');
+      if (outSel && state.ttsAudioOutput) {
+        outSel.value = state.ttsAudioOutput;
+      }
 
       // Sliders TTS
       const sliderVol = document.getElementById('tts-volume-slider');
