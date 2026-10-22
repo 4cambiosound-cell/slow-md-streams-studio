@@ -1442,6 +1442,21 @@
       background: rgba(255, 255, 255, 0.15);
       transform: translateY(-1px);
     }
+
+    /* ANIMACIÓN DRAMÁTICA DE TEMBLOR Y PALPITACIÓN EN LA ENCUESTA (#7) */
+    @keyframes votingDramaticShake {
+      0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      15% { transform: translate(calc(-50% - 10px), calc(-50% - 6px)) scale(1.02) rotate(-1.2deg); }
+      30% { transform: translate(calc(-50% + 10px), calc(-50% + 6px)) scale(1.02) rotate(1.2deg); }
+      45% { transform: translate(calc(-50% - 8px), calc(-50% + 4px)) scale(1.015) rotate(-0.8deg); }
+      60% { transform: translate(calc(-50% + 8px), calc(-50% - 4px)) scale(1.015) rotate(0.8deg); }
+      75% { transform: translate(calc(-50% - 5px), calc(-50% - 3px)) scale(1.01) rotate(-0.5deg); }
+    }
+    .overlay-voting-modal.show.dramatic-shake {
+      animation: votingDramaticShake 0.45s infinite ease-in-out;
+      border-color: #ef4444 !important;
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.95), 0 0 120px rgba(239, 68, 68, 0.8) !important;
+    }
   </style>
 </head>
 <body>
@@ -1491,7 +1506,7 @@
           <span id="overlay-status-badge">▶ EN TURNO AHORA</span>
         </div>
         <div class="song-title-text" id="overlay-song-title">ESPERANDO PETICIÓN...</div>
-        <div class="song-user-text" id="overlay-song-user">Comenta: Escucha [Canción]</div>
+        <div class="song-user-text" id="overlay-song-user">Pega el link de YouTube, Spotify o BandLab</div>
       </div>
       <div class="queue-pill-count" id="overlay-queue-pill">0 EN COLA</div>
     </div>
@@ -1520,7 +1535,7 @@
     <!-- 4. WIDGET ÉPICO DE VOTACIÓN / JURADO (2160x3840) -->
     <div class="overlay-voting-modal" id="overlay-voting-modal">
       <div class="voting-modal-header">
-        <span class="voting-badge">⚖️ JURADO EN VIVO • CALIFICA DEL 1 AL 10</span>
+        <span class="voting-badge">⚖️ JURADO EN VIVO • CALIFICA DEL 1 AL 10 (MÍN. 10 VOTOS)</span>
         <div class="voting-timer-circle" id="voting-timer-num">25</div>
       </div>
       <div class="voting-song-title" id="voting-song-title">ESPERANDO TEMA...</div>
@@ -1555,7 +1570,7 @@
       <div class="cert-trophy" id="cert-trophy-icon">🏆</div>
       <div class="cert-title" id="cert-title-text">¡ARTISTA CERTIFICADO!</div>
       <div class="cert-song-name" id="cert-song-name">NOMBRE DEL TEMA</div>
-      <div class="cert-score-badge" id="cert-score-badge">98% DE APROBACIÓN</div>
+      <div class="cert-score-badge" id="cert-score-badge">95% DE APROBACIÓN</div>
       <div class="cert-footer-desc" id="cert-footer-desc">¡Entra a nuestra lista de artistas certificados!</div>
     </div>
 
@@ -1662,15 +1677,16 @@
         <!-- Tarjeta de Reglas Activas -->
         <div class="panel-card">
           <div class="card-title-bar">
-            <h2>⚙️ Reglas de Entrada (Secuencia de 3 Pasos)</h2>
+            <h2>⚙️ Reglas de Entrada y Subida de Puestos</h2>
           </div>
-          <div style="font-size: 12.5px; line-height: 1.6; color: #cbd5e1;">
+          <div style="font-size: 12.5px; line-height: 1.65; color: #cbd5e1;">
             <div>1️⃣ <strong>Paso 1:</strong> Seguir al streamer (@slowmdoficial)</div>
             <div>2️⃣ <strong>Paso 2:</strong> Compartir el Live</div>
-            <div>3️⃣ <strong>Paso 3:</strong> Enviar regalo <strong>Corazón con los dedos (🫰)</strong></div>
-            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha [Canción] - [Artista]</code></div>
-            <div>💖 <strong>Regalo Quiéreme:</strong> Sube 1 puesto en la cola con animación épica</div>
-            <div>📋 <strong>Comando "Lista":</strong> Muestra la cola destacando tu puesto exacto</div>
+            <div>3️⃣ <strong>Paso 3:</strong> Enviar <strong>Corazón con los dedos (🫰)</strong> o dar <strong>5,000 Likes (Gratis)</strong></div>
+            <div>🔗 <strong>Pedir Canción:</strong> Pegar <strong>Link de YouTube, Spotify o BandLab</strong> en el chat</div>
+            <div>🎁 <strong>Subir con Regalos:</strong> <code>15-29</code> monedas (+1 pos) • <code>30-149</code> (+2 pos) • <code>150+</code> (<strong>#1 Blindado</strong>)</div>
+            <div>💖 <strong>Voz TTS en Chat:</strong> Solo lee mensajes de quienes envíen un <strong>Quiéreme</strong> (sin links ni símbolos)</div>
+            <div>🔒 <strong>Bloqueo por Likes:</strong> Auto-bloqueo hasta <code>4,000</code> likes al iniciar o comando <code>0-50000</code></div>
           </div>
         </div>
 
@@ -1681,17 +1697,17 @@
           </div>
           <div class="sim-buttons-grid">
             <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Paso 3)</button>
-            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (+1 Puesto)</button>
-            <button class="btn-sim" onclick="simular('pedir_escucha')">📝 Comentar "Escucha..."</button>
+            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (+1 Pos y Voz)</button>
+            <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
+            <button class="btn-sim" onclick="simular('regalo_150')" style="border-color: #eab308; color: #fde047; font-weight:800;">👑 Regalo 150+ (#1 Blindado)</button>
             <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
-            <button class="btn-sim" onclick="simular('share_crush')">📸 Compartir Crush</button>
+            <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
             <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos</button>
             <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
             <button class="btn-sim" onclick="simular('sin_seguir')">🚨 Intento Sin Seguir</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
             <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
-            <button class="btn-sim" onclick="simular('spam')">🚫 Filtro Spam (>2 rep)</button>
           </div>
         </div>
 
@@ -1764,14 +1780,14 @@
           </div>
         </div>
 
-        <!-- Tarjeta de La Playlist (Artistas Certificados >= 98%) -->
+        <!-- Tarjeta de La Playlist (Artistas Certificados >= 95%) -->
         <div class="panel-card" style="border-color: rgba(234, 179, 8, 0.3);">
           <div class="card-title-bar">
             <h2>⭐ La Playlist (<span id="panel-count-certified">0</span> Certificados)</h2>
             <button class="btn-action btn-secondary" onclick="exportarPlaylist()" style="padding: 5px 10px; font-size: 11px;">📋 Copiar Todo</button>
           </div>
           <div class="playlist-items-list" id="panel-certified-list">
-            <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 98% o más. Realiza una votación al terminar un tema.</div>
+            <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 95% o más (mínimo 10 votos). Realiza una votación al terminar un tema.</div>
           </div>
         </div>
 
@@ -1800,6 +1816,8 @@
       username: 'slowmdoficial',
       selectedSongIndex: 0,
       queueLocked: false,
+      lockTargetLikes: null,
+      currentLikes: 0,
       requireFollowerToRequest: true,
       certifiedPlaylist: [],
       ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
@@ -1807,8 +1825,8 @@
       voting: {
         active: false,
         song: null,
-        duration: 25,
-        remaining: 25,
+        duration: 120,
+        remaining: 120,
         avg: 0,
         pct: 0,
         votes: 0,
@@ -1833,6 +1851,24 @@
       document.getElementById('overlay-view').classList.remove('active');
     }
 
+    // #6 Limpiar nombres de signos, guiones bajos, números y emojis para la voz
+    function limpiarNombreCliente(nombre) {
+      if (!nombre) return 'Usuario';
+      const limpio = String(nombre)
+        .replace(/^@+/, '')
+        .replace(/[_.\-~*+|/\\]+/g, ' ')
+        .replace(/[^\p{L}\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return limpio || 'Usuario';
+    }
+
+    // #4 Detectar si un texto contiene enlaces/URLs
+    function contieneLinkCliente(texto) {
+      if (!texto) return false;
+      return /(?:https?:\/\/|www\.|youtube\.com\/|youtu\.be\/|spotify\.com\/|spotify\.link\/|bandlab\.com\/)/i.test(String(texto));
+    }
+
     // AUDIO QUEUE PARA TTS LIMPIO SIN SOLAPAMIENTOS
     const ttsAudioQueue = [];
     let isPlayingAudio = false;
@@ -1843,10 +1879,16 @@
       if (outputSetting === 'none') return;
       if (!isOverlay && outputSetting === 'overlay') return; // En el panel no suena para evitar eco
 
-      // Limpiar estrictamente emojis y caracteres raros
-      const limpio = texto
+      // #4 El bot NUNCA lee links en voz alta
+      if (contieneLinkCliente(texto)) return;
+
+      // #6 Limpiar estrictamente emojis, guiones bajos y símbolos raros
+      const limpio = String(texto)
+        .replace(/https?:\/\/\S+/gi, '')
+        .replace(/www\.\S+/gi, '')
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
         .replace(/\p{Extended_Pictographic}/gu, '')
+        .replace(/[_@#*$%^&~`|\\<>]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -1906,6 +1948,8 @@
             actualizarUIConexion(data.status, data.username);
           } else if (data.type === 'EXTRA_CONFIG') {
             if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
             if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = data.requireFollowerToRequest;
             if (Array.isArray(data.certifiedPlaylist)) state.certifiedPlaylist = data.certifiedPlaylist;
             if (data.votingState && data.votingState.active) {
@@ -1923,17 +1967,25 @@
             renderizarPlaylist();
           } else if (data.type === 'QUEUE_LOCK_UPDATE') {
             state.queueLocked = Boolean(data.locked);
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
             actualizarUIControlesStreamer();
             if (data.announcement) {
               mostrarAlertaOverlay('warning', { title: data.locked ? '🔒 COLA BLOQUEADA' : '🔓 COLA ABIERTA', user: 'Streamer', announcement: data.announcement });
               hablarTTS(data.announcement);
+            }
+          } else if (data.type === 'LIKE') {
+            if (data.total !== undefined) state.currentLikes = data.total;
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (state.queueLocked && state.lockTargetLikes) {
+              actualizarUIControlesStreamer();
             }
           } else if (data.type === 'NOT_FOLLOWER_WARNING') {
             reproducirSonidoSirena();
             mostrarSirenaOverlay(data.user, data.message);
             hablarTTS(data.message);
           } else if (data.type === 'VOTING_STARTED') {
-            iniciarUIEncuesta(data.song, data.duration || 25);
+            iniciarUIEncuesta(data.song, data.duration || 120);
             if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
           } else if (data.type === 'VOTE_CAST') {
             actualizarUIVoto(data);
@@ -1955,32 +2007,25 @@
             state.queue = data.queue || [];
             renderizarCola();
 
+            // #5 Solo mostrar el aviso visual en pantalla para acciones (sin leer en voz alta salvo que sea comando de moderador)
             if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
               const pos = data.newPosition || 1;
-              const msg = data.announcement || `¡La canción de ${data.songUser} subió a la posición ${pos}!`;
               mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos, announcement: data.announcement });
-              hablarTTS(msg);
             } else if (data.eventType === 'unlock') {
-              const msg = data.announcement || `¡Canción de ${data.songUser} desbloqueada!`;
               mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: data.announcement });
-              hablarTTS(msg);
             } else if (data.eventType === 'update_song') {
-              const msg = data.announcement || `¡${data.songUser} actualizó su tema a "${data.songTitle}"!`;
+              const msg = data.announcement || `¡${data.songUser} asignó su tema "${data.songTitle}"!`;
               mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: msg });
-              hablarTTS(msg);
             } else if (data.eventType === 'new_song' || data.newSong) {
               const s = data.newSong || { title: data.songTitle, user: data.songUser };
-              const msg = data.announcement || `¡${s.user} entró a la lista!`;
-              const desc = data.newSongDesc || `Turno asignado a @${s.user}`;
+              const desc = data.newSongDesc || `Turno asignado a @${s.user} • Pega tu link de YouTube, Spotify o BandLab`;
               mostrarAlertaOverlay('nueva', { ...s, announcement: desc });
-              hablarTTS(msg);
             } else if (data.announcement) {
               mostrarAlertaOverlay('info', { title: data.songTitle || 'AVISO', user: data.songUser, announcement: data.announcement });
-              hablarTTS(data.announcement);
+              if (!data.skipVoice) hablarTTS(data.announcement);
             } else if (state.queue.length > prevLen) {
               const s = state.queue[state.queue.length - 1];
               mostrarAlertaOverlay('nueva', s);
-              hablarTTS(`¡${s.user} agregó "${s.title}" a la lista!`);
             }
           } else if (data.type === 'EPIC_GIFT_ANIMATION') {
             mostrarAnimacionEpicaRegalo(data.giftType, data.user);
@@ -1994,21 +2039,20 @@
             hablarTTS(data.message);
           } else if (data.type === 'CHAT') {
             mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
-            hablarTTS(`${data.user} dice: ${data.comment}`);
+            // #3 Solo leer en voz alta si el usuario envió un "Quiéreme" (data.readTTS === true) y #4 nunca leer links
+            if (data.readTTS && !contieneLinkCliente(data.comment)) {
+              const nombreLimpio = data.cleanUser || limpiarNombreCliente(data.user);
+              hablarTTS(`${nombreLimpio} dice: ${data.comment}`);
+            }
           } else if (data.type === 'GIFT') {
+            // #5 Solo mostrar aviso visual en pantalla, sin leer acciones en TTS
             mostrarTTSOverlay(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
-            hablarTTS(`¡Gracias a ${data.user} por ${data.giftName}!`);
           } else if (data.type === 'FOLLOW') {
-            reproducirSonidoAplausos();
+            // #5 Solo mostrar banner visual, sin leer acción en TTS
             mostrarAplausosSeguidorOverlay(data.user);
-            const msg = data.announcement || `${data.user} se sumó a la comunidad`;
-            hablarTTS(msg);
           } else if (data.type === 'SHARE') {
-            reproducirSonidoObturador();
-            const primerNombre = data.primerNombre || (data.user || '').trim().split(/[\s_.-]+/)[0] || 'Alguien';
-            mostrarFotoCrushOverlay(primerNombre);
-            const msg = data.announcement || `${primerNombre} mandó este live a su crush`;
-            hablarTTS(msg);
+            // #5 Quitar animación de captura/foto y quitar lectura de voz al compartir; solo mostrar aviso visual discreto
+            mostrarTTSOverlay(data.user, `Compartió el En Vivo 🔄`, 'chat', data.avatarUrl);
           }
         } catch(e) {}
       };
@@ -2050,13 +2094,13 @@
       if (state.queue.length > 0) {
         const top = state.queue[0];
         if (songTitle) songTitle.textContent = top.title.toUpperCase();
-        if (songUser) songUser.textContent = `Petición de: @${top.user}`;
+        if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 BLINDADO' : ''}`;
         if (statusBadge) {
           statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 EN ESPERA (CUMPLE REQUISITOS)';
         }
       } else {
         if (songTitle) songTitle.textContent = 'ESPERANDO PETICIÓN...';
-        if (songUser) songUser.textContent = 'Sígueme y comenta: Escucha [Canción]';
+        if (songUser) songUser.textContent = 'Pega el link de YouTube, Spotify o BandLab';
         if (statusBadge) statusBadge.textContent = 'EN ESPERA DE PETICIONES';
       }
 
@@ -2069,16 +2113,18 @@
 
       if (list) {
         if (state.queue.length === 0) {
-          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Comenta "Escucha [cancion]" en el Live.</div>`;
+          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Al entrar, el usuario pega su link de YouTube, Spotify o BandLab.</div>`;
         } else {
           list.innerHTML = state.queue.map((song, idx) => {
             const isSelected = (state.selectedSongIndex || 0) === idx;
             const isTop = idx === 0;
             const isUnlocked = song.status === 'unlocked';
+            const vipBadge = song.vip150 ? ' <span style="color:#fde047;font-weight:900;">👑 BLINDADO</span>' : '';
+            const linkBadge = song.songUrl ? ' <span style="color:#38bdf8;font-weight:800;">🔗 Link</span>' : '';
             return `
               <div class="queue-row ${isSelected ? 'selected-song' : (isTop ? 'current-song' : '')}" onclick="seleccionarCancion(${idx})" style="cursor: pointer;" title="Haz clic para seleccionar este tema en la barra de reproducción">
                 <div class="row-info-col">
-                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)} ${isSelected ? '🎧' : ''}</div>
+                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)} ${isSelected ? '🎧' : ''}${vipBadge}${linkBadge}</div>
                   <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
                 </div>
                 <div class="row-actions-col">
@@ -2132,7 +2178,7 @@
 
       if (statusEl) {
         if (isUnlocked) {
-          statusEl.textContent = '🔓 DESBLOQUEADA';
+          statusEl.textContent = song.vip150 ? '👑 #1 BLINDADO' : '🔓 DESBLOQUEADA';
           statusEl.className = 'player-status-badge unlocked';
         } else {
           statusEl.textContent = '🔒 BLOQUEADA';
@@ -2148,9 +2194,13 @@
 
       if (hintEl) {
         if (isUnlocked) {
-          hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Tema desbloqueado! Puedes escucharlo en YouTube, Spotify, BandLab o copiar el nombre.</span>';
+          if (song.songUrl) {
+            hintEl.innerHTML = `<span style="color:#38bdf8;">🔗</span> <span style="color:#7dd3fc; font-weight:700;">Link directo detectado (${escapeHtml(song.songPlatform || 'enlace')}): haz clic en el botón para abrir el enlace exacto.</span>`;
+          } else {
+            hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Tema desbloqueado! Esperando que el usuario pegue su link o haz clic para buscar.</span>';
+          }
         } else {
-          hintEl.innerHTML = '<span style="color:#f87171;">🔒</span> <span style="color:#fca5a5;">Tema bloqueado: Requiere apoyo (1000 Tap Tap, 10 Compartidos o 5 Rosas) para habilitar los botones de escucha.</span>';
+          hintEl.innerHTML = '<span style="color:#f87171;">🔒</span> <span style="color:#fca5a5;">Tema bloqueado: Requiere apoyo para habilitar los botones de escucha.</span>';
         }
       }
     }
@@ -2170,14 +2220,34 @@
         return;
       }
 
+      // #4 Si el usuario pegó un link directo de esa plataforma (o cualquier link guardado), abrirlo directamente
+      if (song.songUrl) {
+        if (
+          song.songPlatform === plataforma ||
+          (plataforma === 'youtube' && /youtu\.?be/i.test(song.songUrl)) ||
+          (plataforma === 'spotify' && /spotify/i.test(song.songUrl)) ||
+          (plataforma === 'bandlab' && /bandlab/i.test(song.songUrl))
+        ) {
+          window.open(song.songUrl, '_blank');
+          return;
+        }
+      }
+
       const query = encodeURIComponent(song.title);
       if (plataforma === 'youtube') {
-        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+        if (song.songUrl && !song.songPlatform) {
+          window.open(song.songUrl, '_blank');
+        } else {
+          window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+        }
       } else if (plataforma === 'spotify') {
         window.open(`https://open.spotify.com/search/${query}`, '_blank');
       } else if (plataforma === 'bandlab') {
-        // En BandLab: abre la sección de solicitudes e invitaciones / colaboraciones
-        window.open('https://www.bandlab.com/collaborations', '_blank');
+        if (song.songUrl && /bandlab/i.test(song.songUrl)) {
+          window.open(song.songUrl, '_blank');
+        } else {
+          window.open('https://www.bandlab.com/collaborations', '_blank');
+        }
       }
     }
 
@@ -2189,7 +2259,7 @@
         return;
       }
 
-      const texto = song.title;
+      const texto = song.songUrl || song.title;
       const btn = document.getElementById('btn-player-cp');
       const originalText = btn ? btn.innerHTML : '📋 Copiar';
 
@@ -2200,10 +2270,10 @@
             setTimeout(() => { btn.innerHTML = originalText; }, 2000);
           }
         }).catch(() => {
-          prompt('Copia el nombre de la canción:', texto);
+          prompt('Copia el enlace o nombre de la canción:', texto);
         });
       } else {
-        prompt('Copia el nombre de la canción:', texto);
+        prompt('Copia el enlace o nombre de la canción:', texto);
       }
     }
 
@@ -2645,59 +2715,64 @@
     function simular(tipo) {
       if (tipo === 'corazon_dedos') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón con los dedos', user: 'Maria_Gamer' }));
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón con los dedos', user: 'Maria_Gamer', diamondCount: 5 }));
         } else {
           mostrarAnimacionEpicaRegalo('corazon_dedos', 'Maria_Gamer');
-          hablarTTS('¡Gracias a Maria Gamer por enviar Corazón con los dedos!');
         }
       } else if (tipo === 'quiereme') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: 'Carlos_VIP' }));
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: 'Carlos_VIP', diamondCount: 1 }));
         } else {
           mostrarAnimacionEpicaRegalo('quiereme', 'Carlos_VIP');
-          hablarTTS('¡Carlos VIP envió Quiéreme y sube 1 posición en la lista!');
         }
-      } else if (tipo === 'pedir_escucha') {
+      } else if (tipo === 'pegar_link' || tipo === 'pedir_escucha') {
+        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testChat', user: 'Maria_Gamer', comment: 'Escucha Provenza - Karol G' }));
+          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
         } else {
-          mostrarAlertaOverlay('desbloqueada', { title: 'Provenza - Karol G', user: 'Maria_Gamer', announcement: '¡Maria_Gamer actualizó su tema!' });
-          hablarTTS('¡Maria Gamer actualizó su tema a Provenza Karol G!');
+          mostrarAlertaOverlay('desbloqueada', { title: 'YouTube (dQw4w9WgXcQ)', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
+        }
+      } else if (tipo === 'regalo_150') {
+        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_Diamante';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corgi VIP', user: targetUser, diamondCount: 150 }));
+        }
+      } else if (tipo === 'bloqueo_likes') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: state.username || 'slowmdoficial', comment: '0-50000' }));
         }
       } else if (tipo === 'chat') {
         const msgs = ['¡Saludos mi pana activo aquí!', 'Tremenda música suelta más!', 'Rómpela en ese Live bro'];
         const m = msgs[Math.floor(Math.random() * msgs.length)];
-        mostrarTTSOverlay('Fan_TikTok', m, 'chat');
-        hablarTTS(`Fan_TikTok dice: ${m}`);
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: 'Carlos_VIP', comment: m }));
+        } else {
+          mostrarTTSOverlay('Carlos_VIP', m, 'chat');
+          hablarTTS(`Carlos VIP dice: ${m}`);
+        }
       } else if (tipo === 'song') {
         const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
         const t = temas[Math.floor(Math.random() * temas.length)];
         const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked', overtakenCount: 0 };
         state.queue.push(nuevo);
         sincronizarServidor();
-        const msg = `¡Usuario_Live agregó "${nuevo.title}" a la lista!`;
         mostrarAlertaOverlay('nueva', nuevo);
-        hablarTTS(msg);
       } else if (tipo === 'verlista') {
         lastListTriggerTime = 0; // Reset cooldown para probar
         const myPos = state.queue.length > 0 ? 1 : 0;
         mostrarListaCompletaOverlay(state.queue, 'Usuario_Live', myPos);
       } else if (tipo === 'share_crush') {
-        reproducirSonidoObturador();
-        mostrarFotoCrushOverlay('Alejandro');
-        hablarTTS('Alejandro mandó este live a su crush');
+        mostrarTTSOverlay('Alejandro', 'Compartió el En Vivo 🔄', 'chat');
       } else if (tipo === 'follow_comunidad') {
-        reproducirSonidoAplausos();
         mostrarAplausosSeguidorOverlay('Carlos');
-        hablarTTS('Carlos se sumó a la comunidad');
       } else if (tipo === 'segunda_cancion') {
         const user = state.queue[0]?.user || 'Slow MD';
-        const msg = `${user}, ya tienes una canción en la lista`;
+        const msg = `${limpiarNombreCliente(user)}, ya tienes una canción en la lista`;
         mostrarAlertaOverlay('warning', { title: 'REGLA DE LA COLA', user: user, announcement: msg });
         hablarTTS(msg);
       } else if (tipo === 'pregunta_ayuda') {
-        const banner = "Comenta: Escucha [Canción] - [Artista]";
-        const voice = "Para agregar una canción a la lista debes poner la palabra escucha más el nombre de la canción más el nombre del artista y se agrega automáticamente a la lista.";
+        const banner = "1. Sígueme • 2. Comparte • 3. Corazón con los dedos (o 5,000 likes) • 4. Pega el link de YouTube, Spotify o BandLab";
+        const voice = "Para entrar a la lista debes seguirme, compartir el live y enviar un corazón con los dedos o dar cinco mil likes. Luego pega el link de tu canción de YouTube, Spotify o BandLab en el chat.";
         mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
         hablarTTS(voice);
       } else if (tipo === 'spam') {
@@ -2705,7 +2780,7 @@
       } else if (tipo === 'sin_seguir') {
         const user = 'PedroNoFollower';
         reproducirSonidoSirena();
-        const msg = `${user} está intentando entrar a la lista sin seguirte 🚨`;
+        const msg = `${user} está intentando entrar a la lista sin seguirte`;
         mostrarSirenaOverlay(user, msg);
         hablarTTS(msg);
       } else if (tipo === 'voto_jurado') {
@@ -2713,11 +2788,11 @@
           iniciarEncuestaDesdePanel();
         }
         setTimeout(() => {
-          const notas = [10, 9.5, 8.5, 9.8, 10, 7.5, 9.0];
+          const notas = [10, 9.5, 9.8, 10, 9.6, 10, 9.5];
           const nota = notas[Math.floor(Math.random() * notas.length)];
-          const votantes = ['Carlos', 'Maria', 'Roberto', 'Andrés', 'Laura', 'Sofía', 'Alejandro', 'Valentina'];
+          const votantes = ['___oso___verde', 'Maria_VIP', 'Roberto', 'Andrés', 'Laura', 'Sofía', 'Alejandro', 'Valentina', 'Camila', 'Diego'];
           const usuario = votantes[Math.floor(Math.random() * votantes.length)];
-          const primerNombre = usuario;
+          const primerNombre = limpiarNombreCliente(usuario).split(/\s+/)[0] || 'Usuario';
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
               action: 'testChat',
@@ -2762,7 +2837,7 @@
     function toggleRequerirSeguidor(activo) {
       state.requireFollowerToRequest = Boolean(activo);
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action: 'toggleRequireFollower', active: state.requireFollowerToRequest }));
+        ws.send(JSON.stringify({ action: 'toggleRequireFollower', required: state.requireFollowerToRequest }));
       }
       actualizarUIControlesStreamer();
     }
@@ -2770,6 +2845,7 @@
     function toggleBloqueoCola() {
       const nuevo = !state.queueLocked;
       state.queueLocked = nuevo;
+      if (!nuevo) state.lockTargetLikes = null;
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ action: 'toggleQueueLock', locked: nuevo }));
       }
@@ -2777,8 +2853,9 @@
     }
 
     function explicarComoPedir() {
-      const explicacion = "Para agregar una canción a la lista debes poner la palabra Escucha seguido del nombre de la canción y del artista.";
-      mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: explicacion });
+      const banner = "1. Sígueme • 2. Comparte • 3. Corazón con los dedos (o 5,000 likes) • 4. Pega el link de YouTube, Spotify o BandLab";
+      const explicacion = "Para entrar a la lista debes seguirme, compartir el live y enviar un corazón con los dedos o dar cinco mil likes. Cuando estés en la lista, pega el link de tu canción de YouTube, Spotify o BandLab en el chat.";
+      mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
       hablarTTS(explicacion);
     }
 
@@ -2786,7 +2863,11 @@
       const btnLock = document.getElementById('btn-toggle-queue-lock');
       if (btnLock) {
         if (state.queueLocked) {
-          btnLock.innerHTML = '🔒 Lista: Bloqueada (0)';
+          if (state.lockTargetLikes) {
+            btnLock.innerHTML = `🔒 Bloqueada (${(state.currentLikes || 0).toLocaleString()} / ${Number(state.lockTargetLikes).toLocaleString()} ❤️)`;
+          } else {
+            btnLock.innerHTML = '🔒 Lista: Bloqueada (0)';
+          }
           btnLock.style.borderColor = '#ef4444';
           btnLock.style.color = '#f87171';
         } else {
@@ -2799,6 +2880,44 @@
       const bg = document.getElementById('switch-follower-bg');
       if (chk) chk.checked = Boolean(state.requireFollowerToRequest);
       if (bg) bg.style.background = state.requireFollowerToRequest ? 'var(--cyan-neon)' : 'rgba(255,255,255,0.2)';
+    }
+
+    // #7 Sonido dramático de palpitación (latido de corazón) cuando quedan pocos segundos en la encuesta
+    function reproducirLatidoCorazon() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.65 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const now = ctx.currentTime;
+
+        // Primer golpe del latido (Lub)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(75, now);
+        osc1.frequency.exponentialRampToValueAtTime(38, now + 0.14);
+        gain1.gain.setValueAtTime(0.01, now);
+        gain1.gain.linearRampToValueAtTime(vol, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.17);
+
+        // Segundo golpe del latido (Dub)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(65, now + 0.20);
+        osc2.frequency.exponentialRampToValueAtTime(32, now + 0.36);
+        gain2.gain.setValueAtTime(0.01, now + 0.20);
+        gain2.gain.linearRampToValueAtTime(vol * 0.85, now + 0.22);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.20);
+        osc2.stop(now + 0.40);
+      } catch(e) {}
     }
 
     // GESTIÓN DE VOTACIÓN DEL JURADO (2 MINUTOS / 120s)
@@ -2873,13 +2992,24 @@
       if (chipsEl) chipsEl.innerHTML = '';
       if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
 
-      if (modal) modal.classList.add('show');
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.add('show');
+      }
 
       clearInterval(votingInterval);
       votingInterval = setInterval(() => {
         state.voting.remaining--;
         if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
+
+        // #7 Cuando el tiempo se está acabando (últimos 15 segundos), la encuesta tiembla y suena palpitación
+        if (state.voting.remaining <= 15 && state.voting.remaining > 0) {
+          if (modal) modal.classList.add('dramatic-shake');
+          reproducirLatidoCorazon();
+        }
+
         if (state.voting.remaining <= 0) {
+          if (modal) modal.classList.remove('dramatic-shake');
           clearInterval(votingInterval);
         }
       }, 1000);
@@ -2922,7 +3052,10 @@
     function finalizarUIEncuesta(data) {
       clearInterval(votingInterval);
       const modal = document.getElementById('overlay-voting-modal');
-      if (modal) modal.classList.remove('show');
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.remove('show');
+      }
 
       const btnStart = document.getElementById('btn-start-voting');
       const btnStop = document.getElementById('btn-stop-voting');
@@ -2938,12 +3071,22 @@
 
       if (!banner) return;
 
+      const cancelledByMinVotes = Boolean(data.cancelledByMinVotes);
       const passed = Boolean(data.certified !== undefined ? data.certified : data.approved);
       const pct = Number(data.percentage !== undefined ? data.percentage : (data.currentPct !== undefined ? data.currentPct : (data.pct !== undefined ? data.pct : 0)));
-      const avg = Number(data.average !== undefined ? data.average : (data.currentAvg !== undefined ? data.currentAvg : (data.avg !== undefined ? data.avg : 0)));
+      const totalVotes = Number(data.totalVotes !== undefined ? data.totalVotes : (data.votes !== undefined ? data.votes : 0));
       const song = data.song || {};
 
-      if (passed) {
+      if (cancelledByMinVotes) {
+        // #7 Si no llega a 10 votaciones se cancela la encuesta
+        reproducirSonidoBuzzer();
+        banner.className = 'overlay-certificate-banner rejected show';
+        if (trophy) trophy.textContent = '🚫';
+        if (title) title.textContent = 'ENCUESTA CANCELADA';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `${totalVotes} DE 10 VOTOS MÍNIMOS`;
+        if (footerDesc) footerDesc.textContent = 'La encuesta se canceló porque no llegó al mínimo de 10 votaciones.';
+      } else if (passed) {
         reproducirSonidoFanfarria();
         reproducirSonidoAplausos();
         lanzarConfetiCelebracion();
@@ -2961,7 +3104,7 @@
         if (trophy) trophy.textContent = '⚠️';
         if (title) title.textContent = 'NO CALIFICA';
         if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
-        if (scoreBadge) scoreBadge.textContent = `${pct}% DE APROBACIÓN (Min. 98%)`;
+        if (scoreBadge) scoreBadge.textContent = `${pct}% DE APROBACIÓN (Min. 95%)`;
         if (footerDesc) footerDesc.textContent = '¡Siga trabajando en pulir su talento para la próxima!';
       }
 
@@ -2974,7 +3117,10 @@
     function cerrarUIEncuesta() {
       clearInterval(votingInterval);
       const modal = document.getElementById('overlay-voting-modal');
-      if (modal) modal.classList.remove('show');
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.remove('show');
+      }
       const btnStart = document.getElementById('btn-start-voting');
       const btnStop = document.getElementById('btn-stop-voting');
       if (btnStart) btnStart.style.display = 'block';
@@ -3127,7 +3273,7 @@
       } catch(e) {}
     }
 
-    // GESTIÓN DE LA PLAYLIST (ARTISTAS CERTIFICADOS >= 98%)
+    // GESTIÓN DE LA PLAYLIST (ARTISTAS CERTIFICADOS >= 95%)
     function renderizarPlaylist() {
       const listEl = document.getElementById('panel-certified-list');
       const countEl = document.getElementById('panel-count-certified');
@@ -3136,7 +3282,7 @@
       if (!listEl) return;
 
       if (playlist.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 98% o más. Realiza una votación al terminar un tema.</div>`;
+        listEl.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 95% o más (mínimo 10 votos). Realiza una votación al terminar un tema.</div>`;
         return;
       }
 
