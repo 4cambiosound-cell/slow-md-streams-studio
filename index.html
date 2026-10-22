@@ -1909,7 +1909,15 @@
             if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = data.requireFollowerToRequest;
             if (Array.isArray(data.certifiedPlaylist)) state.certifiedPlaylist = data.certifiedPlaylist;
             if (data.votingState && data.votingState.active) {
-              iniciarUIEncuesta(data.votingState.song, data.votingState.duration);
+              const remaining = Math.max(0, (data.votingState.duration || 120) - Math.floor((Date.now() - (data.votingState.startedAt || Date.now())) / 1000));
+              iniciarUIEncuesta(data.votingState.song, data.votingState.duration, remaining);
+              if (data.votingState.totalVotes > 0) {
+                actualizarUIVoto({
+                  totalVotes: data.votingState.totalVotes,
+                  average: data.votingState.average !== undefined ? data.votingState.average : data.votingState.avg,
+                  percentage: data.votingState.percentage !== undefined ? data.votingState.percentage : data.votingState.pct
+                });
+              }
             }
             actualizarUIControlesStreamer();
             renderizarPlaylist();
@@ -2705,10 +2713,11 @@
           iniciarEncuestaDesdePanel();
         }
         setTimeout(() => {
-          const notas = [10, 9.8, 10, 10, 9.5];
+          const notas = [10, 9.5, 8.5, 9.8, 10, 7.5, 9.0];
           const nota = notas[Math.floor(Math.random() * notas.length)];
-          const usuario = 'Carlos';
-          const primerNombre = 'Carlos';
+          const votantes = ['Carlos', 'Maria', 'Roberto', 'Andrés', 'Laura', 'Sofía', 'Alejandro', 'Valentina'];
+          const usuario = votantes[Math.floor(Math.random() * votantes.length)];
+          const primerNombre = usuario;
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
               action: 'testChat',
@@ -2716,17 +2725,20 @@
               comment: `Le doy ${nota}`
             }));
           } else {
+            const currentVotes = (state.voting.votes || 0) + 1;
+            const newAvg = nota;
+            const newPct = Math.round((nota / 10) * 100);
             actualizarUIVoto({
               user: usuario,
               primerNombre: primerNombre,
               score: nota,
-              average: 9.9,
-              percentage: 99,
-              totalVotes: 1
+              average: newAvg,
+              percentage: newPct,
+              totalVotes: currentVotes
             });
             hablarTTS(`${primerNombre} le da un ${nota}`);
           }
-        }, 600);
+        }, 500);
       }
     }
 
@@ -2823,7 +2835,7 @@
       }
     }
 
-    function iniciarUIEncuesta(song, duration) {
+    function iniciarUIEncuesta(song, duration, remainingSec) {
       const modal = document.getElementById('overlay-voting-modal');
       const titleEl = document.getElementById('voting-song-title');
       const artistEl = document.getElementById('voting-song-artist');
@@ -2840,11 +2852,12 @@
       if (btnStop) btnStop.style.display = 'block';
 
       const dur = duration || 120;
+      const rem = remainingSec !== undefined ? remainingSec : dur;
       state.voting = {
         active: true,
         song: song,
         duration: dur,
-        remaining: dur,
+        remaining: rem,
         avg: 0,
         pct: 0,
         votes: 0,
@@ -2879,9 +2892,15 @@
       const countEl = document.getElementById('voting-count');
       const chipsEl = document.getElementById('voting-recent-chips');
 
-      const avg = Number(data.average || 0);
-      const pct = Number(data.percentage || 0);
-      const total = Number(data.totalVotes || 0);
+      const avg = Number(data.average !== undefined ? data.average : (data.currentAvg !== undefined ? data.currentAvg : (data.avg !== undefined ? data.avg : 0)));
+      const pct = Number(data.percentage !== undefined ? data.percentage : (data.currentPct !== undefined ? data.currentPct : (data.pct !== undefined ? data.pct : 0)));
+      const total = Number(data.totalVotes !== undefined ? data.totalVotes : (data.votes !== undefined ? data.votes : 0));
+
+      if (state.voting) {
+        state.voting.avg = avg;
+        state.voting.pct = pct;
+        state.voting.votes = total;
+      }
 
       if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
       if (avgEl) avgEl.textContent = avg.toFixed(1);
@@ -2919,8 +2938,9 @@
 
       if (!banner) return;
 
-      const passed = Boolean(data.certified);
-      const pct = data.percentage || 0;
+      const passed = Boolean(data.certified !== undefined ? data.certified : data.approved);
+      const pct = Number(data.percentage !== undefined ? data.percentage : (data.currentPct !== undefined ? data.currentPct : (data.pct !== undefined ? data.pct : 0)));
+      const avg = Number(data.average !== undefined ? data.average : (data.currentAvg !== undefined ? data.currentAvg : (data.avg !== undefined ? data.avg : 0)));
       const song = data.song || {};
 
       if (passed) {

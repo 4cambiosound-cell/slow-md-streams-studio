@@ -90,30 +90,40 @@ let votingState = {
 };
 
 // Parser robusto de calificaciones del 1 al 10 en diversos formatos:
-// "Le doy 2", "Un 7", "10/10", "8.9", "7.5", "10", "Doy un 9", "Nota 8"
+// "Le doy 2", "Un 7", "10/10", "8.9", "8,5", "9 de 10", "10", "Doy un 9", "Nota 8"
 function parseScore(comment) {
   if (!comment) return null;
-  const t = comment.trim().toLowerCase();
+  // Convertir comas decimales a punto (ej: 8,5 -> 8.5)
+  let t = comment.trim().toLowerCase().replace(/(\d+),(\d+)/g, '$1.$2');
 
-  // Caso "10/10" o "8/10" o "7.5/10"
-  const fractionMatch = t.match(/\b([1-9](?:\.[0-9]+)?|10)\s*\/\s*10\b/);
+  // 1. Caso fracciones: "10/10", "8.5/10", "9 de 10", "10 de 10"
+  const fractionMatch = t.match(/\b([1-9](?:\.[0-9]+)?|10)\s*(?:\/|\s+de\s+)\s*10\b/i);
   if (fractionMatch) {
     const num = parseFloat(fractionMatch[1]);
     if (num >= 1 && num <= 10) return num;
   }
 
-  // Caso "le doy un 8", "le doy 8.5", "un 7", "doy 9", "nota: 8", "calificación 10"
-  const prefixMatch = t.match(/(?:(?:le\s+)?doy(?:\s+un)?|un|nota|calificaci[oó]n|pongo)\s+([1-9](?:\.[0-9]+)?|10)\b/i);
+  // 2. Caso prefijos: "le doy 10", "le doy un 8.5", "le pongo 9", "doy 8", "nota: 10", "un 7", "para mi un 9"
+  const prefixMatch = t.match(/(?:doy|pongo|califico|nota|calificaci[oó]n|puntos?|le\s+doy|un)\s+(?:un\s+)?([1-9](?:\.[0-9]+)?|10)\b/i);
   if (prefixMatch) {
     const num = parseFloat(prefixMatch[1]);
     if (num >= 1 && num <= 10) return num;
   }
 
-  // Caso número directo solo: "10", "8", "9.5", "7"
+  // 3. Caso número directo solo: "10", "8", "9.5", "7"
   const directMatch = t.match(/^\s*([1-9](?:\.[0-9]+)?|10)\s*$/);
   if (directMatch) {
     const num = parseFloat(directMatch[1]);
     if (num >= 1 && num <= 10) return num;
+  }
+
+  // 4. En comentarios cortos (<= 25 caracteres), buscar número entre 1 y 10
+  if (t.length <= 25) {
+    const shortMatch = t.match(/\b([1-9](?:\.[0-9]+)?|10)\b/);
+    if (shortMatch) {
+      const num = parseFloat(shortMatch[1]);
+      if (num >= 1 && num <= 10) return num;
+    }
   }
 
   return null;
@@ -187,9 +197,13 @@ function finishVoting() {
     type: 'VOTING_FINISHED',
     song: song,
     avg: avg,
+    average: avg,
     pct: pct,
+    percentage: pct,
     totalVotes: totalVotes,
+    votes: totalVotes,
     approved: approved,
+    certified: approved,
     voiceAnnouncement: voiceMsg,
     certifiedPlaylist: certifiedPlaylist
   });
@@ -1302,8 +1316,13 @@ async function connectToTikTok(rawUsername) {
               primerNombre: primerNombre,
               score: score,
               totalVotes: totalVotes,
+              votes: totalVotes,
               currentAvg: avg,
+              average: avg,
+              avg: avg,
               currentPct: pct,
+              percentage: pct,
+              pct: pct,
               voiceAnnouncement: `${primerNombre} le da un ${score}`
             });
             addLog(`🗳️ ${primerNombre} calificó con ${score} (Promedio: ${avg}/10 - ${pct}%)`, 'chat');
@@ -1550,6 +1569,15 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
   ws.send(JSON.stringify({ type: 'LAYOUT_UPDATE', layout: botConfig.layout }));
   ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
+  let initAvg = 0;
+  let initPct = 0;
+  if (votingState.active && votingState.voters.size > 0) {
+    let sum = 0;
+    for (const val of votingState.voters.values()) sum += val;
+    initAvg = Number((sum / votingState.voters.size).toFixed(1));
+    initPct = Math.round((initAvg / 10) * 100);
+  }
+
   ws.send(JSON.stringify({ type: 'RECENT_LOGS', logs: recentLogs }));
   ws.send(JSON.stringify({
     type: 'EXTRA_CONFIG',
@@ -1561,7 +1589,14 @@ wss.on('connection', (ws) => {
       song: votingState.song,
       duration: votingState.duration,
       startedAt: votingState.startedAt,
-      totalVotes: votingState.voters.size
+      totalVotes: votingState.voters.size,
+      votes: votingState.voters.size,
+      average: initAvg,
+      avg: initAvg,
+      currentAvg: initAvg,
+      percentage: initPct,
+      pct: initPct,
+      currentPct: initPct
     }
   }));
 
@@ -1642,6 +1677,58 @@ wss.on('connection', (ws) => {
           giftType: giftType,
           user: testUser,
           avatarUrl: ''
+        });
+      } else if (payload.action === 'testChat') {
+        const testUser = payload.user || 'Carlos';
+        const testComment = payload.comment || 'Le doy 10';
+        addLog(`💬 [Prueba] ${testUser}: "${testComment}"`, 'chat');
+        
+        // Si la votación está activa, procesar el voto en el servidor
+        if (votingState.active) {
+          const score = parseScore(testComment);
+          if (score !== null) {
+            const userKey = normalizarUserKey(testUser);
+            // Si es prueba desde el panel, permitir acumular votos usando sufijo si ya votó
+            const voteKey = votingState.voters.has(userKey) ? `${userKey}_${Date.now()}` : userKey;
+            votingState.voters.set(voteKey, score);
+            const totalVotes = votingState.voters.size;
+            let sum = 0;
+            for (const val of votingState.voters.values()) sum += val;
+            const avg = Number((sum / totalVotes).toFixed(1));
+            const pct = Math.round((avg / 10) * 100);
+
+            const primerNombre = (testUser || '').trim().split(/[\s_.-]+/)[0] || testUser;
+
+            broadcast({
+              type: 'VOTE_CAST',
+              user: testUser,
+              primerNombre: primerNombre,
+              score: score,
+              totalVotes: totalVotes,
+              votes: totalVotes,
+              currentAvg: avg,
+              average: avg,
+              avg: avg,
+              currentPct: pct,
+              percentage: pct,
+              pct: pct,
+              voiceAnnouncement: `${primerNombre} le da un ${score}`
+            });
+            addLog(`🗳️ [Prueba] ${primerNombre} calificó con ${score} (Promedio: ${avg}/10 - ${pct}%)`, 'chat');
+            return;
+          }
+        }
+
+        processServerChat(testComment, testUser, testUser, 'test_' + Date.now(), true, false);
+      } else if (payload.action === 'testGift') {
+        const giftName = payload.giftName || 'Corazón con los dedos';
+        const testUser = payload.user || 'Maria';
+        processServerGift(testUser, giftName, 1, 1, '', {
+          displayId: testUser,
+          handle: testUser,
+          nickname: testUser,
+          userId: 'test_' + Date.now(),
+          avatarUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(testUser)
         });
       } else if (payload.action === 'getPlaylist') {
         ws.send(JSON.stringify({ type: 'PLAYLIST_UPDATE', playlist: certifiedPlaylist }));
