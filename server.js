@@ -640,10 +640,11 @@ function procesarPasosPendientesAlDesbloquear() {
   }
 }
 
-// #4 Detector de links de YouTube, Spotify o BandLab
+// #4 Detector de links de YouTube, Spotify, BandLab, SoundCloud, Apple Music o enlaces generales
 function detectarLinkCancion(text) {
   if (!text) return null;
-  const match = String(text).match(/(?:https?:\/\/)?(?:www\.|m\.|music\.|open\.)?(youtube\.com\/\S+|youtu\.be\/\S+|spotify\.com\/\S+|spotify\.link\/\S+|bandlab\.com\/\S+)/i);
+  const match = String(text).match(/(?:https?:\/\/)?(?:www\.|m\.|music\.|open\.|on\.)?(youtube\.com\/\S+|youtu\.be\/\S+|spotify\.com\/\S+|spotify\.link\/\S+|bandlab\.com\/\S+|soundcloud\.com\/\S+|music\.apple\.com\/\S+)/i) ||
+                String(text).match(/https?:\/\/\S+/i);
   if (!match) return null;
 
   let rawUrl = match[0].replace(/[.,;!?)"'\]]+$/, '');
@@ -652,14 +653,23 @@ function detectarLinkCancion(text) {
   }
 
   const lower = rawUrl.toLowerCase();
-  let platform = 'youtube';
-  let label = 'YouTube';
-  if (lower.includes('spotify.')) {
+  let platform = 'link';
+  let label = 'Enlace';
+  if (lower.includes('youtube.') || lower.includes('youtu.be')) {
+    platform = 'youtube';
+    label = 'YouTube';
+  } else if (lower.includes('spotify.')) {
     platform = 'spotify';
     label = 'Spotify';
   } else if (lower.includes('bandlab.')) {
     platform = 'bandlab';
     label = 'BandLab';
+  } else if (lower.includes('soundcloud.')) {
+    platform = 'soundcloud';
+    label = 'SoundCloud';
+  } else if (lower.includes('apple.com')) {
+    platform = 'apple';
+    label = 'Apple Music';
   }
 
   return {
@@ -669,33 +679,224 @@ function detectarLinkCancion(text) {
   };
 }
 
-// Resolver título real desde oEmbed (YouTube/Spotify) sin bloquear y sin hablar en TTS
-function resolverTituloDeLink(songObj, url, label) {
-  try {
-    const oembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
-    https.get(oembedUrl, (res) => {
-      let body = '';
-      res.on('data', chunk => { body += chunk; });
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(body);
-          if (json && json.title && typeof json.title === 'string') {
-            const cleanTitle = json.title.trim();
-            if (cleanTitle) {
-              songObj.title = `🔗 ${cleanTitle}`;
-              saveQueueData();
-              broadcast({
-                type: 'QUEUE_UPDATE',
-                queue: queueState.queue,
-                history: queueState.history,
-                skipVoice: true
-              });
-            }
+// Decodificar entidades HTML en títulos extraídos de metadatos
+function decodificarEntidadesHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*39;|&apos;|&#x0*27;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Limpiar título y autor para que en el Overlay se vea un nombre de canción profesional y nunca un link
+function limpiarTituloMetadatos(rawTitle, rawAuthor = '') {
+  let title = decodificarEntidadesHTML(rawTitle || '');
+  let author = decodificarEntidadesHTML(rawAuthor || '');
+
+  if (!title || contieneLink(title)) return '';
+
+  // Limpiar sufijos de plataformas comunes
+  title = title
+    .replace(/\s*[-|•]\s*YouTube\s*$/i, '')
+    .replace(/\s*\|\s*Spotify\s*$/i, '')
+    .replace(/\s*\|\s*BandLab\s*$/i, '')
+    .replace(/\s*[-|•]\s*SoundCloud\s*$/i, '')
+    .replace(/\s+on\s+BandLab\s*$/i, '')
+    .replace(/^Stream\s+/i, '')
+    .replace(/\s+by\s+([^|]+)$/i, ' - $1')
+    .replace(/\s*-\s*song and lyrics by\s+/i, ' - ')
+    .replace(/\s*-\s*song by\s+/i, ' - ')
+    .replace(/\s*-\s*Single by\s+/i, ' - ')
+    .replace(/\s*-\s*EP by\s+/i, ' - ')
+    .replace(/\s*-\s*Album by\s+/i, ' - ')
+    .replace(/^🔗\s*/, '')
+    .trim();
+
+  // Limpiar canal autogenerado de YouTube ("Artista - Topic")
+  author = author.replace(/\s*-\s*Topic\s*$/i, '').trim();
+
+  // Ignorar títulos genéricos vacíos de login/home
+  if (/^(YouTube|Spotify|BandLab|SoundCloud|Sign in|Log in|Home|Before you continue)$/i.test(title)) {
+    return '';
+  }
+
+  // Si tenemos autor y el título aún no lo incluye, agregarlo de forma estética
+  if (author && !/^(YouTube|Spotify|BandLab|SoundCloud)$/i.test(author)) {
+    const lowerTitle = title.toLowerCase();
+    const lowerAuthor = author.toLowerCase();
+    if (!lowerTitle.includes(lowerAuthor) && !lowerTitle.includes(' - ')) {
+      title = `${title} - ${author}`;
+    }
+  }
+
+  return title.trim();
+}
+
+// Petición HTTP/HTTPS simple con soporte de redirecciones para leer JSON o HTML (<head>)
+function fetchUrlContent(targetUrl, maxRedirects = 4, timeoutMs = 4500) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = (err, data) => {
+      if (settled) return;
+      settled = true;
+      if (err) reject(err);
+      else resolve(data);
+    };
+
+    const timer = setTimeout(() => done(new Error('Timeout')), timeoutMs);
+
+    function requestStep(currentUrl, redirectsLeft) {
+      let parsed;
+      try {
+        parsed = new URL(currentUrl);
+      } catch (e) {
+        clearTimeout(timer);
+        return done(e);
+      }
+      const client = parsed.protocol === 'http:' ? http : https;
+      const req = client.get(currentUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/json,application/xhtml+xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+        }
+      }, (res) => {
+        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) {
+            clearTimeout(timer);
+            return done(new Error('Too many redirects'));
           }
-        } catch (e) {}
+          const nextUrl = new URL(res.headers.location, currentUrl).toString();
+          return requestStep(nextUrl, redirectsLeft - 1);
+        }
+
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          body += chunk;
+          // Basta con los primeros 90KB (contiene todo el <head> y metadatos og:title)
+          if (body.length > 90000 || body.includes('</head>')) {
+            req.destroy();
+            clearTimeout(timer);
+            done(null, body);
+          }
+        });
+        res.on('end', () => {
+          clearTimeout(timer);
+          done(null, body);
+        });
+        res.on('error', (err) => {
+          clearTimeout(timer);
+          done(err);
+        });
       });
-    }).on('error', () => {});
+
+      req.on('error', (err) => {
+        clearTimeout(timer);
+        done(err);
+      });
+    }
+
+    requestStep(targetUrl, maxRedirects);
+  });
+}
+
+// Extraer el nombre real de la canción y artista desde oEmbed (YouTube/Spotify/SoundCloud) o etiquetas OpenGraph (BandLab/enlaces acortados)
+async function obtenerMetadatosDeLink(url, label = 'Enlace') {
+  const lower = String(url).toLowerCase();
+
+  // 1. Intentar endpoints oficiales oEmbed primero (muy rápidos y precisos)
+  const oembedEndpoints = [];
+  if (lower.includes('youtube.com') || lower.includes('youtu.be')) {
+    oembedEndpoints.push(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+  } else if (lower.includes('open.spotify.com')) {
+    oembedEndpoints.push(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+  } else if (lower.includes('soundcloud.com')) {
+    oembedEndpoints.push(`https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+  }
+  oembedEndpoints.push(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+
+  for (const endpoint of oembedEndpoints) {
+    try {
+      const raw = await fetchUrlContent(endpoint, 3, 3500);
+      const json = JSON.parse(raw);
+      if (json && json.title) {
+        const clean = limpiarTituloMetadatos(json.title, json.author_name || '');
+        if (clean) return clean;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Fallback: Leer directamente el HTML / OpenGraph (<meta property="og:title">, twitter:title, <title>)
+  try {
+    const html = await fetchUrlContent(url, 5, 4500);
+    if (html) {
+      const ogTitleMatch = html.match(/<meta[^>]+(?:property|name)=["'](?:og:title|twitter:title)["'][^>]+content=["']([^"']+)["']/i) ||
+                           html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:title|twitter:title)["']/i);
+      const ogDescMatch = html.match(/<meta[^>]+(?:property|name)=["'](?:og:description|description)["'][^>]+content=["']([^"']+)["']/i) ||
+                          html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:description|description)["']/i);
+      const titleTagMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+
+      const rawTitle = ogTitleMatch ? ogTitleMatch[1] : (titleTagMatch ? titleTagMatch[1] : '');
+      let rawAuthor = '';
+
+      if (ogDescMatch && ogDescMatch[1]) {
+        const desc = decodificarEntidadesHTML(ogDescMatch[1]);
+        // En Spotify og:description suele ser "Artista · Canción · Song · 2024" o "Listen to X on Spotify. Artista · Song"
+        const parts = desc.split('·').map(p => p.trim()).filter(Boolean);
+        if (parts.length >= 2 && !parts[0].toLowerCase().includes('listen to')) {
+          rawAuthor = parts[0];
+        }
+      }
+
+      const clean = limpiarTituloMetadatos(rawTitle, rawAuthor);
+      if (clean) return clean;
+    }
   } catch (e) {}
+
+  return '';
+}
+
+// Resolver título real desde metadatos sin mostrar el link en el Overlay y sin hablar en TTS
+async function resolverTituloDeLink(songObj, url, label, announceUpdate = false) {
+  try {
+    const cleanTitle = await obtenerMetadatosDeLink(url, label);
+    if (cleanTitle) {
+      songObj.title = cleanTitle;
+    } else if (!songObj.title || contieneLink(songObj.title)) {
+      songObj.title = `Tema de @${songObj.user || 'Artista'} (${label})`;
+    }
+    saveQueueData();
+    broadcast({
+      type: 'QUEUE_UPDATE',
+      queue: queueState.queue,
+      history: queueState.history,
+      eventType: announceUpdate ? 'update_song' : undefined,
+      songTitle: songObj.title,
+      songUser: songObj.user,
+      skipVoice: true,
+      announcement: announceUpdate ? `🎵 ¡@${songObj.user} vinculó "${songObj.title}"!` : undefined
+    });
+    if (cleanTitle) {
+      addLog(`🎵 Metadatos leídos para @${songObj.user}: "${songObj.title}" (${label})`, 'queue');
+    }
+  } catch (e) {
+    saveQueueData();
+    broadcast({
+      type: 'QUEUE_UPDATE',
+      queue: queueState.queue,
+      history: queueState.history,
+      skipVoice: true
+    });
+  }
 }
 
 function normalizarUserKey(u) {
@@ -1028,30 +1229,19 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   });
 
   if (idx !== -1) {
-    // YA TIENE DISCO EN LA COLA: Asignar el link a su disco (SIN LEER EN VOZ ALTA)
+    // YA TIENE DISCO EN LA COLA: Asignar el link a su disco (SIN LEER EN VOZ ALTA Y SIN MOSTRAR LA URL EN EL OVERLAY)
     const s = queueState.queue[idx];
     s.songUrl = linkInfo.url;
+    s.songPlatform = linkInfo.platform;
     s.platform = linkInfo.platform;
-    s.title = `🔗 ${linkInfo.label} • @${s.user}`;
+    s.title = `Canción de @${s.user} (${linkInfo.label})`;
     s.status = 'unlocked';
     saveQueueData();
 
-    const announcement = `🔗 ¡@${chatName} vinculó su canción de ${linkInfo.label} en el Puesto #${idx + 1}!`;
-    broadcast({
-      type: 'QUEUE_UPDATE',
-      queue: queueState.queue,
-      history: queueState.history,
-      sound: 'normal',
-      eventType: 'update_song',
-      songTitle: s.title,
-      songUser: s.user,
-      skipVoice: true,
-      announcement: announcement
-    });
     addLog(`🔗 ${chatName} asignó link de ${linkInfo.label} (${linkInfo.url}) en posición #${idx + 1}`, 'chat');
 
-    // Obtener título real de la canción en segundo plano (sin voz)
-    resolverTituloDeLink(s, linkInfo.url, linkInfo.label);
+    // Obtener el nombre real de la canción y artista desde los metadatos del enlace y actualizar el Overlay
+    resolverTituloDeLink(s, linkInfo.url, linkInfo.label, true);
     return true;
   } else {
     // NO TIENE DISCO EN LA LISTA: Mostrar aviso visual (sin voz)
@@ -1867,6 +2057,19 @@ wss.on('connection', (ws) => {
         if (Array.isArray(payload.queue)) {
           queueState.queue = payload.queue;
           verificarEliminacionServidor(queueState.queue);
+          // Si alguna canción agregada manualmente tiene un link como título, extraer su URL y resolver sus metadatos reales
+          for (const item of queueState.queue) {
+            if (item && item.title && contieneLink(item.title)) {
+              const lInfo = detectarLinkCancion(item.title);
+              if (lInfo) {
+                item.songUrl = lInfo.url;
+                item.songPlatform = lInfo.platform;
+                item.platform = lInfo.platform;
+                item.title = `Canción de @${item.user || 'Artista'} (${lInfo.label})`;
+                resolverTituloDeLink(item, lInfo.url, lInfo.label, false);
+              }
+            }
+          }
         }
         if (Array.isArray(payload.history)) queueState.history = payload.history;
         saveQueueData();
@@ -1875,10 +2078,11 @@ wss.on('connection', (ws) => {
         const updateMsg = JSON.stringify({
           type: 'QUEUE_UPDATE',
           queue: queueState.queue,
-          history: queueState.history
+          history: queueState.history,
+          skipVoice: true
         });
         for (const client of wss.clients) {
-          if (client !== ws && client.readyState === WebSocket.OPEN) {
+          if (client.readyState === WebSocket.OPEN) {
             client.send(updateMsg);
           }
         }

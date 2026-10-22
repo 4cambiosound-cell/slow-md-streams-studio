@@ -525,12 +525,12 @@
 
     .player-buttons-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: 2fr 1fr;
       gap: 10px;
     }
     @media (max-width: 700px) {
       .player-buttons-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
       }
     }
 
@@ -538,47 +538,25 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 11px 12px;
+      gap: 8px;
+      padding: 12px 16px;
       border-radius: 10px;
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 800;
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.2s ease;
       user-select: none;
     }
-    .btn-player-yt {
-      background: rgba(255, 0, 0, 0.18);
-      border-color: rgba(255, 0, 0, 0.45);
-      color: #ff4d4d;
+    .btn-player-link {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.22), rgba(6, 182, 212, 0.22));
+      border-color: rgba(16, 185, 129, 0.55);
+      color: #34d399;
     }
-    .btn-player-yt:not(:disabled):hover {
-      background: #ff0000;
+    .btn-player-link:not(:disabled):hover {
+      background: linear-gradient(90deg, #10b981, #06b6d4);
       color: #fff;
-      box-shadow: 0 0 16px rgba(255, 0, 0, 0.6);
-      transform: translateY(-2px);
-    }
-    .btn-player-sp {
-      background: rgba(29, 185, 84, 0.18);
-      border-color: rgba(29, 185, 84, 0.45);
-      color: #1ed760;
-    }
-    .btn-player-sp:not(:disabled):hover {
-      background: #1db954;
-      color: #fff;
-      box-shadow: 0 0 16px rgba(29, 185, 84, 0.6);
-      transform: translateY(-2px);
-    }
-    .btn-player-bl {
-      background: rgba(255, 85, 0, 0.18);
-      border-color: rgba(255, 85, 0, 0.45);
-      color: #ff7733;
-    }
-    .btn-player-bl:not(:disabled):hover {
-      background: #ff5500;
-      color: #fff;
-      box-shadow: 0 0 16px rgba(255, 85, 0, 0.6);
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.65);
       transform: translateY(-2px);
     }
     .btn-player-cp {
@@ -1629,7 +1607,7 @@
           <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
         </div>
 
-        <!-- BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS (4 BOTONES) -->
+        <!-- BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS -->
         <div class="panel-player-bar" id="panel-player-bar">
           <div class="player-bar-header">
             <div class="player-current-info">
@@ -1640,16 +1618,10 @@
           </div>
 
           <div class="player-buttons-grid">
-            <button type="button" id="btn-player-yt" class="btn-player btn-player-yt" disabled onclick="abrirPlataforma('youtube')" title="Abrir en YouTube">
-              ▶ YouTube
+            <button type="button" id="btn-player-open-link" class="btn-player btn-player-link" disabled onclick="abrirEnlaceActual()" title="Abrir el enlace de la canción enviada por el usuario">
+              🔗 Abrir Enlace
             </button>
-            <button type="button" id="btn-player-sp" class="btn-player btn-player-sp" disabled onclick="abrirPlataforma('spotify')" title="Abrir en Spotify">
-              🟢 Spotify
-            </button>
-            <button type="button" id="btn-player-bl" class="btn-player btn-player-bl" disabled onclick="abrirPlataforma('bandlab')" title="Abrir en BandLab (Invitaciones)">
-              🎹 BandLab
-            </button>
-            <button type="button" id="btn-player-cp" class="btn-player btn-player-cp" disabled onclick="copiarTemaActual()" title="Copiar nombre de la canción">
+            <button type="button" id="btn-player-cp" class="btn-player btn-player-cp" disabled onclick="copiarTemaActual()" title="Copiar enlace o nombre de la canción">
               📋 Copiar
             </button>
           </div>
@@ -1665,7 +1637,7 @@
 
         <!-- Formulario para agregar canción manual -->
         <form id="form-manual-song" style="display: flex; gap: 8px; margin-top: 6px;">
-          <input type="text" id="manual-title" placeholder="Título de la canción..." required style="flex: 2; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+          <input type="text" id="manual-title" placeholder="Pega el link o escribe el título de la canción..." required style="flex: 2; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
           <input type="text" id="manual-user" placeholder="Usuario..." style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
           <button type="submit" class="btn-action btn-primary">Agregar</button>
         </form>
@@ -2147,6 +2119,22 @@
       }
     }
 
+    // Formatear el título para que en el Overlay NUNCA se muestre una URL cruda ni emojis de enlace
+    function formatearTituloVisible(songOrTitle, userFallback = 'Artista') {
+      const raw = typeof songOrTitle === 'object' && songOrTitle !== null
+        ? (songOrTitle.title || '')
+        : String(songOrTitle || '');
+      const user = typeof songOrTitle === 'object' && songOrTitle !== null
+        ? (songOrTitle.user || userFallback)
+        : userFallback;
+
+      const sinPrefijo = raw.replace(/^🔗\s*/, '').trim();
+      if (!sinPrefijo || contieneLinkCliente(sinPrefijo)) {
+        return `Canción de @${user}`;
+      }
+      return sinPrefijo;
+    }
+
     // RENDERIZADO DE LA COLA
     function renderizarCola() {
       // 1. Overlay
@@ -2159,7 +2147,7 @@
 
       if (state.queue.length > 0) {
         const top = state.queue[0];
-        if (songTitle) songTitle.textContent = top.title.toUpperCase();
+        if (songTitle) songTitle.textContent = formatearTituloVisible(top).toUpperCase();
         if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 BLINDADO' : ''}`;
         if (statusBadge) {
           statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 EN ESPERA (CUMPLE REQUISITOS)';
@@ -2186,11 +2174,12 @@
             const isTop = idx === 0;
             const isUnlocked = song.status === 'unlocked';
             const vipBadge = song.vip150 ? ' <span style="color:#fde047;font-weight:900;">👑 BLINDADO</span>' : '';
-            const linkBadge = song.songUrl ? ' <span style="color:#38bdf8;font-weight:800;">🔗 Link</span>' : '';
+            const linkBadge = song.songUrl ? ' <span style="color:#38bdf8;font-weight:800;">🔗 Link Listo</span>' : '';
+            const cleanTitle = formatearTituloVisible(song);
             return `
               <div class="queue-row ${isSelected ? 'selected-song' : (isTop ? 'current-song' : '')}" onclick="seleccionarCancion(${idx})" style="cursor: pointer;" title="Haz clic para seleccionar este tema en la barra de reproducción">
                 <div class="row-info-col">
-                  <div class="row-title">#${idx + 1} ${escapeHtml(song.title)} ${isSelected ? '🎧' : ''}${vipBadge}${linkBadge}</div>
+                  <div class="row-title">#${idx + 1} ${escapeHtml(cleanTitle)} ${isSelected ? '🎧' : ''}${vipBadge}${linkBadge}</div>
                   <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
                 </div>
                 <div class="row-actions-col">
@@ -2205,17 +2194,15 @@
       }
     }
 
-    // GESTIÓN DE LA BARRA DE REPRODUCCIÓN / ACCIONES RÁPIDAS
+    // GESTIÓN DE LA BARRA DE REPRODUCCIÓN / ACCIONES RÁPIDAS (ABRIR ENLACE + COPIAR)
     function actualizarBarraReproductor() {
       const titleEl = document.getElementById('player-song-title');
       const statusEl = document.getElementById('player-song-status');
       const hintEl = document.getElementById('player-lock-hint');
-      const btnYt = document.getElementById('btn-player-yt');
-      const btnSp = document.getElementById('btn-player-sp');
-      const btnBl = document.getElementById('btn-player-bl');
+      const btnOpen = document.getElementById('btn-player-open-link');
       const btnCp = document.getElementById('btn-player-cp');
 
-      if (!titleEl || !btnYt) return;
+      if (!titleEl || !btnOpen) return;
 
       if (typeof state.selectedSongIndex !== 'number' || state.selectedSongIndex < 0 || state.selectedSongIndex >= state.queue.length) {
         state.selectedSongIndex = 0;
@@ -2230,17 +2217,17 @@
         if (hintEl) {
           hintEl.innerHTML = '<span>ℹ️</span> <span>Agrega una canción con el formulario abajo o espera peticiones en el Live.</span>';
         }
-        btnYt.disabled = true;
-        btnSp.disabled = true;
-        btnBl.disabled = true;
-        btnCp.disabled = true;
+        btnOpen.innerHTML = '🔗 Abrir Enlace';
+        btnOpen.disabled = true;
+        if (btnCp) btnCp.disabled = true;
         return;
       }
 
       const song = state.queue[state.selectedSongIndex];
       const isUnlocked = song && song.status === 'unlocked';
+      const cleanTitle = formatearTituloVisible(song);
 
-      titleEl.textContent = `${song.title} (pedida por @${song.user})`;
+      titleEl.textContent = `${cleanTitle} (pedida por @${song.user})`;
 
       if (statusEl) {
         if (isUnlocked) {
@@ -2252,18 +2239,23 @@
         }
       }
 
+      const platName = song.songPlatform === 'youtube' ? 'YouTube' :
+                       (song.songPlatform === 'spotify' ? 'Spotify' :
+                       (song.songPlatform === 'bandlab' ? 'BandLab' : ''));
+      btnOpen.innerHTML = song.songUrl
+        ? `🔗 Abrir Enlace${platName ? ` (${platName})` : ''}`
+        : '🔗 Abrir Enlace';
+
       // NINGÚN BOTÓN HABILITADO SI EL TEMA ESTÁ BLOQUEADO
-      btnYt.disabled = !isUnlocked;
-      btnSp.disabled = !isUnlocked;
-      btnBl.disabled = !isUnlocked;
-      btnCp.disabled = !isUnlocked;
+      btnOpen.disabled = !isUnlocked;
+      if (btnCp) btnCp.disabled = !isUnlocked;
 
       if (hintEl) {
         if (isUnlocked) {
           if (song.songUrl) {
-            hintEl.innerHTML = `<span style="color:#38bdf8;">🔗</span> <span style="color:#7dd3fc; font-weight:700;">Link directo detectado (${escapeHtml(song.songPlatform || 'enlace')}): haz clic en el botón para abrir el enlace exacto.</span>`;
+            hintEl.innerHTML = `<span style="color:#38bdf8;">🔗</span> <span style="color:#7dd3fc; font-weight:700;">Enlace listo: en el Overlay se muestra "${escapeHtml(cleanTitle)}" y aquí puedes abrir el link directo.</span>`;
           } else {
-            hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Tema desbloqueado! Esperando que el usuario pegue su link o haz clic para buscar.</span>';
+            hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Turno en cola! Esperando que el usuario pegue el link de su canción en el chat.</span>';
           }
         } else {
           hintEl.innerHTML = '<span style="color:#f87171;">🔒</span> <span style="color:#fca5a5;">Tema bloqueado: Requiere apoyo para habilitar los botones de escucha.</span>';
@@ -2278,43 +2270,33 @@
       }
     }
 
-    function abrirPlataforma(plataforma) {
+    function abrirEnlaceActual() {
       const idx = typeof state.selectedSongIndex === 'number' ? state.selectedSongIndex : 0;
       const song = state.queue[idx];
       if (!song || song.status !== 'unlocked') {
-        alert('⚠️ Este tema se encuentra bloqueado. Los botones solo se habilitan cuando la canción esté desbloqueada.');
+        alert('⚠️ Este tema se encuentra bloqueado. El botón solo se habilita cuando la canción esté desbloqueada.');
         return;
       }
 
-      // #4 Si el usuario pegó un link directo de esa plataforma (o cualquier link guardado), abrirlo directamente
       if (song.songUrl) {
-        if (
-          song.songPlatform === plataforma ||
-          (plataforma === 'youtube' && /youtu\.?be/i.test(song.songUrl)) ||
-          (plataforma === 'spotify' && /spotify/i.test(song.songUrl)) ||
-          (plataforma === 'bandlab' && /bandlab/i.test(song.songUrl))
-        ) {
-          window.open(song.songUrl, '_blank');
-          return;
-        }
+        window.open(song.songUrl, '_blank');
+        return;
       }
 
-      const query = encodeURIComponent(song.title);
-      if (plataforma === 'youtube') {
-        if (song.songUrl && !song.songPlatform) {
-          window.open(song.songUrl, '_blank');
-        } else {
-          window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
-        }
-      } else if (plataforma === 'spotify') {
-        window.open(`https://open.spotify.com/search/${query}`, '_blank');
-      } else if (plataforma === 'bandlab') {
-        if (song.songUrl && /bandlab/i.test(song.songUrl)) {
-          window.open(song.songUrl, '_blank');
-        } else {
-          window.open('https://www.bandlab.com/collaborations', '_blank');
-        }
+      if (song.title && contieneLinkCliente(song.title)) {
+        const match = String(song.title).match(/https?:\/\/\S+/i);
+        const url = match ? match[0] : ('https://' + String(song.title).trim());
+        window.open(url, '_blank');
+        return;
       }
+
+      // Si se agregó un nombre manualmente sin link, buscarlo en YouTube
+      const query = encodeURIComponent(formatearTituloVisible(song));
+      window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+    }
+
+    function abrirPlataforma() {
+      abrirEnlaceActual();
     }
 
     function copiarTemaActual() {
@@ -2325,7 +2307,7 @@
         return;
       }
 
-      const texto = song.songUrl || song.title;
+      const texto = song.songUrl || formatearTituloVisible(song);
       const btn = document.getElementById('btn-player-cp');
       const originalText = btn ? btn.innerHTML : '📋 Copiar';
 
@@ -2379,7 +2361,10 @@
       const desc = document.getElementById('alert-desc-text');
       if (!box || !info) return;
 
-      if (title) title.textContent = (info.title || 'CANCIÓN').toUpperCase();
+      const cleanTitle = (tipo === 'help' || tipo === 'warning')
+        ? (info.title || 'AVISO')
+        : formatearTituloVisible(info, info.user || 'Artista');
+      if (title) title.textContent = cleanTitle.toUpperCase();
 
       if (tipo === 'help') {
         if (label) label.textContent = '💡 ¿CÓMO PEDIR CANCIÓN? 💡';
@@ -2580,7 +2565,7 @@
               <div class="full-list-item-info">
                 <span class="full-list-pos">#${idx + 1}</span>
                 <div class="full-list-meta">
-                  <div class="full-list-song">${escapeHtml(song.title)}</div>
+                  <div class="full-list-song">${escapeHtml(formatearTituloVisible(song))}</div>
                   <div class="full-list-user">@${escapeHtml(song.user)}</div>
                 </div>
               </div>
@@ -3097,7 +3082,7 @@
         chips: []
       };
 
-      if (titleEl) titleEl.textContent = (song && song.title) ? song.title.toUpperCase() : 'CANCIÓN EN EVALUACIÓN';
+      if (titleEl) titleEl.textContent = song ? formatearTituloVisible(song).toUpperCase() : 'CANCIÓN EN EVALUACIÓN';
       if (artistEl) artistEl.textContent = `Artista / Solicitado por: @${(song && song.user) ? song.user : 'Comunidad'}`;
       if (barEl) barEl.style.width = '0%';
       if (avgEl) avgEl.textContent = '0.0';
@@ -3515,15 +3500,22 @@
         });
       }
 
-      // Formulario agregar canción manual
+      // Formulario agregar canción manual (admite tanto título como link directo)
       const formManual = document.getElementById('form-manual-song');
       if (formManual) {
         formManual.addEventListener('submit', (e) => {
           e.preventDefault();
-          const title = document.getElementById('manual-title').value.trim();
-          const user = document.getElementById('manual-user').value.trim() || '@Admin';
-          if (title) {
-            const nueva = { id: 'man_' + Date.now(), title, user, status: 'unlocked' };
+          const rawInput = document.getElementById('manual-title').value.trim();
+          const user = (document.getElementById('manual-user').value.trim() || 'Admin').replace(/^@/, '');
+          if (rawInput) {
+            const isLink = contieneLinkCliente(rawInput);
+            const nueva = {
+              id: 'man_' + Date.now(),
+              title: rawInput,
+              songUrl: isLink ? (rawInput.startsWith('http') ? rawInput : 'https://' + rawInput) : '',
+              user,
+              status: 'unlocked'
+            };
             state.queue.push(nueva);
             sincronizarServidor();
             mostrarAlertaOverlay('nueva', nueva);
