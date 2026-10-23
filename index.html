@@ -1652,12 +1652,11 @@
             <h2>⚙️ Reglas de Entrada y Subida de Puestos</h2>
           </div>
           <div style="font-size: 12.5px; line-height: 1.65; color: #cbd5e1;">
-            <div>1️⃣ <strong>Paso 1:</strong> Seguir al streamer (@slowmdoficial)</div>
-            <div>2️⃣ <strong>Paso 2:</strong> Compartir el Live</div>
-            <div>3️⃣ <strong>Paso 3:</strong> Enviar <strong>Corazón con los dedos (🫰)</strong> o dar <strong>5,000 Likes (Gratis)</strong></div>
-            <div>🔗 <strong>Pedir Canción:</strong> Pegar <strong>Link de YouTube, Spotify o BandLab</strong> en el chat</div>
+            <div>1️⃣ <strong>Entrar a la Lista:</strong> Enviar <strong>Corazón con los dedos (🫰)</strong> o dar <strong><span id="rule-free-likes-val">5,000</span> Likes (Gratis)</strong> <em>(sin necesidad de seguir)</em></div>
+            <div>2️⃣ <strong>Comando Likes Gratis:</strong> Comenta <code>D-1000</code> desde tu perfil para cambiar la meta de likes gratis</div>
+            <div>🔗 <strong>Pedir Canción:</strong> Pegar <strong>Link de YouTube, Spotify o BandLab</strong> en el chat (el Overlay muestra el título limpio)</div>
             <div>🎁 <strong>Subir con Regalos:</strong> <code>15-29</code> monedas (+1 pos) • <code>30-149</code> (+2 pos) • <code>150+</code> (<strong>#1 Blindado</strong>)</div>
-            <div>💖 <strong>Voz TTS en Chat:</strong> Solo lee mensajes de quienes envíen un <strong>Quiéreme</strong> (sin links ni símbolos)</div>
+            <div>💖 <strong>Voz TTS en Chat:</strong> Lee en voz alta todos los comentarios de quienes envíen un <strong>Quiéreme</strong> (sin links ni símbolos)</div>
             <div>🔒 <strong>Bloqueo por Likes:</strong> Auto-bloqueo hasta <code>4,000</code> likes al iniciar o comando <code>0-50000</code></div>
           </div>
         </div>
@@ -1668,18 +1667,18 @@
             <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
           </div>
           <div class="sim-buttons-grid">
-            <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Paso 3)</button>
-            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (+1 Pos y Voz)</button>
+            <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Entrar)</button>
+            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (Activar Voz)</button>
             <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
             <button class="btn-sim" onclick="simular('regalo_150')" style="border-color: #eab308; color: #fde047; font-weight:800;">👑 Regalo 150+ (#1 Blindado)</button>
             <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
             <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
+            <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Gratis)</button>
             <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos</button>
             <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
-            <button class="btn-sim" onclick="simular('sin_seguir')">🚨 Intento Sin Seguir</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
-            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat</button>
+            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat (Voz)</button>
           </div>
         </div>
 
@@ -1726,8 +1725,8 @@
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
               <select id="tts-audio-output" onchange="cambiarSalidaAudioTTS(this.value)" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
-                <option value="overlay" selected>Solo en Overlay (TikTok Live Studio)</option>
-                <option value="both">En Ambos (Overlay y Panel simultáneamente)</option>
+                <option value="both" selected>En Ambos (Overlay y Panel simultáneamente)</option>
+                <option value="overlay">Solo en Overlay (TikTok Live Studio)</option>
                 <option value="none">Silenciar Voz</option>
               </select>
             </div>
@@ -1750,16 +1749,21 @@
               <input type="range" id="tts-speed-slider" class="custom-range-slider" min="0.75" max="1.5" step="0.05" value="1.0" oninput="cambiarVelocidadTTS(this.value)">
             </div>
 
-            <!-- Switch Requerir Seguidor Obligatorio -->
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
-              <div>
-                <div style="font-size: 12.5px; font-weight: 800; color: #fff;">🚨 Solo Seguidores Pueden Pedir:</div>
-                <div style="font-size: 11px; color: var(--text-muted);">Alerta si alguien intenta entrar sin seguirte</div>
+            <!-- Editor de Likes para Canción Gratis (D-X) -->
+            <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">🎁 Likes para Canción Gratis (D-X):</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Edítalo aquí o comenta desde tu perfil ej: <code>D-1000</code></div>
+                </div>
+                <span class="slider-val-badge" id="badge-free-likes-current" style="background: rgba(56,189,248,0.18); color: #7dd3fc;">D-5000</span>
               </div>
-              <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                <input type="checkbox" id="check-require-follower" checked onchange="toggleRequerirSeguidor(this.checked)" style="opacity: 0; width: 0; height: 0;">
-                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--cyan-neon); border-radius: 24px; transition: 0.3s;" id="switch-follower-bg"></span>
-              </label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" id="input-free-likes" min="1" step="100" value="5000" placeholder="Ej: 1000" style="flex: 1; padding: 8px 12px; background: rgba(15,23,42,0.9); border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700;">
+                <button type="button" class="btn-action btn-primary" onclick="guardarLikesGratisDesdePanel()" style="padding: 8px 14px; font-size: 12px; white-space: nowrap;">
+                  💾 Aplicar Likes
+                </button>
+              </div>
             </div>
 
             <!-- Controles Rápidos del Streamer -->
@@ -1822,10 +1826,11 @@
       queueLocked: false,
       lockTargetLikes: null,
       currentLikes: 0,
-      requireFollowerToRequest: true,
+      freeLikesReq: 5000,
+      requireFollowerToRequest: false,
       certifiedPlaylist: [],
       ttsVoice: localStorage.getItem('tts_voice') || 'es-CO-GonzaloNeural',
-      ttsAudioOutput: localStorage.getItem('tts_audio_output') || 'overlay',
+      ttsAudioOutput: 'both',
       ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
       ttsSpeed: parseFloat(localStorage.getItem('tts_speed') || '1.0'),
       voting: {
@@ -1881,10 +1886,10 @@
 
     function hablarTTS(texto, forcePlayInPanel = false) {
       if (!texto) return;
-      const outputSetting = state.ttsAudioOutput || document.getElementById('tts-audio-output')?.value || 'overlay';
+      const outputSetting = state.ttsAudioOutput || document.getElementById('tts-audio-output')?.value || 'both';
       if (!forcePlayInPanel) {
         if (outputSetting === 'none') return;
-        if (!isOverlay && outputSetting === 'overlay') return; // En el panel no suena para evitar eco a menos que sea prueba
+        if (!isOverlay && outputSetting === 'overlay') return;
       }
 
       // #4 El bot NUNCA lee links en voz alta
@@ -1988,7 +1993,8 @@
             if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
             if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
             if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
-            if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = data.requireFollowerToRequest;
+            if (data.freeLikesReq !== undefined) state.freeLikesReq = Number(data.freeLikesReq) || 5000;
+            if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = false;
             if (Array.isArray(data.certifiedPlaylist)) state.certifiedPlaylist = data.certifiedPlaylist;
             if (data.votingState && data.votingState.active) {
               const remaining = Math.max(0, (data.votingState.duration || 120) - Math.floor((Date.now() - (data.votingState.startedAt || Date.now())) / 1000));
@@ -2003,6 +2009,15 @@
             }
             actualizarUIControlesStreamer();
             renderizarPlaylist();
+          } else if (data.type === 'FREE_LIKES_UPDATE') {
+            if (data.freeLikesReq !== undefined) {
+              state.freeLikesReq = Number(data.freeLikesReq) || 5000;
+            }
+            actualizarUIControlesStreamer();
+            if (data.announcement) {
+              mostrarAlertaOverlay('help', { title: `🎁 D-${state.freeLikesReq}: CANCIÓN GRATIS`, user: 'Streamer', announcement: data.announcement });
+              if (!data.skipVoice) hablarTTS(data.announcement);
+            }
           } else if (data.type === 'QUEUE_LOCK_UPDATE') {
             state.queueLocked = Boolean(data.locked);
             if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
@@ -2546,9 +2561,10 @@
       }
 
       if (items.length === 0) {
+        const freeLikes = state.freeLikesReq || 5000;
         container.innerHTML = `
           <div style="text-align:center; padding: clamp(40px, 4vw, 80px); color: var(--text-muted); font-size: clamp(24px, 2.5vw, 60px); font-weight: 700;">
-            No hay canciones en la cola.<br>Paso 1: Sígueme • Paso 2: Comparte • Paso 3: Corazón con los dedos 🫰
+            No hay canciones en la cola.<br>Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️
           </div>
         `;
       } else {
@@ -2743,13 +2759,13 @@
         modal.classList.add('quiereme');
         if (icon) icon.textContent = '💖👑';
         if (title) title.textContent = '¡REGALO QUIÉREME!';
-        if (subtext) subtext.textContent = '¡Sube +1 posición en la lista de espera!';
+        if (subtext) subtext.textContent = '¡Lectura de comentarios en voz alta activada!';
         reproducirSonidoQuiereme();
       } else {
         modal.classList.remove('quiereme');
         if (icon) icon.textContent = '🫰✨';
         if (title) title.textContent = '¡CORAZÓN CON LOS DEDOS!';
-        if (subtext) subtext.textContent = '¡Paso completado para entrar a la lista!';
+        if (subtext) subtext.textContent = '¡Disco agregado directamente a la lista!';
         reproducirSonidoCorazonDedos();
       }
 
@@ -2781,7 +2797,7 @@
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
         } else {
-          mostrarAlertaOverlay('desbloqueada', { title: 'YouTube (dQw4w9WgXcQ)', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
+          mostrarAlertaOverlay('desbloqueada', { title: 'Rick Astley - Never Gonna Give You Up', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
         }
       } else if (tipo === 'regalo_150') {
         const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_Diamante';
@@ -2791,6 +2807,10 @@
       } else if (tipo === 'bloqueo_likes') {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'testChat', user: state.username || 'slowmdoficial', comment: '0-50000' }));
+        }
+      } else if (tipo === 'comando_d_likes') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: state.username || 'slowmdoficial', comment: 'D-1000' }));
         }
       } else if (tipo === 'chat') {
         const msgs = ['¡Saludos mi pana activo aquí!', 'Tremenda música suelta más!', 'Rómpela en ese Live bro'];
@@ -2822,18 +2842,13 @@
         mostrarAlertaOverlay('warning', { title: 'REGLA DE LA COLA', user: user, announcement: msg });
         hablarTTS(msg);
       } else if (tipo === 'pregunta_ayuda') {
-        const banner = "1. Sígueme • 2. Comparte • 3. Corazón con los dedos (o 5,000 likes) • 4. Pega el link de YouTube, Spotify o BandLab";
-        const voice = "Para entrar a la lista debes seguirme, compartir el live y enviar un corazón con los dedos o dar cinco mil likes. Luego pega el link de tu canción de YouTube, Spotify o BandLab en el chat.";
+        const freeLikes = state.freeLikesReq || 5000;
+        const banner = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega el link de YouTube, Spotify o BandLab`;
+        const voice = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego pega el link de tu canción de YouTube, Spotify o BandLab en el chat.`;
         mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
         hablarTTS(voice);
       } else if (tipo === 'spam') {
         alert('Simulación de Filtro Spam Activo:\n\nSi un usuario repite el mismo comentario más de 2 veces en menos de 10 segundos, el servidor lo detecta automáticamente, lo silencia y no lo lee en voz alta.');
-      } else if (tipo === 'sin_seguir') {
-        const user = 'PedroNoFollower';
-        reproducirSonidoSirena();
-        const msg = `${user} está intentando entrar a la lista sin seguirte`;
-        mostrarSirenaOverlay(user, msg);
-        hablarTTS(msg);
       } else if (tipo === 'voto_jurado') {
         if (!state.voting || !state.voting.active) {
           iniciarEncuestaDesdePanel();
@@ -2895,7 +2910,7 @@
     }
 
     function cambiarSalidaAudioTTS(val) {
-      state.ttsAudioOutput = val || 'overlay';
+      state.ttsAudioOutput = val || 'both';
       localStorage.setItem('tts_audio_output', state.ttsAudioOutput);
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -2933,10 +2948,13 @@
       }
     }
 
-    function toggleRequerirSeguidor(activo) {
-      state.requireFollowerToRequest = Boolean(activo);
+    function guardarLikesGratisDesdePanel() {
+      const inp = document.getElementById('input-free-likes');
+      const val = Math.max(1, parseInt(inp ? inp.value : state.freeLikesReq, 10) || 5000);
+      state.freeLikesReq = val;
+      if (inp) inp.value = val;
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action: 'toggleRequireFollower', required: state.requireFollowerToRequest }));
+        ws.send(JSON.stringify({ action: 'updateFreeLikesReq', freeLikesReq: val }));
       }
       actualizarUIControlesStreamer();
     }
@@ -2952,8 +2970,9 @@
     }
 
     function explicarComoPedir() {
-      const banner = "1. Sígueme • 2. Comparte • 3. Corazón con los dedos (o 5,000 likes) • 4. Pega el link de YouTube, Spotify o BandLab";
-      const explicacion = "Para entrar a la lista debes seguirme, compartir el live y enviar un corazón con los dedos o dar cinco mil likes. Cuando estés en la lista, pega el link de tu canción de YouTube, Spotify o BandLab en el chat.";
+      const freeLikes = state.freeLikesReq || 5000;
+      const banner = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega el link de YouTube, Spotify o BandLab`;
+      const explicacion = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Cuando estés en la lista, pega el link de tu canción de YouTube, Spotify o BandLab en el chat.`;
       mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
       hablarTTS(explicacion);
     }
@@ -2975,10 +2994,19 @@
           btnLock.style.color = '#86efac';
         }
       }
-      const chk = document.getElementById('check-require-follower');
-      const bg = document.getElementById('switch-follower-bg');
-      if (chk) chk.checked = Boolean(state.requireFollowerToRequest);
-      if (bg) bg.style.background = state.requireFollowerToRequest ? 'var(--cyan-neon)' : 'rgba(255,255,255,0.2)';
+      const freeLikes = state.freeLikesReq || 5000;
+      const inpFreeLikes = document.getElementById('input-free-likes');
+      if (inpFreeLikes && document.activeElement !== inpFreeLikes) {
+        inpFreeLikes.value = freeLikes;
+      }
+      const badgeFreeLikes = document.getElementById('badge-free-likes-current');
+      if (badgeFreeLikes) {
+        badgeFreeLikes.textContent = `D-${freeLikes}`;
+      }
+      const ruleVal = document.getElementById('rule-free-likes-val');
+      if (ruleVal) {
+        ruleVal.textContent = freeLikes.toLocaleString();
+      }
     }
 
     // #7 Sonido dramático de palpitación (latido de corazón) cuando quedan pocos segundos en la encuesta
