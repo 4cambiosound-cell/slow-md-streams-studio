@@ -842,11 +842,21 @@ function detectarCancionEnParentesis(text) {
     rawInside = multiMatches.join(' - ');
   } else if (multiMatches.length === 1) {
     rawInside = multiMatches[0];
+    const openIdx = str.search(/[（(]/);
+    const closeIdx = str.search(/[)）]/);
+    const beforeParen = openIdx > 0 ? str.slice(0, openIdx).replace(/^(?:@\S+\s+)+/i, '').replace(/^[!¡/]?\s*escucha(?:\s*[:+\-]\s*|\s+)/i, '').replace(/[+\-:]+\s*$/, '').trim() : '';
+    const afterParen = closeIdx !== -1 ? str.slice(closeIdx + 1).trim() : '';
+
     // Si después del primer paréntesis cerrado abrieron otro sin cerrar: ej. "(carlito h) (aro baby"
-    const afterFirst = str.slice(str.indexOf(multiMatches[0]) + multiMatches[0].length);
-    const trailingOpen = afterFirst.match(/[)）]\s*[（(]\s*(.{2,60})$/);
+    const trailingOpen = afterParen.match(/^[（(]\s*(.{2,60})$/);
     if (trailingOpen && trailingOpen[1].trim()) {
       rawInside = `${rawInside} - ${trailingOpen[1].trim()}`;
+    } else if (beforeParen && beforeParen.length <= 45 && !/[?¿!¡]/.test(beforeParen)) {
+      // Ej: "0 amor( javi28 )" -> "0 amor - javi28"
+      rawInside = `${beforeParen} - ${rawInside}`;
+    } else if (afterParen && afterParen.length <= 45 && !/[?¿!¡]/.test(afterParen)) {
+      // Ej: "(0 amor) javi28" -> "0 amor - javi28"
+      rawInside = `${rawInside} - ${afterParen.replace(/^[+\-:]+\s*/, '')}`;
     }
   } else {
     // Soportar caso donde el usuario abrió paréntesis al escribir su canción en móvil pero olvidó cerrarlo: ej. "( no tienen valor + NeutroCH"
