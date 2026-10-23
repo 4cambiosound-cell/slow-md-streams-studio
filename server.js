@@ -363,7 +363,7 @@ const server = http.createServer((req, res) => {
   const params = new URLSearchParams(queryString || '');
   let reqUrl = pathname;
 
-  if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/panel' || reqUrl === '/studio-panel' || reqUrl === '/dashboard' || reqUrl === '/studio') {
+  if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/cola-slow-md.html' || reqUrl === '/panel' || reqUrl === '/studio-panel' || reqUrl === '/dashboard' || reqUrl === '/studio') {
     reqUrl = '/index.html';
   } else if (reqUrl === '/overlay' || reqUrl === '/studio-overlay') {
     reqUrl = '/index.html';
@@ -470,8 +470,8 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      // Fallback a cola-slow-md.html si no existe
-      const fallback = path.join(__dirname, 'cola-slow-md.html');
+      // Fallback a index.html si no existe
+      const fallback = path.join(__dirname, 'index.html');
       fs.readFile(fallback, (err2, data) => {
         if (err2) {
           res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
@@ -524,11 +524,15 @@ function updateStatus(newStatus, extras = {}) {
 // Estado maestro de la cola sincronizada en tiempo real
 const QUEUE_FILE = path.join(__dirname, 'queue-data.json');
 let queueState = { queue: [], history: [] };
+// IDs de canciones ya escuchadas o eliminadas para evitar que clientes antiguos las reinyecten por syncQueue
+const deletedSongIds = new Set();
 try {
   if (fs.existsSync(QUEUE_FILE)) {
     queueState = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
     if (!Array.isArray(queueState.queue)) queueState.queue = [];
     if (!Array.isArray(queueState.history)) queueState.history = [];
+    // Limpiar entradas antiguas de sesiones pasadas
+    queueState.queue = queueState.queue.filter(s => s && !String(s.id || '').startsWith('song_1791') && !String(s.id || '').startsWith('disk_17926'));
   }
 } catch (e) {
   console.error('[Queue] Error leyendo queue-data.json:', e.message);
@@ -548,10 +552,7 @@ const serverUserShares = new Map();
 const serverUserRoses = new Map();
 const serverAliasMap = new Map();
 
-// RASTREO DE LA SECUENCIA DE 3 PASOS:
-// 1. Seguirme
-// 2. Compartir el Live
-// 3. Enviar Corazón con los Dedos
+// RASTREO DE PASOS Y TAPTAP DE ENTRADA A LA LISTA
 const userSteps = new Map();
 
 function getUserStepData(userKey, name, handle, avatarUrl) {
@@ -562,6 +563,9 @@ function getUserStepData(userKey, name, handle, avatarUrl) {
       shared: false,
       giftedHeart: false,
       likesGiven: 0,
+      readyForUnlockLog: false,
+      pendingSongTitle: '',
+      pendingSongUrl: '',
       name: name || userKey,
       handle: handle || '',
       avatarUrl: avatarUrl || ''
@@ -572,6 +576,70 @@ function getUserStepData(userKey, name, handle, avatarUrl) {
   if (handle) data.handle = handle;
   if (avatarUrl) data.avatarUrl = avatarUrl;
   return data;
+}
+
+// Limpiar progreso de un usuario cuando su canción es escuchada o eliminada de la lista
+function limpiarProgresoUsuarioDeCancion(song) {
+  if (!song) return;
+  if (song.id) deletedSongIds.add(song.id);
+  const keysToReset = new Set();
+  if (song.user) keysToReset.add(normalizarUserKey(song.user));
+  if (song.handle) keysToReset.add(normalizarUserKey(song.handle));
+
+  for (const [k, st] of userSteps.entries()) {
+    const stNameKey = st.name ? normalizarUserKey(st.name) : '';
+    const stHandleKey = st.handle ? normalizarUserKey(st.handle) : '';
+    if (keysToReset.has(k) || (stNameKey && keysToReset.has(stNameKey)) || (stHandleKey && keysToReset.has(stHandleKey))) {
+      keysToReset.add(k);
+    }
+  }
+
+  for (const k of keysToReset) {
+    if (!k) continue;
+    serverUserLikes.set(k, 0);
+    const st = userSteps.get(k);
+    if (st) {
+      st.giftedHeart = false;
+      st.likesGiven = 0;
+      st.readyForUnlockLog = false;
+      st.pendingSongTitle = '';
+      st.pendingSongUrl = '';
+    }
+  }
+}
+
+// Reiniciar la lista de temas ya escuchados y los contadores de TapTap al bloquear la lista hasta un nuevo objetivo (0-X)
+function reiniciarParaBloqueo(archivarColaActual = true) {
+  if (archivarColaActual && Array.isArray(queueState.queue) && queueState.queue.length > 0) {
+    for (const s of queueState.queue) {
+      if (s && s.id) deletedSongIds.add(s.id);
+      queueState.history.unshift({
+        ...s,
+        reactedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+    if (queueState.history.length > 50) {
+      queueState.history = queueState.history.slice(0, 50);
+    }
+    queueState.queue = [];
+    saveQueueData();
+    broadcast({
+      type: 'QUEUE_UPDATE',
+      queue: queueState.queue,
+      history: queueState.history,
+      skipVoice: true
+    });
+  }
+
+  // Reiniciar contadores de TapTap y regalos de entrada para que al llegar al objetivo SOLO entren quienes dieron suficientes TapTap para desbloquear la lista
+  serverUserLikes.clear();
+  for (const st of userSteps.values()) {
+    st.likesGiven = 0;
+    st.giftedHeart = false;
+    st.readyForUnlockLog = false;
+    st.pendingSongTitle = '';
+    st.pendingSongUrl = '';
+  }
 }
 
 function registrarUsuarioQuiereme(userIdentifier, extraInfo = {}) {
@@ -624,9 +692,24 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
     });
 
     if (idx === -1) {
-      const initialTitle = data.pendingSongTitle || 'Esperando (Canción + Artista) o link...';
-      const initialUrl = data.pendingSongUrl || '';
-      const initialPlatform = data.pendingSongTitle ? 'youtube' : '';
+      const songTitleUsed = data.pendingSongTitle || '';
+      const songUrlUsed = data.pendingSongUrl || '';
+      const linkMeta = (!songTitleUsed && songUrlUsed) ? detectarLinkCancion(songUrlUsed) : null;
+      const initialTitle = songTitleUsed || (linkMeta ? `Canción de @${data.name} (${linkMeta.label})` : 'Esperando Escucha, (Canción + Artista) o link...');
+      const initialUrl = songUrlUsed || '';
+      const initialPlatform = songTitleUsed ? 'youtube' : (linkMeta ? linkMeta.platform : '');
+
+      // Consumir inmediatamente la calificación y canción pendiente para que NUNCA se duplique ni reaparezca tras ser escuchada
+      data.giftedHeart = false;
+      data.likesGiven = 0;
+      data.readyForUnlockLog = false;
+      data.pendingSongTitle = '';
+      data.pendingSongUrl = '';
+      serverUserLikes.set(userKey, 0);
+      if (data.handle) {
+        serverUserLikes.set(normalizarUserKey(data.handle), 0);
+      }
+
       const nuevoDisco = {
         id: 'disk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         title: initialTitle,
@@ -646,17 +729,21 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
       queueState.queue.push(nuevoDisco);
       saveQueueData();
 
-      const announcement = data.pendingSongTitle
-        ? `¡${data.name} entró a la lista con "${data.pendingSongTitle}" (${metodoEntrada})!`
-        : `¡${data.name} entró a la lista (${metodoEntrada})! Comenta (Canción + Artista) o pega tu link.`;
+      if (linkMeta && !songTitleUsed) {
+        resolverTituloDeLink(nuevoDisco, linkMeta.url, linkMeta.label, false);
+      }
+
+      const announcement = songTitleUsed
+        ? `¡${data.name} entró a la lista con "${songTitleUsed}" (${metodoEntrada})!`
+        : `¡${data.name} entró a la lista (${metodoEntrada})! Comenta Escucha + Canción, (Canción + Artista) o pega tu link.`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
         history: queueState.history,
         newSong: nuevoDisco,
-        newSongDesc: data.pendingSongTitle
-          ? `${metodoEntrada} • "${data.pendingSongTitle}"`
-          : `${metodoEntrada} • Comenta (Canción + Artista) o pega tu link`,
+        newSongDesc: songTitleUsed
+          ? `${metodoEntrada} • "${songTitleUsed}"`
+          : `${metodoEntrada} • Comenta Escucha + Canción, (Canción + Artista) o tu link`,
         sound: 'normal',
         eventType: 'new_song',
         skipVoice: true,
@@ -669,6 +756,10 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
       const s = queueState.queue[idx];
       s.status = 'unlocked';
       s.gift = metodoEntrada;
+      data.giftedHeart = false;
+      data.likesGiven = 0;
+      data.readyForUnlockLog = false;
+      serverUserLikes.set(userKey, 0);
       saveQueueData();
 
       const announcement = `🔓 ¡@${s.user} desbloqueó su canción con ${metodoEntrada}!`;
@@ -690,7 +781,7 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
   return false;
 }
 
-// Al desbloquearse la lista, verificar si usuarios ya habían completado sus pasos
+// Al desbloquearse la lista, verificar si usuarios dieron suficientes TapTap o Corazón con los dedos para desbloquear la lista
 function procesarPasosPendientesAlDesbloquear() {
   for (const userKey of userSteps.keys()) {
     verificarCompletitudPasos(userKey);
@@ -737,14 +828,38 @@ function detectarLinkCancion(text) {
   };
 }
 
-// Alternativa cuando TikTok bloquea los links: (Nombre de la canción + Nombre del artista) entre paréntesis
+// Alternativa 1 cuando TikTok bloquea los links: (Nombre de la canción + Nombre del artista) entre paréntesis
 function detectarCancionEnParentesis(text) {
   if (!text) return null;
-  const match = String(text).match(/[（(]([^)）]{2,120})[)）]/);
-  if (!match) return null;
+  const str = String(text).trim();
+  if (contieneLink(str)) return null;
 
-  const rawInside = match[1].trim();
-  if (!rawInside || contieneLink(rawInside)) return null;
+  // Soportar múltiples paréntesis seguidos ej: "(Canción)(Artista)" o "(Canción) (Artista"
+  const multiMatches = [...str.matchAll(/[（(]([^)）]{1,100})[)）]/g)].map(m => m[1].trim()).filter(Boolean);
+  let rawInside = '';
+
+  if (multiMatches.length >= 2) {
+    rawInside = multiMatches.join(' - ');
+  } else if (multiMatches.length === 1) {
+    rawInside = multiMatches[0];
+    // Si después del primer paréntesis cerrado abrieron otro sin cerrar: ej. "(carlito h) (aro baby"
+    const afterFirst = str.slice(str.indexOf(multiMatches[0]) + multiMatches[0].length);
+    const trailingOpen = afterFirst.match(/[)）]\s*[（(]\s*(.{2,60})$/);
+    if (trailingOpen && trailingOpen[1].trim()) {
+      rawInside = `${rawInside} - ${trailingOpen[1].trim()}`;
+    }
+  } else {
+    // Soportar caso donde el usuario abrió paréntesis al escribir su canción en móvil pero olvidó cerrarlo: ej. "( no tienen valor + NeutroCH"
+    const unclosedMatch = str.match(/^(?:@\S+\s+)?[（(]\s*([^)）]{3,120})$/);
+    if (unclosedMatch) {
+      rawInside = unclosedMatch[1].trim();
+    }
+  }
+
+  if (!rawInside) return null;
+
+  // Si escribieron "(Escucha Canción + Artista)" dentro del paréntesis, limpiar el prefijo "Escucha"
+  rawInside = rawInside.replace(/^[!¡/]?\s*escucha(?:\s*[:+\-]\s*|\s+)/i, '').trim();
 
   // Ignorar comandos reservados del streamer o números sueltos
   if (/^(?:\.{2,}|0|g|calificar|encuesta|lista)$/i.test(rawInside)) return null;
@@ -767,6 +882,49 @@ function detectarCancionEnParentesis(text) {
     platform: 'youtube',
     label: 'YouTube',
     isParenthesesSong: true
+  };
+}
+
+// Alternativa 2: Comando clásico "Escucha + Canción + Artista" (ej: "Escucha Monaco + Bad Bunny", "Escucha: Canción - Artista")
+function detectarComandoEscucha(text) {
+  if (!text) return null;
+  const cleanText = String(text).trim();
+  if (contieneLink(cleanText)) return null;
+
+  const match = cleanText.match(/^(?:@\S+\s+)?[!¡/]?\s*escucha(?:\s*[:+\-]\s*|\s+)(.+)$/i);
+  if (!match) return null;
+
+  let rawSong = match[1]
+    .replace(/^[(\[«"']+|[)\]»"']+$/g, '')
+    .replace(/^[+:\-\s]+/, '')
+    .trim();
+
+  if (!rawSong || rawSong.length < 2 || rawSong.length > 120) return null;
+
+  // Ignorar frases conversacionales que empiezan por "escucha" pero no son nombres de canciones
+  if (/^(?:mi\s+(?:m[uú]sica|tema|canci[oó]n|arte|disco|track)|uno\s+m[ií]o|una\s+m[ií]a|algo\s+diferente|eso|esto|bien|por\s*favor|porfa|bro|hermano|manito|mi\s+bro|klk|activo)\s*[.!?🙏🔥❤️]*$/i.test(rawSong)) {
+    return null;
+  }
+
+  // Ignorar comandos reservados o calificaciones numéricas
+  if (/^(?:\.{2,}|0|g|calificar|encuesta|lista)$/i.test(rawSong)) return null;
+  if (/^(?:0|d)\s*-\s*\d+$/i.test(rawSong)) return null;
+  if (/^borra\s+a\s+/i.test(rawSong)) return null;
+  if (/^\d+(?:[.,]\d+)?(?:\s*\/\s*10)?$/.test(rawSong)) return null;
+
+  const cleanTitle = rawSong
+    .replace(/\s*\+\s*/g, ' - ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!/\p{L}{2,}/u.test(cleanTitle)) return null;
+
+  return {
+    title: cleanTitle,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanTitle)}`,
+    platform: 'youtube',
+    label: 'YouTube',
+    isEscuchaCommand: true
   };
 }
 
@@ -1114,8 +1272,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     // 1. (...) -> Explicación de cómo agregar canción a la lista
     if (text === '...' || text === '…' || /^\.{3,}$/.test(text)) {
       const freeLikes = getFreeLikesReq();
-      const voiceMsg = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe entre paréntesis el nombre de la canción más el artista, o pega tu link en el chat.`;
-      const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
+      const voiceMsg = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe Escucha más el nombre de la canción más el artista, ponlo entre paréntesis, o pega tu link en el chat.`;
+      const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
       broadcast({
         type: 'HOW_TO_ADD_HELP',
         user: userChatName,
@@ -1151,6 +1309,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       const targetLikes = parseInt(lockGoalMatch[1], 10);
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = targetLikes;
+      // Archivar los temas ya escuchados y reiniciar contadores de TapTap para que solo entren los que den suficientes TapTap para desbloquear la lista
+      reiniciarParaBloqueo(true);
       saveConfig();
       const announcement = `🔒 Lista bloqueada hasta llegar a ${targetLikes.toLocaleString()} likes en el Live.`;
       broadcast({
@@ -1161,7 +1321,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`🔒 Streamer bloqueó la lista hasta alcanzar ${targetLikes.toLocaleString()} likes (0-${targetLikes})`, 'queue');
+      addLog(`🔒 Streamer bloqueó la lista hasta alcanzar ${targetLikes.toLocaleString()} likes (0-${targetLikes}) — Temas anteriores limpiados y contadores de TapTap reiniciados`, 'queue');
       return true;
     }
 
@@ -1169,6 +1329,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     if (text === '0' || text === '(0)') {
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = null;
+      reiniciarParaBloqueo(true);
       saveConfig();
       const announcement = "🔒 La lista de canciones ha sido bloqueada temporalmente.";
       broadcast({
@@ -1179,7 +1340,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`🔒 Streamer bloqueó la lista de canciones (0)`, 'queue');
+      addLog(`🔒 Streamer bloqueó la lista de canciones (0) — Temas anteriores limpiados y contadores de TapTap reiniciados`, 'queue');
       return true;
     }
 
@@ -1188,7 +1349,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       botConfig.queueLocked = false;
       botConfig.lockTargetLikes = null;
       saveConfig();
-      const announcement = "🔓 ¡La lista de canciones ha sido reabierta! Ya pueden entrar y pegar sus links.";
+      const announcement = "🔓 ¡La lista de canciones ha sido reabierta! Ya pueden entrar y agregar sus canciones.";
       broadcast({
         type: 'QUEUE_LOCK_UPDATE',
         locked: false,
@@ -1214,6 +1375,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       });
       if (idx !== -1) {
         const removed = queueState.queue.splice(idx, 1)[0];
+        limpiarProgresoUsuarioDeCancion(removed);
         saveQueueData();
         const announcement = `Se eliminó el disco de ${removed.user} de la lista.`;
         broadcast({
@@ -1245,7 +1407,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   if (ayudaRegex.test(text) || ayudaCortaRegex.test(text) || ayudaPedirRegex.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
     const freeLikes = getFreeLikesReq();
-    const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
+    const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
     broadcast({
       type: 'HOW_TO_ADD_HELP',
       user: chatUser,
@@ -1282,10 +1444,12 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     return true;
   }
 
-  // #4 DETECCIÓN DE LINK DE CANCIÓN O (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS - SIN REQUISITO DE SEGUIR
+  // #4 DETECCIÓN DE LINK DE CANCIÓN, (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS O COMANDO ESCUCHA + CANCIÓN + ARTISTA - SIN REQUISITO DE SEGUIR
   const linkInfo = detectarLinkCancion(text);
   const parenInfo = !linkInfo ? detectarCancionEnParentesis(text) : null;
-  if (!linkInfo && !parenInfo) return false;
+  const escuchaInfo = (!linkInfo && !parenInfo) ? detectarComandoEscucha(text) : null;
+  const textSongInfo = parenInfo || escuchaInfo;
+  if (!linkInfo && !textSongInfo) return false;
 
   const chatName = (userChatName || 'Usuario').trim();
   if (userHandle || userId) {
@@ -1295,23 +1459,10 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   const userKey = normalizarUserKey(chatName);
   const handleKey = userHandle ? normalizarUserKey(userHandle) : '';
 
-  // VALIDACIÓN 1: ¿LA LISTA ESTÁ BLOQUEADA?
-  if (botConfig.queueLocked) {
-    const metaTxt = botConfig.lockTargetLikes ? ` hasta llegar a ${botConfig.lockTargetLikes.toLocaleString()} likes` : '';
-    const aviso = `🔒 Lista cerrada${metaTxt}.`;
-    broadcast({
-      type: 'CHAT_WARNING',
-      user: chatName,
-      skipVoice: true,
-      message: aviso,
-      bannerText: aviso
-    });
-    addLog(`🔒 ${chatName} envió canción pero la lista está bloqueada`, 'chat');
-    return true;
+  // Si la lista no está bloqueada, verificar si el usuario ya completó Corazón con los dedos o Likes Gratis antes de buscar su disco
+  if (!botConfig.queueLocked) {
+    verificarCompletitudPasos(userKey);
   }
-
-  // Verificar si el usuario ya completó Corazón con los dedos o Likes Gratis antes de buscar su disco
-  verificarCompletitudPasos(userKey);
 
   // BUSCAR SI EL USUARIO YA TIENE SU DISCO EN LA LISTA (sin exigir que sea seguidor)
   const idx = queueState.queue.findIndex(s => {
@@ -1323,6 +1474,9 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
 
   if (idx !== -1) {
     const s = queueState.queue[idx];
+    const stepData = getUserStepData(userKey, chatName, userHandle);
+    stepData.pendingSongTitle = null;
+    stepData.pendingSongUrl = null;
     if (linkInfo) {
       // ASIGNAR LINK Y EXTRAER METADATOS REALES (SIN MOSTRAR LA URL EN EL OVERLAY)
       s.songUrl = linkInfo.url;
@@ -1334,11 +1488,11 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
 
       addLog(`🔗 ${chatName} asignó link de ${linkInfo.label} (${linkInfo.url}) en posición #${idx + 1}`, 'chat');
       resolverTituloDeLink(s, linkInfo.url, linkInfo.label, true);
-    } else if (parenInfo) {
-      // ASIGNAR (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS
-      s.title = parenInfo.title;
+    } else if (textSongInfo) {
+      // ASIGNAR (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS O COMANDO ESCUCHA + CANCIÓN + ARTISTA
+      s.title = textSongInfo.title;
       if (!s.songUrl) {
-        s.songUrl = parenInfo.url;
+        s.songUrl = textSongInfo.url;
         s.songPlatform = 'youtube';
         s.platform = 'youtube';
       }
@@ -1355,15 +1509,15 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         skipVoice: true,
         announcement: `🎵 ¡@${s.user} agregó "${s.title}"!`
       });
-      addLog(`🎵 ${chatName} asignó su canción entre paréntesis: "${s.title}" en posición #${idx + 1}`, 'chat');
+      addLog(`🎵 ${chatName} asignó su canción (${escuchaInfo ? 'Escucha' : 'Paréntesis'}): "${s.title}" en posición #${idx + 1}`, 'chat');
     }
     return true;
   } else {
     // Si aún no tiene su disco en la lista, guardar el título/link pendiente para cuando envíe el Corazón con los dedos o llegue a los Likes Gratis
     const stepData = getUserStepData(userKey, chatName, userHandle);
-    if (parenInfo) {
-      stepData.pendingSongTitle = parenInfo.title;
-      stepData.pendingSongUrl = parenInfo.url;
+    if (textSongInfo) {
+      stepData.pendingSongTitle = textSongInfo.title;
+      stepData.pendingSongUrl = textSongInfo.url;
     } else if (linkInfo) {
       stepData.pendingSongUrl = linkInfo.url;
       obtenerMetadatosDeLink(linkInfo.url, linkInfo.label).then(cleanTitle => {
@@ -1371,12 +1525,14 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       }).catch(() => {});
     }
 
-    // Si es el propio streamer/moderador comentando (Canción + Artista), agregarlo directo a la lista
-    if (isAuthorized && parenInfo) {
+    // Si es el propio streamer/moderador comentando (Canción + Artista) o Escucha + Canción + Artista, agregarlo directo a la lista
+    if (isAuthorized && textSongInfo) {
+      stepData.pendingSongTitle = null;
+      stepData.pendingSongUrl = null;
       const nuevoManual = {
         id: 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        title: parenInfo.title,
-        songUrl: parenInfo.url,
+        title: textSongInfo.title,
+        songUrl: textSongInfo.url,
         songPlatform: 'youtube',
         platform: 'youtube',
         user: chatName,
@@ -1398,15 +1554,33 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         newSongDesc: `Agregada por @${chatName}`,
         eventType: 'new_song',
         skipVoice: true,
-        announcement: `🎵 ¡Se agregó "${parenInfo.title}" a la lista!`
+        announcement: `🎵 ¡Se agregó "${textSongInfo.title}" a la lista!`
       });
-      addLog(`🎵 Admin @${chatName} agregó "${parenInfo.title}" con paréntesis`, 'queue');
+      addLog(`🎵 Admin @${chatName} agregó "${textSongInfo.title}" (${escuchaInfo ? 'Escucha' : 'Paréntesis'})`, 'queue');
+      return true;
+    }
+
+    // Si la lista está bloqueada, confirmar que su canción quedó guardada y que dé TapTap para desbloquear la lista
+    if (botConfig.queueLocked) {
+      const metaTxt = botConfig.lockTargetLikes ? ` hasta llegar a ${botConfig.lockTargetLikes.toLocaleString()} likes` : '';
+      const freeLikes = getFreeLikesReq();
+      const aviso = textSongInfo
+        ? `🔒 "${textSongInfo.title}" guardada • Da ${freeLikes.toLocaleString()} TapTap o envía Corazón con los dedos 🫰 mientras llegamos a la meta${metaTxt}`
+        : `🔒 Lista cerrada${metaTxt} • Da ${freeLikes.toLocaleString()} TapTap o envía Corazón con los dedos 🫰 para entrar al desbloquear`;
+      broadcast({
+        type: 'CHAT_WARNING',
+        user: chatName,
+        skipVoice: true,
+        message: aviso,
+        bannerText: aviso
+      });
+      addLog(`🔒 ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}"` : `link`} con la lista bloqueada (guardada como pendiente para cuando desbloquee con TapTap o Corazón con los dedos)`, 'chat');
       return true;
     }
 
     const freeLikes = getFreeLikesReq();
-    const bannerMsg = parenInfo
-      ? `"${parenInfo.title}" guardado • Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes para subirlo a la lista`
+    const bannerMsg = textSongInfo
+      ? `"${textSongInfo.title}" guardado • Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes para subirlo a la lista`
       : `Para entrar a la lista: Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️`;
     broadcast({
       type: 'CHAT_WARNING',
@@ -1415,7 +1589,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       message: bannerMsg,
       bannerText: bannerMsg
     });
-    addLog(`⚠️ ${chatName} envió ${parenInfo ? `"(${parenInfo.title})"` : `link de ${linkInfo.label}`} (guardado como pendiente hasta que envíe Corazón con los dedos o ${freeLikes} likes).`, 'chat');
+    addLog(`⚠️ ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}" (${escuchaInfo ? 'Escucha' : 'Paréntesis'})` : `link de ${linkInfo.label}`} (guardado como pendiente hasta que envíe Corazón con los dedos o ${freeLikes} likes).`, 'chat');
     return true;
   }
 }
@@ -1425,25 +1599,36 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
     registrarAliasServidor(userIdentifier, extraInfo.displayId, extraInfo.nickname, extraInfo.userId);
   }
   const userKey = normalizarUserKey(userIdentifier);
+
+  // Verificar si el usuario ya tiene un disco activo en la cola actual
+  const idx = queueState.queue.findIndex(s => {
+    const k = normalizarUserKey(s.user);
+    const kh = s.handle ? normalizarUserKey(s.handle) : '';
+    return k === userKey || (kh && kh === userKey);
+  });
+
+  if (idx !== -1) {
+    // Si ya está en la lista, solo sumar likes a su disco actual y NO acumular para crear otro disco al desbloquear
+    const s = queueState.queue[idx];
+    s.likes = (s.likes || 0) + count;
+    saveQueueData();
+    return;
+  }
+
   const total = (serverUserLikes.get(userKey) || 0) + count;
   serverUserLikes.set(userKey, total);
 
   // #2 Registrar likes acumulados del usuario para la opción gratuita (editable desde el panel o comando D-X)
   const stepData = getUserStepData(userKey, userIdentifier, extraInfo.handle, extraInfo.avatarUrl);
   stepData.likesGiven = total;
-  if (total >= getFreeLikesReq()) {
-    verificarCompletitudPasos(userKey, extraInfo);
-  }
-
-  const idx = queueState.queue.findIndex(s => {
-    const k = normalizarUserKey(s.user);
-    const kh = s.handle ? normalizarUserKey(s.handle) : '';
-    return k === userKey || (kh && kh === userKey);
-  });
-  if (idx !== -1) {
-    const s = queueState.queue[idx];
-    s.likes = total;
-    saveQueueData();
+  const freeLikesNeeded = getFreeLikesReq();
+  if (total >= freeLikesNeeded) {
+    if (!botConfig.queueLocked) {
+      verificarCompletitudPasos(userKey, extraInfo);
+    } else if (!stepData.readyForUnlockLog) {
+      stepData.readyForUnlockLog = true;
+      addLog(`⏳ @${userIdentifier} completó ${total.toLocaleString()} TapTap durante el bloqueo — entrará automáticamente al desbloquearse la lista.`, 'queue');
+    }
   }
 }
 
@@ -1766,6 +1951,7 @@ async function connectToTikTok(rawUsername) {
     if (globalStreamLikes < 4000) {
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = 4000;
+      reiniciarParaBloqueo(true);
       saveConfig();
       const msgLock = `¡La lista está bloqueada hasta llegar a 4,000 likes en el Live!`;
       broadcast({
@@ -2073,6 +2259,16 @@ async function connectToTikTok(rawUsername) {
       }
       globalLiveLikes = globalStreamLikes;
 
+      // Primero registrar los likes individuales del usuario para que si este TapTap alcanza la meta global, su disco ya entre en el desbloqueo
+      addLog(`❤️ ${info.chatName} dio ${count} likes ${total ? `(Total Live: ${total})` : `(Acumulado: ${globalStreamLikes})`}`, 'like');
+      processServerLike(info.chatName, count, {
+        displayId: info.displayId,
+        handle: info.handle,
+        nickname: info.nickname,
+        userId: info.userId,
+        avatarUrl: info.avatarUrl
+      });
+
       // #1 Verificar si se alcanzó la meta de likes para desbloquear la lista automáticamente
       if (botConfig.queueLocked && botConfig.lockTargetLikes && globalStreamLikes >= botConfig.lockTargetLikes) {
         const metaAlcanzada = botConfig.lockTargetLikes;
@@ -2104,14 +2300,6 @@ async function connectToTikTok(rawUsername) {
         });
       }
 
-      addLog(`❤️ ${info.chatName} dio ${count} likes ${total ? `(Total Live: ${total})` : `(Acumulado: ${globalStreamLikes})`}`, 'like');
-      processServerLike(info.chatName, count, {
-        displayId: info.displayId,
-        handle: info.handle,
-        nickname: info.nickname,
-        userId: info.userId,
-        avatarUrl: info.avatarUrl
-      });
       broadcast({
         type: 'LIKE',
         user: info.chatName,
@@ -2279,9 +2467,42 @@ wss.on('connection', (ws) => {
         procesarPasosPendientesAlDesbloquear();
       } else if (payload.action === 'getQueue') {
         ws.send(JSON.stringify({ type: 'QUEUE_UPDATE', queue: queueState.queue, history: queueState.history }));
+      } else if (payload.action === 'deleteSong') {
+        const songId = payload.songId;
+        const idx = queueState.queue.findIndex(s => s && s.id === songId);
+        if (idx !== -1) {
+          const removed = queueState.queue.splice(idx, 1)[0];
+          limpiarProgresoUsuarioDeCancion(removed);
+          queueState.history.unshift({ ...removed, playedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+          if (queueState.history.length > 50) queueState.history = queueState.history.slice(0, 50);
+          saveQueueData();
+          broadcast({
+            type: 'QUEUE_UPDATE',
+            queue: queueState.queue,
+            history: queueState.history,
+            skipVoice: true
+          });
+          addLog(`✅ Canción atendida/eliminada de la lista: "${removed.title}" (@${removed.user})`, 'queue');
+        }
+      } else if (payload.action === 'clearQueue') {
+        reiniciarParaBloqueo(true);
+        addLog(`🧹 Cola de canciones vaciada y contadores de TapTap reiniciados.`, 'queue');
       } else if (payload.action === 'syncQueue') {
         if (Array.isArray(payload.queue)) {
-          queueState.queue = payload.queue;
+          // Detectar canciones que estaban en el servidor pero fueron quitadas en la nueva cola y limpiar su progreso
+          const incomingIds = new Set(payload.queue.map(s => s && s.id).filter(Boolean));
+          for (const prevSong of queueState.queue) {
+            if (prevSong && prevSong.id && !incomingIds.has(prevSong.id)) {
+              limpiarProgresoUsuarioDeCancion(prevSong);
+            }
+          }
+          // Filtrar canciones ya eliminadas o de sesiones antiguas para que ninguna pestaña vieja las reviva
+          queueState.queue = payload.queue.filter(item => {
+            if (!item || !item.id) return false;
+            if (deletedSongIds.has(item.id)) return false;
+            if (String(item.id).startsWith('song_1791') || String(item.id).startsWith('disk_17926')) return false;
+            return true;
+          });
           verificarEliminacionServidor(queueState.queue);
           // Si alguna canción agregada manualmente tiene un link como título, extraer su URL y resolver sus metadatos reales
           for (const item of queueState.queue) {
@@ -2406,8 +2627,12 @@ wss.on('connection', (ws) => {
         botConfig.queueLocked = payload.locked !== undefined ? Boolean(payload.locked) : !botConfig.queueLocked;
         if (!botConfig.queueLocked) {
           botConfig.lockTargetLikes = null;
-        } else if (payload.lockTargetLikes) {
-          botConfig.lockTargetLikes = Number(payload.lockTargetLikes) || null;
+        } else {
+          if (payload.lockTargetLikes) {
+            botConfig.lockTargetLikes = Number(payload.lockTargetLikes) || null;
+          }
+          // Al bloquear la lista desde el panel, archivar temas escuchados y reiniciar contadores de TapTap
+          reiniciarParaBloqueo(true);
         }
         saveConfig();
         const msg = botConfig.queueLocked
@@ -2422,7 +2647,7 @@ wss.on('connection', (ws) => {
           currentLikes: globalStreamLikes,
           announcement: msg
         });
-        addLog(botConfig.queueLocked ? "🔒 Lista bloqueada manualmente desde el panel" : "🔓 Lista desbloqueada manualmente desde el panel", 'queue');
+        addLog(botConfig.queueLocked ? "🔒 Lista bloqueada manualmente desde el panel (temas anteriores limpiados)" : "🔓 Lista desbloqueada manualmente desde el panel", 'queue');
         if (!botConfig.queueLocked) {
           procesarPasosPendientesAlDesbloquear();
         }
