@@ -624,11 +624,15 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
     });
 
     if (idx === -1) {
+      const initialTitle = data.pendingSongTitle || 'Esperando (Canción + Artista) o link...';
+      const initialUrl = data.pendingSongUrl || '';
+      const initialPlatform = data.pendingSongTitle ? 'youtube' : '';
       const nuevoDisco = {
         id: 'disk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        title: 'Esperando link de canción...',
-        songUrl: '',
-        platform: '',
+        title: initialTitle,
+        songUrl: initialUrl,
+        songPlatform: initialPlatform,
+        platform: initialPlatform,
         user: data.name,
         handle: data.handle || '',
         avatarUrl: data.avatarUrl || extraInfo.avatarUrl || '',
@@ -642,19 +646,23 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
       queueState.queue.push(nuevoDisco);
       saveQueueData();
 
-      const announcement = `¡${data.name} entró a la lista (${metodoEntrada})! Pega el link de YouTube, Spotify o BandLab en el chat.`;
+      const announcement = data.pendingSongTitle
+        ? `¡${data.name} entró a la lista con "${data.pendingSongTitle}" (${metodoEntrada})!`
+        : `¡${data.name} entró a la lista (${metodoEntrada})! Comenta (Canción + Artista) o pega tu link.`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
         history: queueState.history,
         newSong: nuevoDisco,
-        newSongDesc: `${metodoEntrada} • Pega tu link de YouTube, Spotify o BandLab`,
+        newSongDesc: data.pendingSongTitle
+          ? `${metodoEntrada} • "${data.pendingSongTitle}"`
+          : `${metodoEntrada} • Comenta (Canción + Artista) o pega tu link`,
         sound: 'normal',
         eventType: 'new_song',
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`⭐ ${data.name} entró a la lista (${metodoEntrada}) -> Disco añadido`, 'queue');
+      addLog(`⭐ ${data.name} entró a la lista (${metodoEntrada}) -> Disco añadido (${initialTitle})`, 'queue');
       return true;
     } else if (queueState.queue[idx].status === 'locked') {
       // Si tenía un tema bloqueado en la lista, desbloquearlo gratis o con Corazón con los dedos
@@ -724,7 +732,41 @@ function detectarLinkCancion(text) {
   return {
     url: rawUrl,
     platform,
-    label
+    label,
+    isLink: true
+  };
+}
+
+// Alternativa cuando TikTok bloquea los links: (Nombre de la canción + Nombre del artista) entre paréntesis
+function detectarCancionEnParentesis(text) {
+  if (!text) return null;
+  const match = String(text).match(/[（(]([^)）]{2,120})[)）]/);
+  if (!match) return null;
+
+  const rawInside = match[1].trim();
+  if (!rawInside || contieneLink(rawInside)) return null;
+
+  // Ignorar comandos reservados del streamer o números sueltos
+  if (/^(?:\.{2,}|0|g|calificar|encuesta|lista)$/i.test(rawInside)) return null;
+  if (/^(?:0|d)\s*-\s*\d+$/i.test(rawInside)) return null;
+  if (/^borra\s+a\s+/i.test(rawInside)) return null;
+  if (/^\d+(?:[.,]\d+)?(?:\s*\/\s*10)?$/.test(rawInside)) return null;
+
+  // Formatear separador "+" como " - " para mostrar "Canción - Artista" limpio
+  const cleanTitle = rawInside
+    .replace(/\s*\+\s*/g, ' - ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Asegurar que contenga al menos 2 letras
+  if (!/\p{L}{2,}/u.test(cleanTitle)) return null;
+
+  return {
+    title: cleanTitle,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanTitle)}`,
+    platform: 'youtube',
+    label: 'YouTube',
+    isParenthesesSong: true
   };
 }
 
@@ -1072,8 +1114,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     // 1. (...) -> Explicación de cómo agregar canción a la lista
     if (text === '...' || text === '…' || /^\.{3,}$/.test(text)) {
       const freeLikes = getFreeLikesReq();
-      const voiceMsg = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego pega el link de tu canción de YouTube, Spotify o BandLab.`;
-      const bannerMsg = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega tu Link`;
+      const voiceMsg = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe entre paréntesis el nombre de la canción más el artista, o pega tu link en el chat.`;
+      const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
       broadcast({
         type: 'HOW_TO_ADD_HELP',
         user: userChatName,
@@ -1203,7 +1245,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   if (ayudaRegex.test(text) || ayudaCortaRegex.test(text) || ayudaPedirRegex.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
     const freeLikes = getFreeLikesReq();
-    const bannerMsg = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega tu Link (YouTube/Spotify/BandLab)`;
+    const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
     broadcast({
       type: 'HOW_TO_ADD_HELP',
       user: chatUser,
@@ -1240,9 +1282,10 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     return true;
   }
 
-  // #4 DETECCIÓN DE LINK DE CANCIÓN (YOUTUBE, SPOTIFY O BANDLAB) - SIN REQUISITO DE SEGUIR
+  // #4 DETECCIÓN DE LINK DE CANCIÓN O (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS - SIN REQUISITO DE SEGUIR
   const linkInfo = detectarLinkCancion(text);
-  if (!linkInfo) return false;
+  const parenInfo = !linkInfo ? detectarCancionEnParentesis(text) : null;
+  if (!linkInfo && !parenInfo) return false;
 
   const chatName = (userChatName || 'Usuario').trim();
   if (userHandle || userId) {
@@ -1263,9 +1306,12 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       message: aviso,
       bannerText: aviso
     });
-    addLog(`🔒 ${chatName} envió link de ${linkInfo.label} pero la lista está bloqueada`, 'chat');
+    addLog(`🔒 ${chatName} envió canción pero la lista está bloqueada`, 'chat');
     return true;
   }
+
+  // Verificar si el usuario ya completó Corazón con los dedos o Likes Gratis antes de buscar su disco
+  verificarCompletitudPasos(userKey);
 
   // BUSCAR SI EL USUARIO YA TIENE SU DISCO EN LA LISTA (sin exigir que sea seguidor)
   const idx = queueState.queue.findIndex(s => {
@@ -1276,25 +1322,92 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   });
 
   if (idx !== -1) {
-    // YA TIENE DISCO EN LA COLA: Asignar el link a su disco (SIN LEER EN VOZ ALTA Y SIN MOSTRAR LA URL EN EL OVERLAY)
     const s = queueState.queue[idx];
-    s.songUrl = linkInfo.url;
-    s.songPlatform = linkInfo.platform;
-    s.platform = linkInfo.platform;
-    s.title = `Canción de @${s.user} (${linkInfo.label})`;
-    s.status = 'unlocked';
-    saveQueueData();
+    if (linkInfo) {
+      // ASIGNAR LINK Y EXTRAER METADATOS REALES (SIN MOSTRAR LA URL EN EL OVERLAY)
+      s.songUrl = linkInfo.url;
+      s.songPlatform = linkInfo.platform;
+      s.platform = linkInfo.platform;
+      s.title = `Canción de @${s.user} (${linkInfo.label})`;
+      s.status = 'unlocked';
+      saveQueueData();
 
-    addLog(`🔗 ${chatName} asignó link de ${linkInfo.label} (${linkInfo.url}) en posición #${idx + 1}`, 'chat');
+      addLog(`🔗 ${chatName} asignó link de ${linkInfo.label} (${linkInfo.url}) en posición #${idx + 1}`, 'chat');
+      resolverTituloDeLink(s, linkInfo.url, linkInfo.label, true);
+    } else if (parenInfo) {
+      // ASIGNAR (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS
+      s.title = parenInfo.title;
+      if (!s.songUrl) {
+        s.songUrl = parenInfo.url;
+        s.songPlatform = 'youtube';
+        s.platform = 'youtube';
+      }
+      s.status = 'unlocked';
+      saveQueueData();
 
-    // Obtener el nombre real de la canción y artista desde los metadatos del enlace y actualizar el Overlay
-    resolverTituloDeLink(s, linkInfo.url, linkInfo.label, true);
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        eventType: 'update_song',
+        songTitle: s.title,
+        songUser: s.user,
+        skipVoice: true,
+        announcement: `🎵 ¡@${s.user} agregó "${s.title}"!`
+      });
+      addLog(`🎵 ${chatName} asignó su canción entre paréntesis: "${s.title}" en posición #${idx + 1}`, 'chat');
+    }
     return true;
   } else {
-    // NO TIENE DISCO EN LA LISTA: Mostrar aviso visual (sin voz)
-    getUserStepData(userKey, chatName, userHandle);
+    // Si aún no tiene su disco en la lista, guardar el título/link pendiente para cuando envíe el Corazón con los dedos o llegue a los Likes Gratis
+    const stepData = getUserStepData(userKey, chatName, userHandle);
+    if (parenInfo) {
+      stepData.pendingSongTitle = parenInfo.title;
+      stepData.pendingSongUrl = parenInfo.url;
+    } else if (linkInfo) {
+      stepData.pendingSongUrl = linkInfo.url;
+      obtenerMetadatosDeLink(linkInfo.url, linkInfo.label).then(cleanTitle => {
+        if (cleanTitle) stepData.pendingSongTitle = cleanTitle;
+      }).catch(() => {});
+    }
+
+    // Si es el propio streamer/moderador comentando (Canción + Artista), agregarlo directo a la lista
+    if (isAuthorized && parenInfo) {
+      const nuevoManual = {
+        id: 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        title: parenInfo.title,
+        songUrl: parenInfo.url,
+        songPlatform: 'youtube',
+        platform: 'youtube',
+        user: chatName,
+        handle: userHandle || '',
+        gift: 'Admin',
+        status: 'unlocked',
+        priority: 'normal',
+        vip150: false,
+        overtakenCount: 0,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      queueState.queue.push(nuevoManual);
+      saveQueueData();
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        newSong: nuevoManual,
+        newSongDesc: `Agregada por @${chatName}`,
+        eventType: 'new_song',
+        skipVoice: true,
+        announcement: `🎵 ¡Se agregó "${parenInfo.title}" a la lista!`
+      });
+      addLog(`🎵 Admin @${chatName} agregó "${parenInfo.title}" con paréntesis`, 'queue');
+      return true;
+    }
+
     const freeLikes = getFreeLikesReq();
-    const bannerMsg = `Para entrar a la lista: Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️`;
+    const bannerMsg = parenInfo
+      ? `"${parenInfo.title}" guardado • Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes para subirlo a la lista`
+      : `Para entrar a la lista: Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️`;
     broadcast({
       type: 'CHAT_WARNING',
       user: chatName,
@@ -1302,7 +1415,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       message: bannerMsg,
       bannerText: bannerMsg
     });
-    addLog(`⚠️ ${chatName} envió link de ${linkInfo.label} pero aún no está en la lista.`, 'chat');
+    addLog(`⚠️ ${chatName} envió ${parenInfo ? `"(${parenInfo.title})"` : `link de ${linkInfo.label}`} (guardado como pendiente hasta que envíe Corazón con los dedos o ${freeLikes} likes).`, 'chat');
     return true;
   }
 }

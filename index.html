@@ -1654,7 +1654,7 @@
           <div style="font-size: 12.5px; line-height: 1.65; color: #cbd5e1;">
             <div>1️⃣ <strong>Entrar a la Lista:</strong> Enviar <strong>Corazón con los dedos (🫰)</strong> o dar <strong><span id="rule-free-likes-val">5,000</span> Likes (Gratis)</strong> <em>(sin necesidad de seguir)</em></div>
             <div>2️⃣ <strong>Comando Likes Gratis:</strong> Comenta <code>D-1000</code> desde tu perfil para cambiar la meta de likes gratis</div>
-            <div>🔗 <strong>Pedir Canción:</strong> Pegar <strong>Link de YouTube, Spotify o BandLab</strong> en el chat (el Overlay muestra el título limpio)</div>
+            <div>🎵 <strong>Pedir Canción:</strong> Escribir entre paréntesis <code>(Canción + Artista)</code> o pegar <strong>Link de YouTube, Spotify o BandLab</strong></div>
             <div>🎁 <strong>Subir con Regalos:</strong> <code>15-29</code> monedas (+1 pos) • <code>30-149</code> (+2 pos) • <code>150+</code> (<strong>#1 Blindado</strong>)</div>
             <div>💖 <strong>Voz TTS en Chat:</strong> Lee en voz alta todos los comentarios de quienes envíen un <strong>Quiéreme</strong> (sin links ni símbolos)</div>
             <div>🔒 <strong>Bloqueo por Likes:</strong> Auto-bloqueo hasta <code>4,000</code> likes al iniciar o comando <code>0-50000</code></div>
@@ -1669,12 +1669,12 @@
           <div class="sim-buttons-grid">
             <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Entrar)</button>
             <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (Activar Voz)</button>
+            <button class="btn-sim" onclick="simular('parentesis_cancion')" style="border-color: #4ade80; color: #86efac; font-weight:800;">🎵 (Canción + Artista)</button>
             <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
             <button class="btn-sim" onclick="simular('regalo_150')" style="border-color: #eab308; color: #fde047; font-weight:800;">👑 Regalo 150+ (#1 Blindado)</button>
             <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
             <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
             <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Gratis)</button>
-            <button class="btn-sim" onclick="simular('follow_comunidad')">👏 Seguidor Aplausos</button>
             <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
@@ -2792,6 +2792,13 @@
         } else {
           mostrarAnimacionEpicaRegalo('quiereme', 'Carlos_VIP');
         }
+      } else if (tipo === 'parentesis_cancion') {
+        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: '(Monaco + Bad Bunny)' }));
+        } else {
+          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetUser, announcement: `🎵 ¡@${targetUser} agregó "Monaco - Bad Bunny"!` });
+        }
       } else if (tipo === 'pegar_link' || tipo === 'pedir_escucha') {
         const targetUser = state.queue[0]?.user || 'Maria_Gamer';
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2843,8 +2850,8 @@
         hablarTTS(msg);
       } else if (tipo === 'pregunta_ayuda') {
         const freeLikes = state.freeLikesReq || 5000;
-        const banner = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega el link de YouTube, Spotify o BandLab`;
-        const voice = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego pega el link de tu canción de YouTube, Spotify o BandLab en el chat.`;
+        const banner = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
+        const voice = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe entre paréntesis el nombre de la canción más el artista, o pega tu link en el chat.`;
         mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
         hablarTTS(voice);
       } else if (tipo === 'spam') {
@@ -2971,8 +2978,8 @@
 
     function explicarComoPedir() {
       const freeLikes = state.freeLikesReq || 5000;
-      const banner = `1. Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis • 2. Pega el link de YouTube, Spotify o BandLab`;
-      const explicacion = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Cuando estés en la lista, pega el link de tu canción de YouTube, Spotify o BandLab en el chat.`;
+      const banner = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe (Canción + Artista) o pega tu Link`;
+      const explicacion = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Cuando estés en la lista, escribe entre paréntesis el nombre de la canción más el artista, o pega tu link en el chat.`;
       mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
       hablarTTS(explicacion);
     }
