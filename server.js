@@ -1625,7 +1625,7 @@ async function connectToTikTok(rawUsername) {
   try {
     tiktokConnection = new TikTokLiveConnection(username, {
       processInitialData: false, // NO procesar historial antiguo antes de conectar
-      enableExtendedGiftInfo: true,
+      enableExtendedGiftInfo: false,
       fetchRoomInfoOnConnect: false
     });
 
