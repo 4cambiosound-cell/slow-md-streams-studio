@@ -5,6 +5,7 @@ const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const { TikTokLiveConnection, WebcastEvent } = require('tiktok-live-connector');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
+const { RadioInteractiveEngine } = require('./radio-engine');
 
 const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
@@ -367,6 +368,24 @@ const server = http.createServer((req, res) => {
     reqUrl = '/index.html';
   } else if (reqUrl === '/overlay' || reqUrl === '/studio-overlay') {
     reqUrl = '/index.html';
+  } else if (reqUrl === '/radio' || reqUrl === '/radio-panel' || reqUrl === '/radio-live' || reqUrl === '/radio-live.html' || reqUrl === '/radio-overlay' || reqUrl === '/radio/overlay') {
+    reqUrl = '/radio-live.html';
+  } else if (reqUrl === '/api/radio/youtube-search') {
+    const q = (params.get('q') || '').trim();
+    const title = (params.get('title') || '').trim();
+    const artist = (params.get('artist') || '').trim();
+    radioEngine.searchYouTube(q, title, artist).then((results) => {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ results }));
+    }).catch((err) => {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ results: [], error: err.message }));
+    });
+    return;
+  } else if (reqUrl === '/api/radio/state') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify(radioEngine.getFullState()));
+    return;
   } else if (reqUrl.startsWith('/widgets/cola-canciones')) {
     reqUrl = '/index.html';
   } else if (reqUrl.startsWith('/widgets/comentarios-tts')) {
@@ -507,12 +526,32 @@ const server = http.createServer((req, res) => {
 // Servidor WebSocket
 const wss = new WebSocketServer({ server });
 
+function broadcastRadio(data) {
+  const msg = JSON.stringify(data);
+  for (const client of wss.clients) {
+    if (client.readyState === WebSocket.OPEN && client.isRadioClient) {
+      client.send(msg);
+    }
+  }
+}
+
+const radioEngine = new RadioInteractiveEngine({
+  broadcastRadio,
+  voicesCatalog: NATURAL_NEURAL_VOICES
+});
+
 function broadcast(data) {
   const msg = JSON.stringify(data);
   for (const client of wss.clients) {
-    if (client.readyState === WebSocket.OPEN) {
+    if (client.readyState === WebSocket.OPEN && !client.isRadioClient) {
       client.send(msg);
     }
+  }
+  // Espejo opcional hacia el motor de Radio Live Interactiva si comparten usuario en vivo
+  if (data && data.type && ['STATUS', 'GIFT', 'CHAT', 'FOLLOW', 'LIKE'].includes(data.type)) {
+    try {
+      radioEngine.onMainServerTikTokEvent(data.type, data);
+    } catch (e) {}
   }
 }
 
@@ -531,8 +570,12 @@ try {
     queueState = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
     if (!Array.isArray(queueState.queue)) queueState.queue = [];
     if (!Array.isArray(queueState.history)) queueState.history = [];
-    // Limpiar entradas antiguas de sesiones pasadas
-    queueState.queue = queueState.queue.filter(s => s && !String(s.id || '').startsWith('song_1791') && !String(s.id || '').startsWith('disk_17926'));
+    // Bloquear todas las canciones del historial para que nunca reingresen a la cola
+    for (const h of queueState.history) {
+      if (h && h.id) deletedSongIds.add(h.id);
+    }
+    // Conservar las canciones activas no eliminadas
+    queueState.queue = queueState.queue.filter(s => s && s.id && !deletedSongIds.has(s.id));
   }
 } catch (e) {
   console.error('[Queue] Error leyendo queue-data.json:', e.message);
@@ -608,8 +651,9 @@ function limpiarProgresoUsuarioDeCancion(song) {
   }
 }
 
-// Reiniciar la lista de temas ya escuchados y los contadores de TapTap al bloquear la lista hasta un nuevo objetivo (0-X)
-function reiniciarParaBloqueo(archivarColaActual = true) {
+// Reiniciar contadores de TapTap al bloquear la lista hasta un nuevo objetivo (0-X),
+// manteniendo SIEMPRE en espera las canciones que ya están en la lista para escucharlas en orden
+function reiniciarParaBloqueo(archivarColaActual = false) {
   if (archivarColaActual && Array.isArray(queueState.queue) && queueState.queue.length > 0) {
     for (const s of queueState.queue) {
       if (s && s.id) deletedSongIds.add(s.id);
@@ -631,14 +675,21 @@ function reiniciarParaBloqueo(archivarColaActual = true) {
     });
   }
 
-  // Reiniciar contadores de TapTap y regalos de entrada para que al llegar al objetivo SOLO entren quienes dieron suficientes TapTap para desbloquear la lista
+  // Identificar los usuarios que ya tienen canción en la cola para no borrar sus canciones ni estados
+  const activeQueueUserKeys = new Set();
+  for (const s of queueState.queue) {
+    if (s.user) activeQueueUserKeys.add(normalizarUserKey(s.user));
+    if (s.handle) activeQueueUserKeys.add(normalizarUserKey(s.handle));
+  }
+
+  // Para usuarios que NO están en la cola, reiniciar contadores de TapTap para el nuevo objetivo
   serverUserLikes.clear();
-  for (const st of userSteps.values()) {
-    st.likesGiven = 0;
-    st.giftedHeart = false;
-    st.readyForUnlockLog = false;
-    st.pendingSongTitle = '';
-    st.pendingSongUrl = '';
+  for (const [key, st] of userSteps.entries()) {
+    if (!activeQueueUserKeys.has(key)) {
+      st.likesGiven = 0;
+      st.giftedHeart = false;
+      st.readyForUnlockLog = false;
+    }
   }
 }
 
@@ -1319,8 +1370,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       const targetLikes = parseInt(lockGoalMatch[1], 10);
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = targetLikes;
-      // Archivar los temas ya escuchados y reiniciar contadores de TapTap para que solo entren los que den suficientes TapTap para desbloquear la lista
-      reiniciarParaBloqueo(true);
+      // Conservar las canciones en espera en la lista y reiniciar contadores de TapTap para el nuevo objetivo
+      reiniciarParaBloqueo(false);
       saveConfig();
       const announcement = `🔒 Lista bloqueada hasta llegar a ${targetLikes.toLocaleString()} likes en el Live.`;
       broadcast({
@@ -1328,10 +1379,12 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         locked: true,
         lockTargetLikes: targetLikes,
         currentLikes: globalStreamLikes,
+        queue: queueState.queue,
+        history: queueState.history,
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`🔒 Streamer bloqueó la lista hasta alcanzar ${targetLikes.toLocaleString()} likes (0-${targetLikes}) — Temas anteriores limpiados y contadores de TapTap reiniciados`, 'queue');
+      addLog(`🔒 Streamer bloqueó la lista hasta alcanzar ${targetLikes.toLocaleString()} likes (0-${targetLikes}) — Discos en espera conservados`, 'queue');
       return true;
     }
 
@@ -1339,7 +1392,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     if (text === '0' || text === '(0)') {
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = null;
-      reiniciarParaBloqueo(true);
+      reiniciarParaBloqueo(false);
       saveConfig();
       const announcement = "🔒 La lista de canciones ha sido bloqueada temporalmente.";
       broadcast({
@@ -1347,10 +1400,12 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         locked: true,
         lockTargetLikes: null,
         currentLikes: globalStreamLikes,
+        queue: queueState.queue,
+        history: queueState.history,
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`🔒 Streamer bloqueó la lista de canciones (0) — Temas anteriores limpiados y contadores de TapTap reiniciados`, 'queue');
+      addLog(`🔒 Streamer bloqueó la lista de canciones (0) — Discos en espera conservados`, 'queue');
       return true;
     }
 
@@ -1365,6 +1420,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         locked: false,
         lockTargetLikes: null,
         currentLikes: globalStreamLikes,
+        queue: queueState.queue,
+        history: queueState.history,
         skipVoice: true,
         announcement: announcement
       });
@@ -1961,7 +2018,7 @@ async function connectToTikTok(rawUsername) {
     if (globalStreamLikes < 4000) {
       botConfig.queueLocked = true;
       botConfig.lockTargetLikes = 4000;
-      reiniciarParaBloqueo(true);
+      reiniciarParaBloqueo(false);
       saveConfig();
       const msgLock = `¡La lista está bloqueada hasta llegar a 4,000 likes en el Live!`;
       broadcast({
@@ -1969,9 +2026,11 @@ async function connectToTikTok(rawUsername) {
         locked: true,
         lockTargetLikes: 4000,
         currentLikes: globalStreamLikes,
+        queue: queueState.queue,
+        history: queueState.history,
         announcement: msgLock
       });
-      addLog(`🔒 Lista bloqueada automáticamente al conectar (Likes actuales: ${globalStreamLikes} / Meta: 4,000 likes).`, 'queue');
+      addLog(`🔒 Lista bloqueada automáticamente al conectar (Likes actuales: ${globalStreamLikes} / Meta: 4,000 likes). Discos en espera conservados.`, 'queue');
     }
 
     const extractUserInfo = (data) => {
@@ -2291,6 +2350,8 @@ async function connectToTikTok(rawUsername) {
           locked: false,
           lockTargetLikes: null,
           currentLikes: globalStreamLikes,
+          queue: queueState.queue,
+          history: queueState.history,
           announcement: msgUnlock
         });
         addLog(`🔓 ¡Meta de ${metaAlcanzada.toLocaleString()} likes alcanzada! Lista desbloqueada automáticamente.`, 'queue');
@@ -2374,8 +2435,18 @@ function disconnectTikTok() {
 }
 
 // Manejador de conexiones WebSocket
-wss.on('connection', (ws) => {
-  // Enviar estado actual, cola de canciones, reglas, layout y logs iniciales al nuevo cliente
+wss.on('connection', (ws, req) => {
+  const reqUrlStr = req?.url || '';
+  if (reqUrlStr.includes('channel=radio')) {
+    ws.isRadioClient = true;
+    ws.send(JSON.stringify({
+      type: 'RADIO_STATE_SYNC',
+      state: radioEngine.getFullState()
+    }));
+  }
+
+  // Enviar estado actual, cola de canciones, reglas, layout y logs iniciales al nuevo cliente del Overlay 1
+  if (!ws.isRadioClient) {
   ws.send(JSON.stringify({ type: 'STATUS', ...currentStatus }));
   ws.send(JSON.stringify({ type: 'RULES_UPDATE', rules: botConfig.rules }));
   ws.send(JSON.stringify({ type: 'TTS_CONFIG_UPDATE', config: botConfig.tts }));
@@ -2414,10 +2485,101 @@ wss.on('connection', (ws) => {
       currentPct: initPct
     }
   }));
+  }
 
   ws.on('message', (message) => {
     try {
       const payload = JSON.parse(message.toString());
+
+      // ACCIONES EXCLUSIVAS DEL 2DO OVERLAY: RADIO LIVE INTERACTIVA (100% INDEPENDIENTE)
+      if (typeof payload.action === 'string' && payload.action.startsWith('radio:')) {
+        ws.isRadioClient = true;
+        const subAction = payload.action.slice('radio:'.length);
+        if (subAction === 'getState') {
+          ws.send(JSON.stringify({ type: 'RADIO_STATE_SYNC', state: radioEngine.getFullState() }));
+        } else if (subAction === 'connectTikTok') {
+          radioEngine.connectTikTok(payload.username);
+        } else if (subAction === 'disconnectTikTok') {
+          radioEngine.disconnectTikTok(true);
+        } else if (subAction === 'updateConfig') {
+          radioEngine.updateConfig(payload.config);
+        } else if (subAction === 'addSong') {
+          radioEngine.addSongRequest({
+            songTitle: payload.songTitle,
+            artistName: payload.artistName,
+            directUrl: payload.directUrl || '',
+            requestedBy: payload.requestedBy || 'Administrador',
+            method: 'manual_admin',
+            skipRules: true
+          });
+        } else if (subAction === 'playNext' || subAction === 'songEnded') {
+          radioEngine.playNextInQueue();
+        } else if (subAction === 'songError') {
+          radioEngine.handleSongError(payload.songId, payload.reason);
+        } else if (subAction === 'toggleQueuePause') {
+          radioEngine.queuePaused = !radioEngine.queuePaused;
+          radioEngine.setRadioState(radioEngine.queuePaused ? 'PAUSED' : (radioEngine.data.currentSong ? 'PLAYING' : 'IDLE'));
+          radioEngine.broadcastStateUpdate();
+        } else if (subAction === 'reorderQueue') {
+          radioEngine.reorderQueue(payload.songId, payload.direction);
+        } else if (subAction === 'updateSongStatus') {
+          radioEngine.updateSongStatus(payload.songId, payload.newStatus, payload.candidateIdx);
+        } else if (subAction === 'interventionCompleted') {
+          radioEngine.completeActiveIntervention(payload.interventionId);
+        } else if (subAction === 'emergencyStop') {
+          radioEngine.triggerEmergencyStop();
+        } else if (subAction === 'resumeEmergency') {
+          radioEngine.resumeFromEmergencyStop();
+        } else if (subAction === 'manualIntervention') {
+          radioEngine.enqueueIntervention({
+            type: 'admin_message',
+            priority: 1,
+            title: '🎙️ Locución Urgente de Cabina',
+            username: 'Cabina',
+            text: payload.text,
+            voice: radioEngine.data.config.voices.maleAnnouncerVoice
+          });
+        } else if (subAction === 'testCall') {
+          radioEngine.programarLlamadaFicticia({
+            username: payload.username || 'Gabriela Pie',
+            songTitle: payload.songTitle || 'La mejor canción de este año',
+            artistName: payload.artistName || 'Slow MD',
+            queuePosition: Math.max(1, radioEngine.data.queue.length || 4),
+            songsBefore: Math.max(0, (radioEngine.data.queue.length || 4) - 1),
+            force: true
+          });
+        } else if (subAction === 'simulateGift') {
+          radioEngine.handleGiftEvent({
+            eventId: 'sim_gift_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            userId: normalizarUserKey(payload.username || 'Gabriela Pie'),
+            username: payload.username || 'Gabriela Pie',
+            giftName: payload.giftName || 'Rosa',
+            repeatCount: 1,
+            unitCoins: Number(payload.totalCoins) || 3,
+            totalCoins: Number(payload.totalCoins) || 3,
+            platform: 'Simulador Radio',
+            isSimulated: true
+          });
+        } else if (subAction === 'simulateChat') {
+          radioEngine.handleChatEvent({
+            eventId: 'sim_chat_' + Date.now(),
+            userId: normalizarUserKey(payload.username || 'Gabriela Pie'),
+            username: payload.username || 'Gabriela Pie',
+            comment: payload.comment || 'Ponme: La mejor canción de este año + Slow MD',
+            platform: 'Simulador Radio',
+            isSimulated: true
+          });
+        } else if (subAction === 'simulateFollow') {
+          radioEngine.handleFollowEvent({
+            eventId: 'sim_follow_' + Date.now(),
+            userId: normalizarUserKey(payload.username || 'Carlos Urbano'),
+            username: payload.username || 'Carlos Urbano',
+            platform: 'Simulador Radio'
+          });
+        }
+        return;
+      }
+
       if (payload.action === 'connect') {
         connectToTikTok(payload.username);
       } else if (payload.action === 'disconnect') {
@@ -2641,8 +2803,8 @@ wss.on('connection', (ws) => {
           if (payload.lockTargetLikes) {
             botConfig.lockTargetLikes = Number(payload.lockTargetLikes) || null;
           }
-          // Al bloquear la lista desde el panel, archivar temas escuchados y reiniciar contadores de TapTap
-          reiniciarParaBloqueo(true);
+          // Al bloquear la lista desde el panel, mantener canciones en espera y reiniciar contadores de TapTap
+          reiniciarParaBloqueo(false);
         }
         saveConfig();
         const msg = botConfig.queueLocked
@@ -2655,9 +2817,11 @@ wss.on('connection', (ws) => {
           locked: botConfig.queueLocked,
           lockTargetLikes: botConfig.lockTargetLikes,
           currentLikes: globalStreamLikes,
+          queue: queueState.queue,
+          history: queueState.history,
           announcement: msg
         });
-        addLog(botConfig.queueLocked ? "🔒 Lista bloqueada manualmente desde el panel (temas anteriores limpiados)" : "🔓 Lista desbloqueada manualmente desde el panel", 'queue');
+        addLog(botConfig.queueLocked ? "🔒 Lista bloqueada manualmente desde el panel (discos en espera conservados)" : "🔓 Lista desbloqueada manualmente desde el panel", 'queue');
         if (!botConfig.queueLocked) {
           procesarPasosPendientesAlDesbloquear();
         }
@@ -2683,8 +2847,10 @@ wss.on('connection', (ws) => {
 server.listen(PORT, () => {
   console.log('====================================================');
   console.log(`🚀 SLOW MD - SERVIDOR DE TIKTOK LIVE INICIADO`);
-  console.log(`📡 URL Panel Streamer: http://localhost:${PORT}/?view=panel`);
-  console.log(`📺 URL Overlay Meld / OBS: http://localhost:${PORT}/?view=overlay`);
+  console.log(`📡 URL Panel Streamer (Overlay 1): http://localhost:${PORT}/?view=panel`);
+  console.log(`📺 URL Overlay 1 Meld / OBS: http://localhost:${PORT}/?view=overlay`);
+  console.log(`📻 URL Panel Radio Live Interactiva (Overlay 2): http://localhost:${PORT}/radio`);
+  console.log(`🎙️ URL Overlay 2 Radio Live (OBS / Meld): http://localhost:${PORT}/radio-overlay`);
   console.log('====================================================');
 
   // Si había un usuario configurado previamente, intentar reconectar automáticamente

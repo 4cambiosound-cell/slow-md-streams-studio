@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📻 RADIO LIVE INTERACTIVA — Cabina & Overlay Automatizado</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: rgba(13, 19, 34, 0.88);
+      --bg-card-solid: #0f172a;
+      --border-glow: rgba(56, 189, 248, 0.28);
+      --neon-cyan: #00f2fe;
+      --neon-pink: #ff0844;
+      --neon-rose: #f43f5e;
+      --neon-amber: #f59e0b;
+      --neon-green: #10b981;
+      --neon-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      background: var(--bg-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body.mode-overlay {
+      background: transparent !important;
+      overflow: hidden !important;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    body.mode-overlay.solid-radio-bg {
+      background: radial-gradient(circle at 20% 20%, rgba(15, 23, 42, 0.96), rgba(5, 8, 17, 0.98)) !important;
+    }
+
+    body.mode-overlay #admin-panel-root {
+      display: none !important;
+    }
+
+    body.mode-panel #overlay-root {
+      display: none !important;
+    }
+
+    /* ==========================================================================
+       DISEÑO DEL OVERLAY PÚBLICO (/radio-overlay) PARA OBS Y MELD STUDIO
+       ========================================================================== */
+    #overlay-root {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: clamp(14px, 2vw, 28px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .ov-glass {
+      background: linear-gradient(135deg, rgba(10, 15, 29, 0.86), rgba(17, 24, 39, 0.78));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 22px rgba(0, 242, 254, 0.08);
+    }
+
+    /* A. ENCABEZADO DE LA EMISORA */
+    .ov-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 18px;
+      border-left: 4px solid var(--neon-cyan);
+    }
+
+    .ov-station-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ov-station-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 18px rgba(0, 242, 254, 0.45);
+    }
+
+    .ov-station-title {
+      font-size: clamp(16px, 2vw, 22px);
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ffffff, #7dd3fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .ov-station-slogan {
+      font-size: clamp(11px, 1.2vw, 13px);
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .ov-header-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ov-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .ov-pill.live {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .ov-pill.test {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+      animation: pulseDot 1.4s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.45; }
+    }
+
+    /* ECUALIZADOR ANIMADO */
+    .eq-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 22px;
+      padding: 0 4px;
+    }
+
+    .eq-bar {
+      width: 4px;
+      background: linear-gradient(180deg, var(--neon-cyan), #ec4899);
+      border-radius: 3px;
+      height: 25%;
+      transition: height 0.15s ease;
+    }
+
+    .eq-bars.active .eq-bar:nth-child(1) { animation: eqAnim 0.65s infinite ease-in-out 0.0s; }
+    .eq-bars.active .eq-bar:nth-child(2) { animation: eqAnim 0.55s infinite ease-in-out 0.15s; }
+    .eq-bars.active .eq-bar:nth-child(3) { animation: eqAnim 0.75s infinite ease-in-out 0.3s; }
+    .eq-bars.active .eq-bar:nth-child(4) { animation: eqAnim 0.50s infinite ease-in-out 0.1s; }
+    .eq-bars.active .eq-bar:nth-child(5) { animation: eqAnim 0.70s infinite ease-in-out 0.25s; }
+    .eq-bars.active .eq-bar:nth-child(6) { animation: eqAnim 0.60s infinite ease-in-out 0.05s; }
+
+    @keyframes eqAnim {
+      0%, 100% { height: 22%; }
+      50% { height: 100%; }
+    }
+
+    /* ZONA CENTRAL DE INTERVENCIONES Y LLAMADAS FICTICIAS A 2 VOCES */
+    .ov-center-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      my: auto;
+      z-index: 20;
+    }
+
+    /* E. TARJETA DE INTERVENCIÓN DEL LOCUTOR */
+    .ov-intervention-card {
+      width: min(92vw, 680px);
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
+      border: 2px solid var(--neon-cyan);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.75), 0 0 35px rgba(0, 242, 254, 0.28);
+      transform: translateY(15px) scale(0.95);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: none;
+    }
+
+    .ov-intervention-card.show {
+      display: block;
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .ov-int-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .ov-int-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(0, 242, 254, 0.16);
+      color: #67e8f9;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .ov-int-user {
+      font-size: clamp(16px, 2vw, 22px);
+      font-weight: 900;
+      color: #fde047;
+      margin-bottom: 6px;
+    }
+
+    .ov-int-text {
+      font-size: clamp(14px, 1.6vw, 18px);
+      line-height: 1.45;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    /* F. TARJETA DE LLAMADA EN VIVO A 2 VOCES (LOCUTOR + OYENTE FEMENINA) */
+    .ov-call-card {
+      width: min(94vw, 720px);
+      padding: 20px 24px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(17, 12, 36, 0.96), rgba(38, 14, 46, 0.94));
+      border: 2px solid #f43f5e;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.8), 0 0 40px rgba(244, 63, 94, 0.35);
+      display: none;
+      animation: popCall 0.35s ease-out;
+    }
+
+    .ov-call-card.show {
+      display: block;
+    }
+
+    @keyframes popCall {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .ov-call-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .ov-call-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(244, 63, 94, 0.22);
+      border: 1px solid #f43f5e;
+      color: #fda4af;
+      font-weight: 900;
+      font-size: 12.5px;
+      text-transform: uppercase;
+    }
+
+    .ov-call-speakers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .ov-speaker-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      opacity: 0.48;
+      transition: all 0.25s ease;
+    }
+
+    .ov-speaker-box.speaking-active {
+      opacity: 1;
+      transform: scale(1.03);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .ov-speaker-box.male.speaking-active {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 22px rgba(0, 242, 254, 0.35);
+    }
+
+    .ov-speaker-box.female.speaking-active {
+      border-color: #ec4899;
+      box-shadow: 0 0 22px rgba(236, 72, 153, 0.4);
+    }
+
+    .ov-speaker-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .ov-speaker-box.male .ov-speaker-avatar {
+      background: linear-gradient(135deg, #0284c7, #00f2fe);
+    }
+
+    .ov-speaker-box.female .ov-speaker-avatar {
+      background: linear-gradient(135deg, #db2777, #f43f5e);
+    }
+
+    .ov-speaker-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .ov-speaker-role {
+      font-size: 11.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .ov-call-dialogue-box {
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45);
+      border-left: 4px solid #f43f5e;
+      font-size: clamp(15px, 1.7vw, 19px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.45;
+    }
+
+    /* ZONA INFERIOR DEL OVERLAY: CANCIÓN ACTUAL + COLA + ACTIVIDAD */
+    .ov-bottom-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 14px;
+      align-items: end;
+    }
+
+    @media (max-width: 1024px) {
+      .ov-bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* B. CANCIÓN ACTUAL */
+    .ov-now-playing {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-left: 4px solid #10b981;
+    }
+
+    .ov-np-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .ov-np-thumb {
+      width: 68px;
+      height: 68px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+
+    .ov-np-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ov-np-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ov-np-title {
+      font-size: clamp(15px, 1.6vw, 19px);
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .ov-np-artist {
+      font-size: 13px;
+      color: #cbd5e1;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ov-np-requester {
+      font-size: 11.5px;
+      color: #38bdf8;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .ov-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ov-progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .ov-progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #00f2fe);
+      border-radius: 999px;
+      transition: width 0.4s linear;
+    }
+
+    .ov-progress-times {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    /* C. PRÓXIMAS CANCIONES */
+    .ov-queue-box, .ov-activity-box {
+      padding: 12px 14px;
+      max-height: 230px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ov-box-title {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #7dd3fc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ov-list-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .ov-queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      font-size: 12px;
+    }
+
+    .ov-q-pos {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      min-width: 26px;
+    }
+
+    .ov-q-main {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 700;
+    }
+
+    .ov-q-user {
+      color: #fde047;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       PANEL ADMINISTRATIVO COMPLETO (/radio)
+       ========================================================================== */
+    #admin-panel-root {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 18px 22px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .admin-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .admin-top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inp {
+      padding: 9px 12px;
+      border-radius: 9px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    .inp:focus {
+      outline: none;
+      border-color: var(--neon-cyan);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.18s ease;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+
+    .btn-cyan {
+      background: linear-gradient(135deg, #0284c7, #00f2fe);
+      color: #041019;
+    }
+
+    .btn-pink {
+      background: linear-gradient(135deg, #e11d48, #f43f5e);
+    }
+
+    .btn-amber {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #090d16;
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, #059669, #10b981);
+    }
+
+    .btn-dark {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: #e2e8f0;
+    }
+
+    .btn-emergency {
+      background: linear-gradient(135deg, #991b1b, #ef4444);
+      border: 2px solid #fca5a5;
+      box-shadow: 0 0 18px rgba(239, 68, 68, 0.45);
+    }
+
+    /* ESTADÍSTICAS RÁPIDAS */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    /* GRILLA PRINCIPAL DE 3 COLUMNAS */
+    .admin-main-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1.15fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 1280px) {
+      .admin-main-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .admin-main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .yt-player-wrapper {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #020617;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      position: relative;
+    }
+
+    .yt-player-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .search-results-list, .queue-admin-list, .users-coins-list, .activity-admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 290px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      font-size: 12.5px;
+    }
+
+    .item-row img {
+      width: 48px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .badge-status {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .badge-status.Aprobada { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .badge-status.Pendiente { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .badge-status.Reproduciendo { background: rgba(0, 242, 254, 0.2); color: #67e8f9; }
+    .badge-status.Error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    textarea.inp {
+      min-height: 68px;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body class="mode-panel">
+
+  <!-- ========================================================================
+       1. OVERLAY PÚBLICO PARA OBS STUDIO Y MELD STUDIO (/radio-overlay)
+       ======================================================================== -->
+  <div id="overlay-root">
+    <!-- A. ENCABEZADO -->
+    <header class="ov-header ov-glass" id="ov-comp-header">
+      <div class="ov-station-brand">
+        <div class="ov-station-icon">📻</div>
+        <div>
+          <div class="ov-station-title" id="ov-station-name">RADIO LIVE INTERACTIVA 105.9 FM</div>
+          <div class="ov-station-slogan" id="ov-station-slogan">La Emisora Oficial del Live • Música & Cabina en Vivo</div>
+        </div>
+      </div>
+
+      <div class="ov-header-badges">
+        <div class="eq-bars active" id="ov-comp-equalizer">
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+        </div>
+        <div class="ov-pill test" id="ov-connection-pill">
+          <span class="pulse-dot"></span>
+          <span id="ov-connection-text">MODO DE PRUEBAS</span>
+        </div>
+        <!-- G. ESTADO DE LA RADIO -->
+        <div class="ov-pill" id="ov-comp-radioState" style="border-color: var(--neon-cyan); color: #67e8f9;">
+          <span id="ov-radio-state-text">▶ EN SINTONÍA</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- E & F. ESCENARIO CENTRAL: INTERVENCIONES DEL LOCUTOR Y LLAMADAS A 2 VOCES -->
+    <div class="ov-center-stage">
+      <!-- E. Intervención del Locutor -->
+      <div class="ov-intervention-card" id="ov-comp-interventions">
+        <div class="ov-int-top">
+          <span class="ov-int-badge">🎙️ LOCUTOR EN CABINA • VOZ ACTIVA</span>
+          <div class="eq-bars active">
+            <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+          </div>
+        </div>
+        <div class="ov-int-user" id="ov-int-username">@Oyente</div>
+        <div class="ov-int-text" id="ov-int-message">Saludando a la audiencia en vivo...</div>
+      </div>
+
+      <!-- F. Llamada Ficticia con Dos Voces (Locutor Masculino + Oyente Femenina) -->
+      <div class="ov-call-card" id="ov-comp-calls">
+        <div class="ov-call-header">
+          <span class="ov-call-badge"><span class="pulse-dot"></span> 📞 LLAMADA EN VIVO EN CABINA</span>
+          <span style="font-size: 12px; font-weight: 800; color: #fde047;" id="ov-call-requester">De parte de @Oyente</span>
+        </div>
+        <div class="ov-call-speakers-grid">
+          <div class="ov-speaker-box male" id="ov-speaker-male">
+            <div class="ov-speaker-avatar">🎙️</div>
+            <div>
+              <div class="ov-speaker-name">Locutor en Cabina</div>
+              <div class="ov-speaker-role" id="ov-male-voice-label">Voz Masculina Urbana</div>
+            </div>
+          </div>
+          <div class="ov-speaker-box female" id="ov-speaker-female">
+            <div class="ov-speaker-avatar">📲</div>
+            <div>
+              <div class="ov-speaker-name">Oyente en Línea</div>
+              <div class="ov-speaker-role" id="ov-female-voice-label">Voz Femenina en Directo</div>
+            </div>
+          </div>
+        </div>
+        <div class="ov-call-dialogue-box" id="ov-call-current-line">
+          Conectando llamada telefónica al aire...
+        </div>
+      </div>
+    </div>
+
+    <!-- ZONA INFERIOR: B. CANCIÓN ACTUAL + C. PRÓXIMAS CANCIONES + D. ACTIVIDAD -->
+    <div class="ov-bottom-grid">
+      <!-- B. Canción Actual -->
+      <div class="ov-now-playing ov-glass" id="ov-comp-currentSong">
+        <div class="ov-np-top">
+          <img class="ov-np-thumb" id="ov-np-thumb" src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="Portada" />
+          <div class="ov-np-info">
+            <div class="ov-np-label"><span>🎵</span> <span id="ov-np-status-badge">SONANDO EN CABINA</span></div>
+            <div class="ov-np-title" id="ov-np-title">Esperando petición musical...</div>
+            <div class="ov-np-artist" id="ov-np-artist">Comenta: Ponme: Canción + Artista</div>
+            <div class="ov-np-requester" id="ov-np-requester">Sintonía interactiva en directo</div>
+          </div>
+        </div>
+        <div class="ov-progress-wrap">
+          <div class="ov-progress-bar-bg">
+            <div class="ov-progress-bar-fill" id="ov-np-progress-fill"></div>
+          </div>
+          <div class="ov-progress-times">
+            <span id="ov-np-time-current">00:00</span>
+            <span id="ov-np-time-total">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. Próximas Canciones -->
+      <div class="ov-queue-box ov-glass" id="ov-comp-upcomingQueue">
+        <div class="ov-box-title">
+          <span>📋 PRÓXIMAS CANCIONES</span>
+          <span id="ov-queue-count-badge">0 EN FILA</span>
+        </div>
+        <div class="ov-list-items" id="ov-queue-list">
+          <div style="font-size: 12px; color: #94a3b8; padding: 8px 0;">Escribe <strong>Ponme: Canción + Artista</strong> en el chat para programar tu tema.</div>
+        </div>
+      </div>
+
+      <!-- D. Actividad de la Audiencia -->
+      <div class="ov-activity-box ov-glass" id="ov-comp-audienceActivity">
+        <div class="ov-box-title">
+          <span>⚡ ACTIVIDAD Y REGALOS</span>
+          <span id="ov-threshold-badge">SALUDO: 10 MONEDAS</span>
+        </div>
+        <div class="ov-list-items" id="ov-activity-list">
+          <div style="font-size: 12px; color: #94a3b8; padding: 8px 0;">Esperando eventos de la audiencia en vivo...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       2. PANEL ADMINISTRATIVO COMPLETO (/radio)
+       ======================================================================== -->
+  <div id="admin-panel-root">
+    <!-- BARRA SUPERIOR DE CONTROL Y ESTADO -->
+    <header class="admin-topbar">
+      <div class="admin-brand">
+        <div class="ov-station-icon">📻</div>
+        <div>
+          <h1 style="font-size: 20px; font-weight: 900; letter-spacing: 0.4px;">RADIO LIVE INTERACTIVA — PANEL DE CABINA</h1>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            Emisora automatizada con 2 voces simultáneas, acumulador de monedas, buscador YouTube y Director de Audio
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-top-controls">
+        <div class="ov-pill test" id="admin-conn-badge">
+          <span class="pulse-dot"></span>
+          <span id="admin-conn-text">MODO DE PRUEBAS</span>
+        </div>
+
+        <input type="text" id="inp-tiktok-user" class="inp" placeholder="@usuario de TikTok" style="width: 170px;" />
+        <button class="btn btn-cyan" onclick="conectarTikTokRadio()">📡 Conectar TikTok</button>
+        <button class="btn btn-dark" onclick="desconectarTikTokRadio()">⏹️ Modo Pruebas</button>
+        <button class="btn btn-dark" onclick="copiarUrlOverlayRadio()" title="Copiar URL para OBS o Meld Studio">🔗 Copiar URL Overlay (/radio-overlay)</button>
+        <a href="/radio-overlay" target="_blank" class="btn btn-dark" style="text-decoration: none;">📺 Ver Overlay</a>
+        <a href="/?view=panel" class="btn btn-dark" style="text-decoration: none;">💿 Ir a Overlay 1</a>
+        <button class="btn btn-emergency" id="btn-emergency-stop" onclick="toggleParadaEmergencia()">🚨 PARADA DE EMERGENCIA</button>
+      </div>
+    </header>
+
+    <!-- CINTA DE ESTADÍSTICAS EN TIEMPO REAL -->
+    <section class="stats-strip">
+      <div class="stat-card">
+        <span class="stat-label">🪙 Monedas Acumuladas</span>
+        <span class="stat-value" id="stat-coins">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">🎁 Regalos Procesados</span>
+        <span class="stat-value" id="stat-gifts">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">🎙️ Saludos Emitidos</span>
+        <span class="stat-value" id="stat-greetings">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">📞 Llamadas (2 Voces)</span>
+        <span class="stat-value" id="stat-calls">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">🎵 Canciones en Cola / Tocadas</span>
+        <span class="stat-value" id="stat-songs">0 / 0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">🔊 Volumen Música Actual</span>
+        <span class="stat-value" id="stat-music-vol">80%</span>
+      </div>
+    </section>
+
+    <!-- GRILLA PRINCIPAL DE 3 COLUMNAS -->
+    <main class="admin-main-grid">
+
+      <!-- COLUMNA 1: REPRODUCTOR YOUTUBE, BUSCADOR Y COLA MUSICAL -->
+      <div class="panel-col">
+        <!-- Reproductor Musical + Director de Audio -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">💿 Fuente Musical YouTube & Director de Audio</div>
+            <span class="badge-status Reproduciendo" id="admin-radio-state-badge">EN ESPERA</span>
+          </div>
+
+          <div class="yt-player-wrapper">
+            <div id="youtube-player-container"></div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-green" onclick="reproducirSiguienteCola()">⏭️ Siguiente Canción</button>
+            <button class="btn btn-dark" onclick="pausarReanudarReproductor()">⏯️ Play / Pausa</button>
+            <button class="btn btn-amber" onclick="probarDuckingManual()">🔉 Probar Ducking (80%→20%)</button>
+            <button class="btn btn-dark" id="btn-pause-queue" onclick="togglePausaCola()">⏸️ Pausar Cola</button>
+          </div>
+
+          <!-- Ajustes del Director de Audio (Sección 8) -->
+          <div class="form-grid-2" style="padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div class="field-group">
+              <label>Volumen Música Normal (%): <span id="lbl-vol-normal">80%</span></label>
+              <input type="range" id="rng-vol-normal" min="10" max="100" value="80" oninput="actualizarSlidersAudio()" />
+            </div>
+            <div class="field-group">
+              <label>Volumen Durante Voz / Ducking (%): <span id="lbl-vol-duck">20%</span></label>
+              <input type="range" id="rng-vol-duck" min="0" max="70" value="20" oninput="actualizarSlidersAudio()" />
+            </div>
+            <div class="field-group">
+              <label>Fundido Entrada (ms):</label>
+              <input type="number" id="inp-fade-in" class="inp" value="500" min="100" max="3000" step="100" onchange="guardarConfigAudio()" />
+            </div>
+            <div class="field-group">
+              <label>Fundido Salida (ms):</label>
+              <input type="number" id="inp-fade-out" class="inp" value="800" min="100" max="3000" step="100" onchange="guardarConfigAudio()" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Buscador de Canciones en YouTube (Sección 10) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔍 Buscador de Canciones en YouTube</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="inp-yt-search" class="inp" style="flex: 1;" placeholder="Ej: Mi vida + Slow MD o pega enlace de YouTube..." onkeydown="if(event.key==='Enter') buscarEnYouTube()" />
+            <button class="btn btn-cyan" onclick="buscarEnYouTube()">Buscar</button>
+          </div>
+          <div class="search-results-list" id="yt-search-results">
+            <div style="font-size: 12px; color: var(--text-muted);">Busca por título + artista, enlace directo o ID de vídeo para ver candidatos verificados.</div>
+          </div>
+        </div>
+
+        <!-- Lista de Reproducción / Cola Musical (Sección 11) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 Cola Musical Ordenada (<span id="admin-queue-count">0</span>)</div>
+            <span style="font-size: 11px; color: var(--text-muted);">Comando chat: <code>Ponme: canción + artista</code></span>
+          </div>
+          <div class="queue-admin-list" id="admin-queue-list"></div>
+        </div>
+      </div>
+
+      <!-- COLUMNA 2: MOTOR DE 2 VOCES, LLAMADAS DRAMATIZADAS, SALUDOS Y SIMULADOR -->
+      <div class="panel-col">
+        <!-- Simulador de Eventos en Modo de Pruebas (Sección 5, 6, 12, 13, 14) -->
+        <div class="card" style="border-color: rgba(245, 158, 11, 0.35);">
+          <div class="card-header">
+            <div class="card-title">🎮 Simulador Interactivo (Probar todas las Funciones)</div>
+            <span class="badge-status Pendiente">MODO DE PRUEBAS</span>
+          </div>
+          <div class="sim-grid">
+            <button class="btn btn-dark" onclick="simularRegalo(3, 'Rosa')">🎁 Regalo +3 Monedas (Acumular)</button>
+            <button class="btn btn-pink" onclick="simularRegalo(10, 'Corazón Dedos')">🎁 Regalo +10 Monedas (Saludo)</button>
+            <button class="btn btn-amber" onclick="simularRegalo(25, 'León Urbano')">🎁 Regalo +25 (Excedente + Subir)</button>
+            <button class="btn btn-cyan" onclick="simularPeticionPonme()">🎵 "Ponme: Mi vida + Slow MD"</button>
+            <button class="btn btn-pink" onclick="probarLlamadaDosVoces()">📞 Llamada Ficticia (2 Voces)</button>
+            <button class="btn btn-green" onclick="simularSeguidor()">🌟 Simular Nuevo Seguidor</button>
+          </div>
+          <!-- Locución Manual Urgente (Prioridad 1) -->
+          <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <input type="text" id="inp-manual-tts" class="inp" style="flex: 1;" placeholder="Escribe un anuncio urgente de cabina (Prioridad 1)..." />
+            <button class="btn btn-cyan" onclick="enviarIntervencionManual()">🎙️ Hablar Ahora</button>
+          </div>
+        </div>
+
+        <!-- Configuración de Llamadas Ficticias con Dos Voces (Sección 13) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📞 Llamadas Ficticias con Dos Voces (Locutor + Oyente)</div>
+            <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="chk-calls-enabled" checked onchange="guardarConfigVocesYLlamadas()" /> Activar Llamadas
+            </label>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label>🎙️ Voz A — Locutor Masculino:</label>
+              <div style="display: flex; gap: 6px;">
+                <select id="sel-voice-male" class="inp" style="flex: 1;" onchange="guardarConfigVocesYLlamadas()">
+                  <option value="es-DO-EmilioNeural" selected>🇩🇴 Emilio — Rep. Dominicana (Urbano)</option>
+                  <option value="es-CO-GonzaloNeural">🇨🇴 Gonzalo — Colombia (Masculino)</option>
+                  <option value="es-PR-VictorNeural">🇵🇷 Víctor — Puerto Rico (Masculino)</option>
+                  <option value="es-MX-JorgeNeural">🇲🇽 Jorge — México (Locutor)</option>
+                  <option value="es-US-AlonsoNeural">🇺🇸 Alonso — Latino USA (Estudio)</option>
+                  <option value="es-VE-SebastianNeural">🇻🇪 Sebastián — Venezuela (Masculino)</option>
+                  <option value="es-AR-TomasNeural">🇦🇷 Tomás — Argentina (Masculino)</option>
+                  <option value="es-ES-AlvaroNeural">🇪🇸 Álvaro — España (Narrador)</option>
+                </select>
+                <button class="btn btn-dark" onclick="probarVozIndividual('M')">🔊</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>📲 Voz B — Llamante Femenina:</label>
+              <div style="display: flex; gap: 6px;">
+                <select id="sel-voice-female" class="inp" style="flex: 1;" onchange="guardarConfigVocesYLlamadas()">
+                  <option value="es-DO-RamonaNeural" selected>🇩🇴 Ramona — Rep. Dominicana (Alegre)</option>
+                  <option value="es-CO-SalomeNeural">🇨🇴 Salomé — Colombia (Femenina)</option>
+                  <option value="es-PR-KarinaNeural">🇵🇷 Karina — Puerto Rico (Femenina)</option>
+                  <option value="es-MX-DaliaNeural">🇲🇽 Dalia — México (Cálida)</option>
+                  <option value="es-US-PalomaNeural">🇺🇸 Paloma — Latino USA (Estudio)</option>
+                  <option value="es-VE-PaolaNeural">🇻🇪 Paola — Venezuela (Femenina)</option>
+                  <option value="es-AR-ElenaNeural">🇦🇷 Elena — Argentina (Femenina)</option>
+                  <option value="es-ES-ElviraNeural">🇪🇸 Elvira — España (Natural)</option>
+                </select>
+                <button class="btn btn-dark" onclick="probarVozIndividual('F')">🔊</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label>Probabilidad de llamada en petición (%):</label>
+              <input type="number" id="inp-call-prob" class="inp" min="0" max="100" value="100" onchange="guardarConfigVocesYLlamadas()" />
+            </div>
+            <div class="field-group">
+              <label>Variables soportadas en diálogos:</label>
+              <div style="font-size: 11px; color: #7dd3fc; padding-top: 6px;">
+                <code>{username}</code> <code>{song_title}</code> <code>{artist_name}</code> <code>{queue_position}</code> <code>{songs_before}</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sistema de Saludos Personalizados y Estilos (Sección 7) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎙️ Estilos de Saludos Automáticos y Plantillas</div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label>Estilo del Locutor:</label>
+              <select id="sel-greeting-style" class="inp" onchange="cambiarEstiloLocutor()">
+                <option value="urbano_dominicano">🔥 Locutor Urbano Dominicano</option>
+                <option value="romantica">💖 Radio Romántica</option>
+                <option value="humoristica">😂 Radio Humorística</option>
+                <option value="juvenil">⚡ Radio Juvenil</option>
+                <option value="profesional">🎙️ Locutor Profesional</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Agrupación Inteligente de Saludos:</label>
+              <label class="toggle-label" style="margin-top: 2px;">
+                <input type="checkbox" id="chk-group-greetings" checked onchange="guardarConfigSaludos()" />
+                Agrupar si hay 3+ saludos en cola
+              </label>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Plantillas del Estilo Seleccionado (una por línea • usa <code>{username}</code> <code>{gift_name}</code> <code>{total_coins}</code>):</label>
+            <textarea id="txt-greeting-templates" class="inp" rows="4"></textarea>
+          </div>
+          <button class="btn btn-cyan" onclick="guardarConfigSaludos()">💾 Guardar Plantillas de Saludo</button>
+        </div>
+
+        <!-- Cola de Intervenciones en Tiempo Real (Sección 9) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎛️ Motor Central de Intervenciones (Prioridades 1–5)</div>
+            <span id="admin-int-count" style="font-size: 12px; color: #7dd3fc; font-weight: 800;">0 en cola</span>
+          </div>
+          <div class="activity-admin-list" id="admin-interventions-list">
+            <div style="font-size: 12px; color: var(--text-muted);">No hay intervenciones pendientes en cola.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA 3: MONEDAS POR USUARIO, ADELANTO DE CANCIONES, VISIBILIDAD OVERLAY Y BITÁCORA -->
+      <div class="panel-col">
+        <!-- Contador Acumulativo de Monedas y Reglas de Adelanto (Sección 6 y 14) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🪙 Reglas de Monedas, Excedente y Adelanto de Fila</div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label>Umbral Monedas para Saludo (10-20+):</label>
+              <input type="number" id="inp-coin-threshold" class="inp" min="1" max="5000" value="10" onchange="guardarConfigMonedasYAdelanto()" />
+            </div>
+            <div class="field-group">
+              <label>Manejo de Excedente (Ej: 25 de 10):</label>
+              <label class="toggle-label" style="margin-top: 2px;">
+                <input type="checkbox" id="chk-carry-surplus" checked onchange="guardarConfigMonedasYAdelanto()" />
+                Conservar excedente (15 mon.)
+              </label>
+            </div>
+            <div class="field-group">
+              <label>Monedas para Adelantar Canción:</label>
+              <input type="number" id="inp-advance-threshold" class="inp" min="1" max="5000" value="20" onchange="guardarConfigMonedasYAdelanto()" />
+            </div>
+            <div class="field-group">
+              <label>Máx. Posiciones a Avanzar:</label>
+              <input type="number" id="inp-advance-max" class="inp" min="1" max="20" value="3" onchange="guardarConfigMonedasYAdelanto()" />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Contador Acumulativo por Usuario (En Tiempo Real):</label>
+            <div class="users-coins-list" id="admin-users-coins-list">
+              <div style="font-size: 12px; color: var(--text-muted);">Aún no se han recibido regalos en esta sesión.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visibilidad de Componentes del Overlay y Personalización (Sección 4) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🖥️ Componentes del Overlay (OBS / Meld Studio)</div>
+          </div>
+          <div class="field-group">
+            <label>Nombre de la Emisora:</label>
+            <input type="text" id="inp-station-name" class="inp" value="RADIO LIVE INTERACTIVA 105.9 FM" onchange="guardarComponentesOverlay()" />
+          </div>
+          <div class="toggle-grid">
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-header" checked onchange="guardarComponentesOverlay()" /> A. Encabezado</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-currentSong" checked onchange="guardarComponentesOverlay()" /> B. Canción Actual</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-upcomingQueue" checked onchange="guardarComponentesOverlay()" /> C. Próximas Canciones</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-audienceActivity" checked onchange="guardarComponentesOverlay()" /> D. Actividad Audiencia</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-interventions" checked onchange="guardarComponentesOverlay()" /> E. Saludos Locutor</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-calls" checked onchange="guardarComponentesOverlay()" /> F. Llamadas 2 Voces</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-radioState" checked onchange="guardarComponentesOverlay()" /> G. Estado Radio</label>
+            <label class="toggle-label"><input type="checkbox" id="chk-ov-transparentBg" checked onchange="guardarComponentesOverlay()" /> Fondo 100% Transparente</label>
+          </div>
+        </div>
+
+        <!-- Conexión OBS WebSocket Opcional + YouTube API Key -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔌 Adaptadores Externos (OBS WebSocket & YouTube API)</div>
+          </div>
+          <div class="form-grid-2">
+            <div class="field-group">
+              <label>OBS WebSocket URL:</label>
+              <input type="text" id="inp-obs-url" class="inp" value="ws://127.0.0.1:4455" />
+            </div>
+            <div class="field-group">
+              <label>Fuente Audio en OBS:</label>
+              <input type="text" id="inp-obs-source" class="inp" value="Música Radio" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label>YouTube Data API v3 Key (Opcional — buscador directo ya incluido):</label>
+            <input type="password" id="inp-yt-apikey" class="inp" placeholder="AIzaSy..." />
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-dark" onclick="conectarOBSWebSocket()">🎛️ Conectar OBS WebSocket</button>
+            <button class="btn btn-cyan" onclick="guardarAdaptadoresExternos()">💾 Guardar Adaptadores</button>
+          </div>
+        </div>
+
+        <!-- Registro de Eventos y Actividad (Sección 15) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📜 Bitácora de Eventos en Tiempo Real</div>
+          </div>
+          <div class="activity-admin-list" id="admin-activity-feed"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- API Oficial de YouTube IFrame Player -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    // Determinar si estamos en modo Overlay público (/radio-overlay o ?view=overlay) o Panel Administrativo
+    const urlParams = new URLSearchParams(window.location.search);
+    const isOverlayMode = window.location.pathname.includes('radio-overlay') || urlParams.get('view') === 'overlay';
+    document.body.className = isOverlayMode ? 'mode-overlay' : 'mode-panel';
+
+    let ws = null;
+    let radioState = null;
+    let ytPlayer = null;
+    let ytReady = false;
+    let currentPlayingVideoId = null;
+    let currentMusicVolume = 80;
+    let rememberedNormalVolume = 80;
+    let fadeInterval = null;
+    let activeTTSAudio = null;
+    let isPlayingInterventionClient = false;
+    let obsSocket = null;
+
+    // ========================================================================
+    // CONEXIÓN WEBSOCKET EN TIEMPO REAL (CANAL INDEPENDIENTE RADIO)
+    // ========================================================================
+    function connectRadioWebSocket() {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${window.location.host}/?channel=radio`);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ action: 'radio:getState' }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (!msg || !msg.type || !msg.type.startsWith('RADIO_')) return;
+
+          if (msg.type === 'RADIO_STATE_SYNC') {
+            radioState = msg.state;
+            renderRadioState(msg.state);
+          } else if (msg.type === 'RADIO_CONNECTION_STATUS') {
+            if (radioState) {
+              radioState.connectionState = msg.connectionState;
+              renderConnectionBadges(msg.connectionState);
+            }
+          } else if (msg.type === 'RADIO_STATUS_BADGE') {
+            if (radioState) {
+              radioState.radioState = msg.radioState;
+              renderRadioStatusPill(msg.radioState);
+            }
+          } else if (msg.type === 'RADIO_ACTIVITY') {
+            if (radioState) {
+              radioState.activityFeed = [msg.entry, ...(radioState.activityFeed || [])].slice(0, 35);
+              radioState.stats = msg.stats || radioState.stats;
+              renderActivityAndStats();
+            }
+          } else if (msg.type === 'RADIO_LOAD_SONG') {
+            if (msg.song && msg.song.videoId) {
+              loadAndPlayYouTubeVideo(msg.song.videoId);
+            }
+          } else if (msg.type === 'RADIO_PLAY_INTERVENTION') {
+            ejecutarIntervencionConDucking(msg.intervention, msg.audioConfig);
+          } else if (msg.type === 'RADIO_EMERGENCY_STOP') {
+            detenerAudioInmediato(msg.audioConfig);
+          }
+        } catch (err) {
+          console.error('[RadioWS] Error procesando mensaje:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        setTimeout(connectRadioWebSocket, 3000);
+      };
+    }
+
+    function sendRadioAction(action, payload = {}) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: `radio:${action}`, ...payload }));
+      }
+    }
+
+    // ========================================================================
+    // REPRODUCTOR YOUTUBE IFRAME API + DIRECTOR DE AUDIO CON DUCKING GRADUAL
+    // ========================================================================
+    function onYouTubeIframeAPIReady() {
+      ytPlayer = new YT.Player('youtube-player-container', {
+        height: '100%',
+        width: '100%',
+        videoId: '',
+        playerVars: {
+          autoplay: 1,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1
+        },
+        events: {
+          onReady: () => {
+            ytReady = true;
+            if (radioState && radioState.currentSong && radioState.currentSong.videoId) {
+              loadAndPlayYouTubeVideo(radioState.currentSong.videoId);
+            }
+          },
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.ENDED) {
+              sendRadioAction('songEnded');
+            }
+          },
+          onError: (err) => {
+            console.warn('[YouTubePlayer] Error en vídeo, pasando al siguiente:', err.data);
+            sendRadioAction('songError', { reason: `Código YouTube ${err.data}` });
+          }
+        }
+      });
+
+      // Actualizar barra de progreso cada segundo
+      setInterval(() => {
+        if (!ytReady || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+        const state = ytPlayer.getPlayerState();
+        if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.PAUSED) {
+          const cur = ytPlayer.getCurrentTime() || 0;
+          const dur = ytPlayer.getDuration() || 0;
+          updateProgressBarUI(cur, dur);
+        }
+      }, 1000);
+    }
+
+    function loadAndPlayYouTubeVideo(videoId) {
+      if (!videoId) return;
+      currentPlayingVideoId = videoId;
+      if (ytReady && ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+        ytPlayer.loadVideoById(videoId);
+        ytPlayer.setVolume(currentMusicVolume);
+      }
+    }
+
+    function formatMMSS(seconds) {
+      const s = Math.max(0, Math.floor(Number(seconds) || 0));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m < 10 ? '0' : ''}${m}:${rem < 10 ? '0' : ''}${rem}`;
+    }
+
+    function updateProgressBarUI(cur, dur) {
+      const pct = dur > 0 ? Math.min(100, (cur / dur) * 100) : 0;
+      const fill = document.getElementById('ov-np-progress-fill');
+      const tCur = document.getElementById('ov-np-time-current');
+      const tTot = document.getElementById('ov-np-time-total');
+      if (fill) fill.style.width = `${pct.toFixed(1)}%`;
+      if (tCur) tCur.textContent = formatMMSS(cur);
+      if (tTot) tTot.textContent = formatMMSS(dur);
+    }
+
+    // Fundido suave de volumen (Ducking de entrada y salida) en YouTube Player y OBS WebSocket
+    function fadeMusicVolumeTo(targetVol, durationMs = 500) {
+      return new Promise((resolve) => {
+        clearInterval(fadeInterval);
+        const startVol = currentMusicVolume;
+        const diff = targetVol - startVol;
+        if (Math.abs(diff) < 1 || durationMs <= 20) {
+          aplicarVolumenMusica(targetVol);
+          return resolve();
+        }
+        const steps = 15;
+        const stepTime = Math.max(15, Math.floor(durationMs / steps));
+        let currentStep = 0;
+
+        fadeInterval = setInterval(() => {
+          currentStep++;
+          const nextVal = Math.round(startVol + (diff * (currentStep / steps)));
+          aplicarVolumenMusica(nextVal);
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+            aplicarVolumenMusica(targetVol);
+            resolve();
+          }
+        }, stepTime);
+      });
+    }
+
+    function aplicarVolumenMusica(vol) {
+      currentMusicVolume = Math.max(0, Math.min(100, Math.round(vol)));
+      const statVol = document.getElementById('stat-music-vol');
+      if (statVol) statVol.textContent = `${currentMusicVolume}%`;
+
+      if (ytReady && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+        try { ytPlayer.setVolume(currentMusicVolume); } catch (e) {}
+      }
+
+      // Si hay OBS WebSocket conectado, ajustar volumen de la fuente en OBS
+      if (obsSocket && obsSocket.readyState === WebSocket.OPEN) {
+        const inputName = document.getElementById('inp-obs-source')?.value || 'Música Radio';
+        const mul = Math.pow(currentMusicVolume / 100, 2);
+        try {
+          obsSocket.send(JSON.stringify({
+            op: 6,
+            d: {
+              requestType: 'SetInputVolume',
+              requestId: 'vol_' + Date.now(),
+              requestData: { inputName, inputVolumeMul: mul }
+            }
+          }));
+        } catch (e) {}
+      }
+    }
+
+    // ========================================================================
+    // EJECUCIÓN DE INTERVENCIONES Y LLAMADAS FICTICIAS A 2 VOCES (CON DUCKING)
+    // ========================================================================
+    async function ejecutarIntervencionConDucking(intervention, audioCfg) {
+      if (!intervention) return;
+      if (isPlayingInterventionClient) return;
+      isPlayingInterventionClient = true;
+
+      const normalVol = Number(audioCfg?.normalMusicVolume ?? 80);
+      const duckVol = Number(audioCfg?.duckMusicVolume ?? 20);
+      const fadeInMs = Number(audioCfg?.fadeInMs ?? 500);
+      const fadeOutMs = Number(audioCfg?.fadeOutMs ?? 800);
+      rememberedNormalVolume = normalVol;
+
+      try {
+        // 1. Mostrar visualmente la tarjeta correspondiente en el Overlay
+        mostrarIntervencionEnOverlay(intervention);
+
+        // 2. Atenuar gradualmente la música (Ducking)
+        renderRadioStatusPill('DUCKING');
+        await fadeMusicVolumeTo(duckVol, fadeInMs);
+
+        // 3. Si es una llamada ficticia a 2 voces, reproducir timbre + líneas alternadas M y F
+        if (intervention.isCall && Array.isArray(intervention.callLines)) {
+          renderRadioStatusPill('CALL_IN_PROGRESS');
+          await reproducirTimbreTelefonico();
+          for (const line of intervention.callLines) {
+            if (!isPlayingInterventionClient) break;
+            activarTurnoLocutorVisual(line.speaker, line.text);
+            await reproducirAudioTTS(line.text, line.voice, audioCfg);
+            await esperarMs(260);
+          }
+        } else {
+          // Intervención de una voz (Saludo por regalo, bienvenida, anuncio o mensaje programado)
+          renderRadioStatusPill('ANNOUNCER_SPEAKING');
+          await reproducirAudioTTS(intervention.text, intervention.voice, audioCfg);
+        }
+      } catch (err) {
+        console.warn('[AudioDirector] Error durante locución:', err);
+      } finally {
+        // 4. Ocultar tarjetas de locución y restaurar volumen original gradualmente
+        ocultarIntervencionEnOverlay();
+        await fadeMusicVolumeTo(rememberedNormalVolume, fadeOutMs);
+        isPlayingInterventionClient = false;
+        sendRadioAction('interventionCompleted', { interventionId: intervention.id });
+      }
+    }
+
+    function reproducirAudioTTS(text, voice, audioCfg) {
+      return new Promise((resolve) => {
+        if (!text) return resolve();
+        if (activeTTSAudio) {
+          try { activeTTSAudio.pause(); } catch (e) {}
+          activeTTSAudio = null;
+        }
+        const ttsUrl = `/api/tts?voice=${encodeURIComponent(voice || 'es-DO-EmilioNeural')}&q=${encodeURIComponent(text)}`;
+        const audio = new Audio(ttsUrl);
+        activeTTSAudio = audio;
+        audio.volume = Math.max(0, Math.min(1, Number(audioCfg?.ttsVolume ?? 100) / 100));
+        audio.playbackRate = Math.max(0.75, Math.min(1.4, Number(audioCfg?.ttsRate ?? 1.0)));
+
+        const safetyTimer = setTimeout(() => {
+          resolve();
+        }, 22000);
+
+        audio.onended = () => {
+          clearTimeout(safetyTimer);
+          activeTTSAudio = null;
+          resolve();
+        };
+        audio.onerror = () => {
+          clearTimeout(safetyTimer);
+          activeTTSAudio = null;
+          resolve();
+        };
+        audio.play().catch(() => {
+          clearTimeout(safetyTimer);
+          activeTTSAudio = null;
+          resolve();
+        });
+      });
+    }
+
+    function reproducirTimbreTelefonico() {
+      return new Promise((resolve) => {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          if (ctx.state === 'suspended') ctx.resume();
+          const now = ctx.currentTime;
+          [0, 0.35].forEach((offset) => {
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc1.frequency.setValueAtTime(440, now + offset);
+            osc2.frequency.setValueAtTime(480, now + offset);
+            gain.gain.setValueAtTime(0.18, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.25);
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+            osc1.start(now + offset);
+            osc2.start(now + offset);
+            osc1.stop(now + offset + 0.26);
+            osc2.stop(now + offset + 0.26);
+          });
+          setTimeout(resolve, 750);
+        } catch (e) {
+          resolve();
+        }
+      });
+    }
+
+    function esperarMs(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function mostrarIntervencionEnOverlay(intervention) {
+      const intCard = document.getElementById('ov-comp-interventions');
+      const callCard = document.getElementById('ov-comp-calls');
+
+      if (intervention.isCall) {
+        if (intCard) intCard.classList.remove('show');
+        if (callCard && (radioState?.config?.overlayComponents?.calls !== false)) {
+          callCard.classList.add('show');
+          const reqEl = document.getElementById('ov-call-requester');
+          if (reqEl) reqEl.textContent = `Petición de @${intervention.username}`;
+        }
+      } else {
+        if (callCard) callCard.classList.remove('show');
+        if (intCard && (radioState?.config?.overlayComponents?.interventions !== false)) {
+          intCard.classList.add('show');
+          const uEl = document.getElementById('ov-int-username');
+          const mEl = document.getElementById('ov-int-message');
+          if (uEl) uEl.textContent = `@${intervention.username}`;
+          if (mEl) mEl.textContent = intervention.text;
+        }
+      }
+    }
+
+    function activarTurnoLocutorVisual(speaker, lineText) {
+      const maleBox = document.getElementById('ov-speaker-male');
+      const femaleBox = document.getElementById('ov-speaker-female');
+      const lineBox = document.getElementById('ov-call-current-line');
+
+      if (maleBox) maleBox.classList.toggle('speaking-active', speaker === 'M');
+      if (femaleBox) femaleBox.classList.toggle('speaking-active', speaker === 'F');
+      if (lineBox) {
+        lineBox.style.borderLeftColor = speaker === 'F' ? '#ec4899' : '#00f2fe';
+        lineBox.textContent = `${speaker === 'F' ? '📲 Oyente: ' : '🎙️ Locutor: '}"${lineText}"`;
+      }
+    }
+
+    function ocultarIntervencionEnOverlay() {
+      const intCard = document.getElementById('ov-comp-interventions');
+      const callCard = document.getElementById('ov-comp-calls');
+      if (intCard) intCard.classList.remove('show');
+      if (callCard) callCard.classList.remove('show');
+    }
+
+    function detenerAudioInmediato(audioCfg) {
+      isPlayingInterventionClient = false;
+      if (activeTTSAudio) {
+        try { activeTTSAudio.pause(); } catch (e) {}
+        activeTTSAudio = null;
+      }
+      ocultarIntervencionEnOverlay();
+      aplicarVolumenMusica(Number(audioCfg?.normalMusicVolume ?? 80));
+    }
+
+    // ========================================================================
+    // RENDERIZADO COMPLETO DEL OVERLAY Y DEL PANEL ADMINISTRATIVO
+    // ========================================================================
+    function renderRadioState(state) {
+      if (!state) return;
+      const cfg = state.config || {};
+
+      // 1. Visibilidad y tema del Overlay
+      const comps = cfg.overlayComponents || {};
+      document.body.classList.toggle('solid-radio-bg', comps.transparentBg === false);
+      const mapIds = {
+        header: 'ov-comp-header',
+        currentSong: 'ov-comp-currentSong',
+        upcomingQueue: 'ov-comp-upcomingQueue',
+        audienceActivity: 'ov-comp-audienceActivity',
+        equalizer: 'ov-comp-equalizer',
+        radioState: 'ov-comp-radioState'
+      };
+      Object.entries(mapIds).forEach(([key, elId]) => {
+        const el = document.getElementById(elId);
+        if (el) el.style.display = comps[key] === false ? 'none' : '';
+      });
+
+      const stName = document.getElementById('ov-station-name');
+      const stSlogan = document.getElementById('ov-station-slogan');
+      if (stName) stName.textContent = cfg.stationName || 'RADIO LIVE INTERACTIVA';
+      if (stSlogan) stSlogan.textContent = cfg.stationSlogan || 'Emisora Automatizada en Vivo';
+
+      const thBadge = document.getElementById('ov-threshold-badge');
+      if (thBadge) thBadge.textContent = `SALUDO: ${cfg.coins?.greetingThreshold || 10} MONEDAS`;
+
+      renderConnectionBadges(state.connectionState);
+      renderRadioStatusPill(state.radioState);
+
+      // 2. Canción Actual en Overlay
+      const cur = state.currentSong;
+      const npTitle = document.getElementById('ov-np-title');
+      const npArtist = document.getElementById('ov-np-artist');
+      const npReq = document.getElementById('ov-np-requester');
+      const npThumb = document.getElementById('ov-np-thumb');
+      if (cur) {
+        if (npTitle) npTitle.textContent = cur.title;
+        if (npArtist) npArtist.textContent = `${cur.artist} (${cur.channel || 'YouTube'})`;
+        if (npReq) npReq.textContent = `Solicitada por @${cur.requestedBy}`;
+        if (npThumb && cur.thumbnail) npThumb.src = cur.thumbnail;
+        if (cur.videoId && cur.videoId !== currentPlayingVideoId) {
+          loadAndPlayYouTubeVideo(cur.videoId);
+        }
+      } else {
+        if (npTitle) npTitle.textContent = 'Esperando petición musical...';
+        if (npArtist) npArtist.textContent = 'Escribe en el chat: Ponme: Canción + Artista';
+        if (npReq) npReq.textContent = 'Sintonía interactiva en directo';
+      }
+
+      // 3. Próximas Canciones en Overlay y Panel
+      const queue = state.queue || [];
+      const ovQCount = document.getElementById('ov-queue-count-badge');
+      const ovQList = document.getElementById('ov-queue-list');
+      if (ovQCount) ovQCount.textContent = `${queue.length} EN FILA`;
+      if (ovQList) {
+        if (queue.length === 0) {
+          ovQList.innerHTML = `<div style="font-size: 12px; color: #94a3b8; padding: 6px 0;">Cola vacía • Comenta <strong>Ponme: Canción + Artista</strong></div>`;
+        } else {
+          ovQList.innerHTML = queue.slice(0, 4).map(s => `
+            <div class="ov-queue-row">
+              <span class="ov-q-pos">#${s.position}</span>
+              <span class="ov-q-main">${escapeHtml(s.title)} — ${escapeHtml(s.artist)}</span>
+              <span class="ov-q-user">@${escapeHtml(s.requestedBy)}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      const admQCount = document.getElementById('admin-queue-count');
+      const admQList = document.getElementById('admin-queue-list');
+      if (admQCount) admQCount.textContent = queue.length;
+      if (admQList) {
+        if (queue.length === 0) {
+          admQList.innerHTML = `<div style="font-size: 12px; color: var(--text-muted);">No hay canciones pendientes en la cola.</div>`;
+        } else {
+          admQList.innerHTML = queue.map(s => `
+            <div class="item-row">
+              <img src="${escapeHtml(s.thumbnail || '')}" alt="thumb" />
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  #${s.position} ${escapeHtml(s.title)} — <span style="color: #7dd3fc;">${escapeHtml(s.artist)}</span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8;">
+                  Por <strong>@${escapeHtml(s.requestedBy)}</strong> • Antes: ${s.songsBefore} • Coincidencia: ${s.matchScore || 95}%
+                </div>
+              </div>
+              <span class="badge-status ${s.status}">${s.status}</span>
+              <div style="display: flex; gap: 4px;">
+                ${s.status === 'Pendiente' ? `<button class="btn btn-green" style="padding: 5px 8px;" onclick="cambiarEstadoCancion('${s.id}', 'Aprobada')" title="Aprobar">✓</button>` : ''}
+                <button class="btn btn-dark" style="padding: 5px 8px;" onclick="reordenarCancion('${s.id}', 'up')" title="Subir">▲</button>
+                <button class="btn btn-dark" style="padding: 5px 8px;" onclick="reordenarCancion('${s.id}', 'down')" title="Bajar">▼</button>
+                <button class="btn btn-pink" style="padding: 5px 8px;" onclick="cambiarEstadoCancion('${s.id}', 'Cancelada')" title="Retirar">✕</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // 4. Intervenciones Pendientes en Panel
+      const intList = document.getElementById('admin-interventions-list');
+      const intCount = document.getElementById('admin-int-count');
+      const ints = state.interventionsQueue || [];
+      if (intCount) intCount.textContent = `${ints.length} en cola`;
+      if (intList) {
+        if (!state.activeIntervention && ints.length === 0) {
+          intList.innerHTML = `<div style="font-size: 12px; color: var(--text-muted);">Sin intervenciones pendientes.</div>`;
+        } else {
+          const activeHtml = state.activeIntervention ? `
+            <div class="item-row" style="border-color: var(--neon-cyan); background: rgba(0, 242, 254, 0.1);">
+              <div>
+                <div style="font-weight: 800; color: #67e8f9;">🔊 AL AIRE (P${state.activeIntervention.priority}): ${escapeHtml(state.activeIntervention.title)}</div>
+                <div style="font-size: 11.5px; color: #e2e8f0;">${escapeHtml(state.activeIntervention.text)}</div>
+              </div>
+            </div>
+          ` : '';
+          intList.innerHTML = activeHtml + ints.map(item => `
+            <div class="item-row">
+              <div>
+                <div style="font-weight: 800; color: #fde047;">Prioridad ${item.priority}: ${escapeHtml(item.title)}</div>
+                <div style="font-size: 11px; color: #cbd5e1;">${escapeHtml(item.text)}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // 5. Tabla de Monedas Acumuladas por Usuario
+      const usersListEl = document.getElementById('admin-users-coins-list');
+      const users = state.users || [];
+      const threshold = cfg.coins?.greetingThreshold || 10;
+      if (usersListEl) {
+        if (users.length === 0) {
+          usersListEl.innerHTML = `<div style="font-size: 12px; color: var(--text-muted);">Aún no hay usuarios con monedas acumuladas.</div>`;
+        } else {
+          usersListEl.innerHTML = users.slice(0, 20).map(u => `
+            <div class="item-row">
+              <div>
+                <div style="font-weight: 800; color: #fff;">@${escapeHtml(u.username)}</div>
+                <div style="font-size: 11px; color: #94a3b8;">Saludos activados: ${u.greetingsTriggered || 0} • Regalos: ${u.giftsCount || 0}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #fde047;">
+                  Saldo saludo: ${u.accumulatedCoinsForGreeting}/${threshold} 🪙
+                </div>
+                <div style="font-size: 11px; color: #38bdf8;">Total histórico: ${u.totalHistoricalCoins} monedas</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // 6. Sincronizar controles del formulario administrativo
+      sincronizarInputsAdmin(cfg, state);
+      renderActivityAndStats();
+    }
+
+    function renderConnectionBadges(conn) {
+      if (!conn) return;
+      const isLive = Boolean(conn.isRealConnection && conn.status === 'connected');
+      const label = conn.modeLabel || (isLive ? `EN VIVO (@${conn.username})` : 'MODO DE PRUEBAS');
+
+      const ovPill = document.getElementById('ov-connection-pill');
+      const ovText = document.getElementById('ov-connection-text');
+      if (ovPill) ovPill.className = `ov-pill ${isLive ? 'live' : 'test'}`;
+      if (ovText) ovText.textContent = label;
+
+      const admPill = document.getElementById('admin-conn-badge');
+      const admText = document.getElementById('admin-conn-text');
+      if (admPill) admPill.className = `ov-pill ${isLive ? 'live' : 'test'}`;
+      if (admText) admText.textContent = label;
+    }
+
+    function renderRadioStatusPill(st) {
+      const map = {
+        PLAYING: '▶ REPRODUCIENDO MÚSICA',
+        DUCKING: '🔉 ATENUANDO MÚSICA (DUCKING)',
+        ANNOUNCER_SPEAKING: '🎙️ LOCUTOR HABLANDO',
+        CALL_IN_PROGRESS: '📞 LLAMADA EN CURSO (2 VOCES)',
+        PAUSED: '⏸️ EMISORA PAUSADA',
+        RECONNECTING: '🔄 RECONECTANDO...',
+        IDLE: '📻 CABINA EN SINTONÍA'
+      };
+      const text = map[st] || '📻 EN SINTONÍA';
+      const ovEl = document.getElementById('ov-radio-state-text');
+      const admEl = document.getElementById('admin-radio-state-badge');
+      if (ovEl) ovEl.textContent = text;
+      if (admEl) admEl.textContent = text;
+    }
+
+    function renderActivityAndStats() {
+      if (!radioState) return;
+      const st = radioState.stats || {};
+      const setTxt = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+      setTxt('stat-coins', (st.totalCoinsReceived || 0).toLocaleString());
+      setTxt('stat-gifts', (st.totalGiftsReceived || 0).toLocaleString());
+      setTxt('stat-greetings', (st.totalGreetingsPlayed || 0).toLocaleString());
+      setTxt('stat-calls', (st.totalCallsPlayed || 0).toLocaleString());
+      setTxt('stat-songs', `${(radioState.queue || []).length} / ${st.totalSongsPlayed || 0}`);
+
+      const feed = radioState.activityFeed || [];
+      const ovAct = document.getElementById('ov-activity-list');
+      if (ovAct) {
+        if (feed.length === 0) {
+          ovAct.innerHTML = `<div style="font-size: 12px; color: #94a3b8;">Esperando actividad en directo...</div>`;
+        } else {
+          ovAct.innerHTML = feed.slice(0, 4).map(a => `
+            <div class="ov-queue-row">
+              <span class="ov-q-main">${escapeHtml(a.title)}</span>
+              <span style="font-size: 10.5px; color: #94a3b8;">${escapeHtml(a.timestamp || '')}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      const admAct = document.getElementById('admin-activity-feed');
+      if (admAct) {
+        admAct.innerHTML = feed.slice(0, 25).map(a => `
+          <div class="item-row">
+            <div style="flex: 1;">
+              <div style="font-weight: 700; color: #f8fafc;">${escapeHtml(a.title)}</div>
+              <div style="font-size: 11px; color: #94a3b8;">${escapeHtml(a.subtitle || '')}</div>
+            </div>
+            <span style="font-size: 10.5px; color: #64748b;">${escapeHtml(a.timestamp || '')}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    let inputsInitialized = false;
+    function sincronizarInputsAdmin(cfg, state) {
+      const btnStop = document.getElementById('btn-emergency-stop');
+      if (btnStop) {
+        const isStopped = Boolean(cfg.audio?.emergencyStopActive);
+        btnStop.textContent = isStopped ? '✅ REANUDAR INTERVENCIONES' : '🚨 PARADA DE EMERGENCIA';
+      }
+
+      if (inputsInitialized) return;
+      inputsInitialized = true;
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+      const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = Boolean(val); };
+
+      setVal('inp-tiktok-user', cfg.tiktokUsername || '');
+      setVal('rng-vol-normal', cfg.audio?.normalMusicVolume ?? 80);
+      setVal('rng-vol-duck', cfg.audio?.duckMusicVolume ?? 20);
+      setVal('inp-fade-in', cfg.audio?.fadeInMs ?? 500);
+      setVal('inp-fade-out', cfg.audio?.fadeOutMs ?? 800);
+      actualizarSlidersAudio(false);
+
+      setChk('chk-calls-enabled', cfg.calls?.enabled !== false);
+      setVal('sel-voice-male', cfg.voices?.maleAnnouncerVoice || 'es-DO-EmilioNeural');
+      setVal('sel-voice-female', cfg.voices?.femaleCallerVoice || 'es-DO-RamonaNeural');
+      setVal('inp-call-prob', cfg.calls?.probabilityPct ?? 100);
+
+      setVal('sel-greeting-style', cfg.greetings?.style || 'urbano_dominicano');
+      setChk('chk-group-greetings', cfg.greetings?.groupGreetings !== false);
+      cargarPlantillasEstiloActual(cfg);
+
+      setVal('inp-coin-threshold', cfg.coins?.greetingThreshold ?? 10);
+      setChk('chk-carry-surplus', cfg.coins?.carryOverSurplus !== false);
+      setVal('inp-advance-threshold', cfg.advance?.coinsThreshold ?? 20);
+      setVal('inp-advance-max', cfg.advance?.maxPositionsAdvance ?? 3);
+
+      setVal('inp-station-name', cfg.stationName || 'RADIO LIVE INTERACTIVA 105.9 FM');
+      setChk('chk-ov-header', cfg.overlayComponents?.header !== false);
+      setChk('chk-ov-currentSong', cfg.overlayComponents?.currentSong !== false);
+      setChk('chk-ov-upcomingQueue', cfg.overlayComponents?.upcomingQueue !== false);
+      setChk('chk-ov-audienceActivity', cfg.overlayComponents?.audienceActivity !== false);
+      setChk('chk-ov-interventions', cfg.overlayComponents?.interventions !== false);
+      setChk('chk-ov-calls', cfg.overlayComponents?.calls !== false);
+      setChk('chk-ov-radioState', cfg.overlayComponents?.radioState !== false);
+      setChk('chk-ov-transparentBg', cfg.overlayComponents?.transparentBg !== false);
+    }
+
+    function cargarPlantillasEstiloActual(cfg) {
+      const style = document.getElementById('sel-greeting-style')?.value || 'urbano_dominicano';
+      const list = cfg?.greetings?.templates?.[style] || [];
+      const txt = document.getElementById('txt-greeting-templates');
+      if (txt) txt.value = list.join('\n\n');
+    }
+
+    // ========================================================================
+    // ACCIONES DEL PANEL ADMINISTRATIVO
+    // ========================================================================
+    function conectarTikTokRadio() {
+      const username = document.getElementById('inp-tiktok-user')?.value.trim();
+      sendRadioAction('connectTikTok', { username });
+    }
+
+    function desconectarTikTokRadio() {
+      sendRadioAction('disconnectTikTok');
+    }
+
+    function toggleParadaEmergencia() {
+      const isStopped = Boolean(radioState?.config?.audio?.emergencyStopActive);
+      sendRadioAction(isStopped ? 'resumeEmergency' : 'emergencyStop');
+    }
+
+    function actualizarSlidersAudio(sendToServer = true) {
+      const normalVol = Number(document.getElementById('rng-vol-normal')?.value ?? 80);
+      const duckVol = Number(document.getElementById('rng-vol-duck')?.value ?? 20);
+      document.getElementById('lbl-vol-normal').textContent = `${normalVol}%`;
+      document.getElementById('lbl-vol-duck').textContent = `${duckVol}%`;
+      if (!isPlayingInterventionClient) {
+        aplicarVolumenMusica(normalVol);
+      }
+      if (sendToServer) guardarConfigAudio();
+    }
+
+    function guardarConfigAudio() {
+      sendRadioAction('updateConfig', {
+        config: {
+          audio: {
+            normalMusicVolume: Number(document.getElementById('rng-vol-normal')?.value ?? 80),
+            duckMusicVolume: Number(document.getElementById('rng-vol-duck')?.value ?? 20),
+            fadeInMs: Number(document.getElementById('inp-fade-in')?.value ?? 500),
+            fadeOutMs: Number(document.getElementById('inp-fade-out')?.value ?? 800)
+          }
+        }
+      });
+    }
+
+    async function probarDuckingManual() {
+      const normalVol = Number(document.getElementById('rng-vol-normal')?.value ?? 80);
+      const duckVol = Number(document.getElementById('rng-vol-duck')?.value ?? 20);
+      const fadeIn = Number(document.getElementById('inp-fade-in')?.value ?? 500);
+      const fadeOut = Number(document.getElementById('inp-fade-out')?.value ?? 800);
+      await fadeMusicVolumeTo(duckVol, fadeIn);
+      await esperarMs(1800);
+      await fadeMusicVolumeTo(normalVol, fadeOut);
+    }
+
+    async function buscarEnYouTube() {
+      const q = document.getElementById('inp-yt-search')?.value.trim();
+      if (!q) return;
+      const box = document.getElementById('yt-search-results');
+      if (box) box.innerHTML = `<div style="font-size: 12px; color: #38bdf8;">Buscando "${escapeHtml(q)}" en YouTube...</div>`;
+      try {
+        const res = await fetch(`/api/radio/youtube-search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const items = data.results || [];
+        if (items.length === 0) {
+          box.innerHTML = `<div style="font-size: 12px; color: #fca5a5;">No se encontraron resultados para "${escapeHtml(q)}".</div>`;
+          return;
+        }
+        box.innerHTML = items.map((item, i) => `
+          <div class="item-row">
+            <img src="${escapeHtml(item.thumbnail)}" alt="thumb" />
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.title)}</div>
+              <div style="font-size: 11px; color: #94a3b8;">Canal: ${escapeHtml(item.channelTitle)} • Coincidencia: ${item.matchScore}%</div>
+            </div>
+            <button class="btn btn-green" onclick="agregarResultadoYouTube(${i})">➕ Añadir</button>
+          </div>
+        `).join('');
+        window._lastYtSearchResults = items;
+      } catch (e) {
+        if (box) box.innerHTML = `<div style="font-size: 12px; color: #fca5a5;">Error al buscar en YouTube.</div>`;
+      }
+    }
+
+    function agregarResultadoYouTube(idx) {
+      const item = window._lastYtSearchResults?.[idx];
+      if (!item) return;
+      sendRadioAction('addSong', {
+        songTitle: item.title,
+        artistName: item.channelTitle,
+        directUrl: item.url,
+        requestedBy: 'Cabina'
+      });
+    }
+
+    function reproducirSiguienteCola() {
+      sendRadioAction('playNext');
+    }
+
+    function pausarReanudarReproductor() {
+      if (!ytReady || !ytPlayer) return;
+      const st = ytPlayer.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) {
+        ytPlayer.pauseVideo();
+      } else {
+        ytPlayer.playVideo();
+      }
+    }
+
+    function togglePausaCola() {
+      sendRadioAction('toggleQueuePause');
+    }
+
+    function reordenarCancion(songId, direction) {
+      sendRadioAction('reorderQueue', { songId, direction });
+    }
+
+    function cambiarEstadoCancion(songId, newStatus) {
+      sendRadioAction('updateSongStatus', { songId, newStatus });
+    }
+
+    // SIMULADOR INTERACTIVO (MODO DE PRUEBAS)
+    function simularRegalo(coins, giftName) {
+      sendRadioAction('simulateGift', {
+        username: 'Gabriela Pie',
+        giftName: giftName || 'Regalo Urbano',
+        totalCoins: coins
+      });
+    }
+
+    function simularPeticionPonme() {
+      sendRadioAction('simulateChat', {
+        username: 'Gabriela Pie',
+        comment: 'Ponme: La mejor canción de este año + Slow MD'
+      });
+    }
+
+    function probarLlamadaDosVoces() {
+      sendRadioAction('testCall', {
+        username: 'Gabriela Pie',
+        songTitle: 'La mejor canción de este año',
+        artistName: 'Slow MD'
+      });
+    }
+
+    function simularSeguidor() {
+      sendRadioAction('simulateFollow', {
+        username: 'Carlos Urbano'
+      });
+    }
+
+    function enviarIntervencionManual() {
+      const inp = document.getElementById('inp-manual-tts');
+      const text = inp?.value.trim();
+      if (!text) return;
+      sendRadioAction('manualIntervention', { text });
+      inp.value = '';
+    }
+
+    function probarVozIndividual(gender) {
+      const voice = gender === 'F'
+        ? document.getElementById('sel-voice-female')?.value
+        : document.getElementById('sel-voice-male')?.value;
+      const sampleText = gender === 'F'
+        ? '¡Hola, buenas, cariño! Llamo para pedir una canción en la emisora.'
+        : '¡Dímelo mi gente! Estamos en vivo desde la cabina de Radio Live Interactiva.';
+      reproducirAudioTTS(sampleText, voice, radioState?.config?.audio);
+    }
+
+    function guardarConfigVocesYLlamadas() {
+      sendRadioAction('updateConfig', {
+        config: {
+          voices: {
+            maleAnnouncerVoice: document.getElementById('sel-voice-male')?.value || 'es-DO-EmilioNeural',
+            femaleCallerVoice: document.getElementById('sel-voice-female')?.value || 'es-DO-RamonaNeural'
+          },
+          calls: {
+            enabled: Boolean(document.getElementById('chk-calls-enabled')?.checked),
+            probabilityPct: Number(document.getElementById('inp-call-prob')?.value ?? 100)
+          }
+        }
+      });
+    }
+
+    function cambiarEstiloLocutor() {
+      if (radioState?.config) {
+        cargarPlantillasEstiloActual(radioState.config);
+      }
+      guardarConfigSaludos();
+    }
+
+    function guardarConfigSaludos() {
+      const style = document.getElementById('sel-greeting-style')?.value || 'urbano_dominicano';
+      const rawTemplates = document.getElementById('txt-greeting-templates')?.value || '';
+      const lines = rawTemplates.split(/\n+/).map(s => s.trim()).filter(Boolean);
+      const currentTemplates = { ...(radioState?.config?.greetings?.templates || {}) };
+      if (lines.length > 0) {
+        currentTemplates[style] = lines;
+      }
+      sendRadioAction('updateConfig', {
+        config: {
+          greetings: {
+            style,
+            groupGreetings: Boolean(document.getElementById('chk-group-greetings')?.checked),
+            templates: currentTemplates
+          }
+        }
+      });
+    }
+
+    function guardarConfigMonedasYAdelanto() {
+      sendRadioAction('updateConfig', {
+        config: {
+          coins: {
+            greetingThreshold: Number(document.getElementById('inp-coin-threshold')?.value ?? 10),
+            carryOverSurplus: Boolean(document.getElementById('chk-carry-surplus')?.checked)
+          },
+          advance: {
+            coinsThreshold: Number(document.getElementById('inp-advance-threshold')?.value ?? 20),
+            maxPositionsAdvance: Number(document.getElementById('inp-advance-max')?.value ?? 3)
+          }
+        }
+      });
+    }
+
+    function guardarComponentesOverlay() {
+      sendRadioAction('updateConfig', {
+        config: {
+          stationName: document.getElementById('inp-station-name')?.value || 'RADIO LIVE INTERACTIVA 105.9 FM',
+          overlayComponents: {
+            header: Boolean(document.getElementById('chk-ov-header')?.checked),
+            currentSong: Boolean(document.getElementById('chk-ov-currentSong')?.checked),
+            upcomingQueue: Boolean(document.getElementById('chk-ov-upcomingQueue')?.checked),
+            audienceActivity: Boolean(document.getElementById('chk-ov-audienceActivity')?.checked),
+            interventions: Boolean(document.getElementById('chk-ov-interventions')?.checked),
+            calls: Boolean(document.getElementById('chk-ov-calls')?.checked),
+            radioState: Boolean(document.getElementById('chk-ov-radioState')?.checked),
+            transparentBg: Boolean(document.getElementById('chk-ov-transparentBg')?.checked)
+          }
+        }
+      });
+    }
+
+    function guardarAdaptadoresExternos() {
+      sendRadioAction('updateConfig', {
+        config: {
+          youtubeApiKey: document.getElementById('inp-yt-apikey')?.value.trim() || '',
+          obsWebSocket: {
+            url: document.getElementById('inp-obs-url')?.value.trim() || 'ws://127.0.0.1:4455',
+            musicInputName: document.getElementById('inp-obs-source')?.value.trim() || 'Música Radio'
+          }
+        }
+      });
+    }
+
+    function conectarOBSWebSocket() {
+      const url = document.getElementById('inp-obs-url')?.value.trim() || 'ws://127.0.0.1:4455';
+      try {
+        if (obsSocket) obsSocket.close();
+        obsSocket = new WebSocket(url);
+        obsSocket.onopen = () => {
+          alert('✅ Conectado a OBS WebSocket local (' + url + '). El Director de Audio controlará también la fuente de OBS.');
+        };
+        obsSocket.onerror = () => {
+          alert('⚠️ No se detectó OBS WebSocket activo en ' + url + '. Asegúrate de habilitar OBS WebSocket (Puerto 4455) en Herramientas -> Ajustes de WebSocket en OBS.');
+        };
+      } catch (e) {
+        alert('Error conectando a OBS WebSocket: ' + e.message);
+      }
+    }
+
+    function copiarUrlOverlayRadio() {
+      const url = `${window.location.origin}/radio-overlay`;
+      navigator.clipboard?.writeText(url).then(() => {
+        alert(`✅ URL del 2do Overlay copiada:\n\n${url}\n\nPégala como Fuente de Navegador en OBS Studio o Meld Studio.`);
+      }).catch(() => {
+        prompt('Copia la URL del Overlay:', url);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      connectRadioWebSocket();
+    });
+  </script>
+</body>
+</html>

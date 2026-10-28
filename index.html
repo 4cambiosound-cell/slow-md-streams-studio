@@ -1594,6 +1594,7 @@
         <button class="btn-action btn-primary" id="btn-toggle-live">Conectar Live</button>
         <button class="btn-action btn-secondary" onclick="copiarEnlaceOverlay()">📋 Copiar Link Overlay</button>
         <button class="btn-action btn-secondary" onclick="window.open('/?view=overlay', 'OverlayWindow', 'width=460,height=820')">📺 Ver Overlay</button>
+        <button class="btn-action btn-secondary" onclick="window.open('/radio', '_blank')" style="border-color: #00f2fe; color: #7dd3fc;">📻 Radio Live (Overlay 2)</button>
       </div>
     </header>
 
@@ -2023,10 +2024,17 @@
             state.queueLocked = Boolean(data.locked);
             if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
             if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
+            if (Array.isArray(data.queue)) {
+              state.queue = data.queue;
+            }
+            if (Array.isArray(data.history)) {
+              state.history = data.history;
+            }
             actualizarUIControlesStreamer();
+            renderizarCola();
             if (data.announcement) {
               mostrarAlertaOverlay('warning', { title: data.locked ? '🔒 COLA BLOQUEADA' : '🔓 COLA ABIERTA', user: 'Streamer', announcement: data.announcement });
-              hablarTTS(data.announcement);
+              if (!data.skipVoice) hablarTTS(data.announcement);
             }
           } else if (data.type === 'LIKE') {
             if (data.total !== undefined) state.currentLikes = data.total;
@@ -2166,12 +2174,16 @@
         if (songTitle) songTitle.textContent = formatearTituloVisible(top).toUpperCase();
         if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 BLINDADO' : ''}`;
         if (statusBadge) {
-          statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 EN ESPERA (CUMPLE REQUISITOS)';
+          if (state.queueLocked) {
+            statusBadge.textContent = '🔒 EN ESPERA (LISTA BLOQUEADA)';
+          } else {
+            statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '⏳ EN ESPERA (CUMPLE REQUISITOS)';
+          }
         }
       } else {
         if (songTitle) songTitle.textContent = 'ESPERANDO PETICIÓN...';
         if (songUser) songUser.textContent = 'Pega el link de YouTube, Spotify o BandLab';
-        if (statusBadge) statusBadge.textContent = 'EN ESPERA DE PETICIONES';
+        if (statusBadge) statusBadge.textContent = state.queueLocked ? '🔒 LISTA BLOQUEADA' : 'EN ESPERA DE PETICIONES';
       }
 
       // 2. Panel del Streamer - Barra de Reproducción Superior y Lista

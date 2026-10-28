@@ -1,0 +1,696 @@
+{
+  "config": {
+    "stationName": "RADIO LIVE INTERACTIVA 105.9 FM",
+    "stationSlogan": "La Emisora Oficial del Live • Música & Cabina en Vivo",
+    "tiktokUsername": "",
+    "mirrorMainTikTokConnection": true,
+    "youtubeApiKey": "",
+    "obsWebSocket": {
+      "enabled": false,
+      "url": "ws://127.0.0.1:4455",
+      "password": "",
+      "musicInputName": "Música Radio"
+    },
+    "coins": {
+      "greetingThreshold": 10,
+      "carryOverSurplus": true,
+      "allowMultipleActivations": false
+    },
+    "greetings": {
+      "enabled": true,
+      "style": "urbano_dominicano",
+      "groupGreetings": true,
+      "groupThresholdCount": 3,
+      "followerGreetingEnabled": true,
+      "likesMilestoneStep": 10000,
+      "templates": {
+        "urbano_dominicano": [
+          "¡Atención, mi gente! Tenemos un saludo especial para {username}, que acaba de apoyarnos con {total_coins} monedas en nuestra emisora. ¡Gracias por ese {gift_name}, mi amor! Ponte cómodo que la música sigue encendida.",
+          "¡Oye pero qué flow! Dímelo {username}, gracias de corazón por enviar {gift_name} y sumar {total_coins} monedas en cabina. ¡Esta emisora está activa gracias a ti, bendiciones!",
+          "¡Súbele el volumen a la radio! Reportándose en sintonía {username} con {total_coins} monedas de apoyo. ¡Gracias por ese {gift_name}, aquí seguimos soltando los mejores temas en vivo!",
+          "¡Fuego en la cabina! Un saludo bien duro para {username} que se hizo sentir con {gift_name} llegando a {total_coins} monedas. ¡Quédate ahí que viene buena música!"
+        ],
+        "romantica": [
+          "Queremos hacer una pausa muy especial en nuestra transmisión para saludar con mucho cariño a {username}, quien nos acompaña y nos apoya con {total_coins} monedas. Gracias por ese hermoso detalle de {gift_name}, sigue disfrutando de la mejor música.",
+          "Un abrazo lleno de buena energía para {username}. Gracias por iluminar nuestra cabina con tu {gift_name} y alcanzar {total_coins} monedas. Esta siguiente melodía también suena para ti.",
+          "En esta noche de buena música, enviamos un saludo muy afectuoso para {username}. Gracias por tu apoyo de {total_coins} monedas a nuestra emisora."
+        ],
+        "humoristica": [
+          "¡Paren las rotativas y suelten el micrófono! {username} acaba de romper el cochinito con {gift_name} sumando {total_coins} monedas. ¡Así sí da gusto trabajar en esta cabina, muchas gracias!",
+          "¡Atención control maestro! Confirmado: {username} es oficialmente VIP de la emisora tras llegar a {total_coins} monedas con su {gift_name}. ¡Pónganle aire acondicionado exclusivo en primera fila!",
+          "¡Ay mamá! {username} llegó tirando la casa por la ventana con {gift_name} y {total_coins} monedas acumuladas. ¡Gracias por mantener vivo al locutor!"
+        ],
+        "juvenil": [
+          "¡Ey, qué buena vibra! Un saludo gigante para {username} que acaba de sumar {total_coins} monedas con {gift_name}. ¡Gracias por apoyar el stream, seguimos con más música!",
+          "¡Tremendo apoyo de {username} en el chat! Gracias por ese {gift_name} y tus {total_coins} monedas, eres parte clave de nuestra comunidad musical.",
+          "¡Shoutout especial para {username}! Llegó a {total_coins} monedas enviando {gift_name}. ¡La energía está al cien en la radio!"
+        ],
+        "profesional": [
+          "Hacemos una breve mención en nuestra programación en directo para agradecer a {username} por su aporte de {total_coins} monedas mediante {gift_name}. Muchas gracias por su sintonía.",
+          "Agradecemos cordialmente la participación de {username}, quien ha alcanzado {total_coins} monedas de apoyo en nuestra emisora interactiva. Continuamos con nuestra selección musical.",
+          "Saludos en directo para {username}. Gracias por respaldar esta transmisión con {gift_name} y un total de {total_coins} monedas."
+        ]
+      }
+    },
+    "audio": {
+      "normalMusicVolume": 80,
+      "duckMusicVolume": 20,
+      "fadeInMs": 500,
+      "fadeOutMs": 800,
+      "ttsVolume": 100,
+      "ttsRate": 1,
+      "minSecondsBetweenGreetings": 4,
+      "emergencyStopActive": false
+    },
+    "voices": {
+      "maleAnnouncerVoice": "es-DO-EmilioNeural",
+      "maleAnnouncerLabel": "🇩🇴 Emilio (Locutor Urbano Dominicano)",
+      "femaleCallerVoice": "es-DO-RamonaNeural",
+      "femaleCallerLabel": "🇩🇴 Ramona (Oyente Femenina Natural)"
+    },
+    "calls": {
+      "enabled": true,
+      "probabilityPct": 100,
+      "triggerOnSongRequest": true,
+      "templates": [
+        {
+          "id": "call_tpl_1",
+          "name": "Llamada Clásica de Petición Urbana",
+          "lines": [
+            {
+              "speaker": "F",
+              "text": "¡Hola, buenas, cariño! ¿Me escuchan en la cabina?"
+            },
+            {
+              "speaker": "M",
+              "text": "¡Fuerte y claro, mi amor! Estás al aire en Radio Live Interactiva. ¿Qué tenemos para hoy?"
+            },
+            {
+              "speaker": "F",
+              "text": "Llamo de parte de {username}, que está en sintonía y quiere que pongas su tema titulado {song_title}, del artista {artist_name}."
+            },
+            {
+              "speaker": "M",
+              "text": "¡Eso va directo para la lista, mi gente! Está en la posición número {queue_position} y tenemos {songs_before} canciones antes de esa. ¡Vamos a ver quién se anima con {gift_threshold} monedas para adelantarla!"
+            }
+          ]
+        },
+        {
+          "id": "call_tpl_2",
+          "name": "Llamada Emocionada desde el Live",
+          "lines": [
+            {
+              "speaker": "F",
+              "text": "¡Aló, cabina! ¡Qué emoción que entró la llamada!"
+            },
+            {
+              "speaker": "M",
+              "text": "¡Dímelo, corazón! Estás en vivo para toda la audiencia de TikTok. ¿De parte de quién nos llamas?"
+            },
+            {
+              "speaker": "F",
+              "text": "Te llamo de parte de {username}. Me pidió que por favor no deje de sonar {song_title} de {artist_name}."
+            },
+            {
+              "speaker": "M",
+              "text": "¡Complacido en el acto! Ya quedó anotada en el puesto {queue_position}, con {songs_before} temas por delante. ¡Recuerden que enviando {gift_threshold} monedas pueden subir su canción en la fila!"
+            }
+          ]
+        },
+        {
+          "id": "call_tpl_3",
+          "name": "Llamada VIP de Cabina",
+          "lines": [
+            {
+              "speaker": "F",
+              "text": "¡Buenas noches, locutor! Reportando sintonía total en la emisora."
+            },
+            {
+              "speaker": "M",
+              "text": "¡Esa es la actitud, mi reina! Cuéntame, ¿qué canción vamos a programar ahora mismo?"
+            },
+            {
+              "speaker": "F",
+              "text": "Aquí {username} está pidiendo a gritos el tema {song_title}, interpretado por {artist_name}."
+            },
+            {
+              "speaker": "M",
+              "text": "¡Fuego con ese tema! Ya entró en la posición {queue_position} de la cola y tiene {songs_before} canciones antes. ¡No se muevan que la radio está encendida!"
+            }
+          ]
+        }
+      ]
+    },
+    "requests": {
+      "commandPrefix": "Ponme:",
+      "requireCoins": false,
+      "coinsCost": 0,
+      "maxPerUser": 3,
+      "cooldownSeconds": 20,
+      "allowDuplicates": false,
+      "requireAdminApproval": false,
+      "maxPendingQueue": 30,
+      "blockedUsers": []
+    },
+    "advance": {
+      "enabled": true,
+      "coinsThreshold": 20,
+      "positionsPerThreshold": 1,
+      "maxPositionsAdvance": 5,
+      "allowOvertakeFirst": true,
+      "ambiguousPolicy": "oldest"
+    },
+    "scheduled": {
+      "enabled": true,
+      "intervalMinutes": 8,
+      "messages": [
+        {
+          "id": "sched_1",
+          "text": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+          "enabled": true
+        },
+        {
+          "id": "sched_2",
+          "text": "¡Apoya nuestra emisora en vivo! Al acumular {gift_threshold} monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+          "enabled": true
+        },
+        {
+          "id": "sched_3",
+          "text": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+          "enabled": true
+        }
+      ]
+    },
+    "priorities": {
+      "manualAdmin": 1,
+      "fictionalCall": 2,
+      "giftGreeting": 3,
+      "songAnnouncement": 3,
+      "followerGreeting": 4,
+      "likesMilestone": 5,
+      "scheduledMessage": 5
+    },
+    "overlayComponents": {
+      "header": true,
+      "currentSong": true,
+      "upcomingQueue": true,
+      "audienceActivity": true,
+      "interventions": true,
+      "calls": true,
+      "radioState": true,
+      "equalizer": true,
+      "transparentBg": true
+    }
+  },
+  "queue": [],
+  "currentSong": null,
+  "history": [],
+  "users": {
+    "u2": {
+      "userKey": "u2",
+      "userId": "u2",
+      "username": "Gabriela Pie",
+      "handle": "",
+      "avatarUrl": "",
+      "accumulatedCoinsForGreeting": 15,
+      "accumulatedCoinsForAdvance": 25,
+      "totalHistoricalCoins": 25,
+      "giftsCount": 1,
+      "greetingsTriggered": 1,
+      "lastGiftAt": "2026-10-23T22:58:26.308Z"
+    }
+  },
+  "giftHistory": [
+    {
+      "eventId": "g25",
+      "userId": "u2",
+      "username": "Gabriela Pie",
+      "giftName": "Leon",
+      "repeatCount": 1,
+      "unitCoins": 25,
+      "totalCoins": 25,
+      "userAccumulatedBalance": 25,
+      "userHistoricalTotal": 25,
+      "timestamp": "2026-10-23T22:58:26.308Z",
+      "platform": "TikTok LIVE",
+      "isSimulated": false
+    }
+  ],
+  "activityFeed": [
+    {
+      "id": "act_1793154053645_a6rx",
+      "type": "greeting",
+      "title": "❤️ ¡70,000 Likes en la Emisora!",
+      "subtitle": "¡Oye eso mi gente! Acabamos de superar los 70000 likes en la transmisión. ¡Gracias a todos por romper la pantalla con ese apoyo!",
+      "meta": {},
+      "timestamp": "06:20:53 p. m.",
+      "createdAt": 1793154053646
+    },
+    {
+      "id": "act_1793154053636_v6u3",
+      "type": "system",
+      "title": "❤️ ¡Meta de 70,000 Likes alcanzada!",
+      "subtitle": "Agradecimiento en cabina programado",
+      "meta": {},
+      "timestamp": "06:20:53 p. m.",
+      "createdAt": 1793154053639
+    },
+    {
+      "id": "act_1792817427411_b63c",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "08:50:27 p. m.",
+      "createdAt": 1792817427411
+    },
+    {
+      "id": "act_1792816947398_epx7",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "08:42:27 p. m.",
+      "createdAt": 1792816947398
+    },
+    {
+      "id": "act_1792816467392_wcen",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "08:34:27 p. m.",
+      "createdAt": 1792816467392
+    },
+    {
+      "id": "act_1792815987381_v8wx",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "08:26:27 p. m.",
+      "createdAt": 1792815987381
+    },
+    {
+      "id": "act_1792815507374_fy71",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "08:18:27 p. m.",
+      "createdAt": 1792815507375
+    },
+    {
+      "id": "act_1792815027370_uo34",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "08:10:27 p. m.",
+      "createdAt": 1792815027370
+    },
+    {
+      "id": "act_1792814547364_o805",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "08:02:27 p. m.",
+      "createdAt": 1792814547365
+    },
+    {
+      "id": "act_1792814067354_vhbv",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "07:54:27 p. m.",
+      "createdAt": 1792814067354
+    },
+    {
+      "id": "act_1792813587349_djyb",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "07:46:27 p. m.",
+      "createdAt": 1792813587349
+    },
+    {
+      "id": "act_1792813107347_il8u",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "07:38:27 p. m.",
+      "createdAt": 1792813107348
+    },
+    {
+      "id": "act_1792812627337_8032",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "07:30:27 p. m.",
+      "createdAt": 1792812627338
+    },
+    {
+      "id": "act_1792812147330_o0vi",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "07:22:27 p. m.",
+      "createdAt": 1792812147330
+    },
+    {
+      "id": "act_1792811667327_7l2c",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "07:14:27 p. m.",
+      "createdAt": 1792811667327
+    },
+    {
+      "id": "act_1792811187329_hcup",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "07:06:27 p. m.",
+      "createdAt": 1792811187329
+    },
+    {
+      "id": "act_1792810707333_5roq",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "06:58:27 p. m.",
+      "createdAt": 1792810707338
+    },
+    {
+      "id": "act_1792810227328_fnzc",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "06:50:27 p. m.",
+      "createdAt": 1792810227334
+    },
+    {
+      "id": "act_1792809747336_mkud",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "06:42:27 p. m.",
+      "createdAt": 1792809747337
+    },
+    {
+      "id": "act_1792809267300_t3zq",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "06:34:27 p. m.",
+      "createdAt": 1792809267301
+    },
+    {
+      "id": "act_1792808787090_w20q",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "06:26:27 p. m.",
+      "createdAt": 1792808787267
+    },
+    {
+      "id": "act_1792808306997_35sc",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "06:18:26 p. m.",
+      "createdAt": 1792808306999
+    },
+    {
+      "id": "act_1792807826930_ce9q",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "06:10:26 p. m.",
+      "createdAt": 1792807826932
+    },
+    {
+      "id": "act_1792807346821_1hvy",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "06:02:26 p. m.",
+      "createdAt": 1792807346831
+    },
+    {
+      "id": "act_1792806866821_vrq7",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "05:54:26 p. m.",
+      "createdAt": 1792806866822
+    },
+    {
+      "id": "act_1792806386705_1lbz",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "05:46:26 p. m.",
+      "createdAt": 1792806386706
+    },
+    {
+      "id": "act_1792805906735_agyt",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "05:38:26 p. m.",
+      "createdAt": 1792805906736
+    },
+    {
+      "id": "act_1792805426774_mniu",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "05:30:26 p. m.",
+      "createdAt": 1792805426786
+    },
+    {
+      "id": "act_1792804946698_s6oi",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "05:22:26 p. m.",
+      "createdAt": 1792804946707
+    },
+    {
+      "id": "act_1792804466737_d9nz",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "05:14:26 p. m.",
+      "createdAt": 1792804466738
+    },
+    {
+      "id": "act_1792803986765_5sik",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "05:06:26 p. m.",
+      "createdAt": 1792803986780
+    },
+    {
+      "id": "act_1792803506694_alg4",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "04:58:26 p. m.",
+      "createdAt": 1792803506695
+    },
+    {
+      "id": "act_1792803026695_4ac0",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "04:50:26 p. m.",
+      "createdAt": 1792803026771
+    },
+    {
+      "id": "act_1792802546462_fcrv",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "04:42:26 p. m.",
+      "createdAt": 1792802546463
+    },
+    {
+      "id": "act_1792802066445_4ybm",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "04:34:26 p. m.",
+      "createdAt": 1792802066446
+    },
+    {
+      "id": "act_1792801586389_j1kt",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "04:26:26 p. m.",
+      "createdAt": 1792801586390
+    },
+    {
+      "id": "act_1792801106386_6q5o",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "04:18:26 p. m.",
+      "createdAt": 1792801106386
+    },
+    {
+      "id": "act_1792800626379_l36r",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "04:10:26 p. m.",
+      "createdAt": 1792800626379
+    },
+    {
+      "id": "act_1792800146365_2lgt",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "04:02:26 p. m.",
+      "createdAt": 1792800146365
+    },
+    {
+      "id": "act_1792799666359_5u9x",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "03:54:26 p. m.",
+      "createdAt": 1792799666360
+    },
+    {
+      "id": "act_1792799186357_vhkg",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "03:46:26 p. m.",
+      "createdAt": 1792799186357
+    },
+    {
+      "id": "act_1792798706355_5his",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "03:38:26 p. m.",
+      "createdAt": 1792798706355
+    },
+    {
+      "id": "act_1792798226341_cpcu",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "03:30:26 p. m.",
+      "createdAt": 1792798226341
+    },
+    {
+      "id": "act_1792797746339_hfvb",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¿Quieres que tu canción suene más rápido? Envía regalos en el Live para adelantar posiciones en la lista de reproducción.",
+      "meta": {},
+      "timestamp": "03:22:26 p. m.",
+      "createdAt": 1792797746339
+    },
+    {
+      "id": "act_1792797266329_3agb",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "¡Apoya nuestra emisora en vivo! Al acumular 10 monedas en regalos, nuestro locutor te enviará un saludo especial en directo.",
+      "meta": {},
+      "timestamp": "03:14:26 p. m.",
+      "createdAt": 1792797266330
+    },
+    {
+      "id": "act_1792796786321_u0e2",
+      "type": "greeting",
+      "title": "📻 Mensaje Programado de la Emisora",
+      "subtitle": "Estás escuchando Radio Live Interactiva. Recuerda que puedes pedir tu canción escribiendo en el chat: Ponme dos puntos, el nombre de la canción más el artista.",
+      "meta": {},
+      "timestamp": "03:06:26 p. m.",
+      "createdAt": 1792796786321
+    },
+    {
+      "id": "act_1792796306313_8f6u",
+      "type": "greeting",
+      "title": "🎙️ Saludo por Regalo para @Gabriela Pie",
+      "subtitle": "¡Oye pero qué flow! Dímelo Gabriela Pie, gracias de corazón por enviar Leon y sumar 25 monedas en cabina. ¡Esta emisora está activa gracias a ti, bendiciones!",
+      "meta": {},
+      "timestamp": "02:58:26 p. m.",
+      "createdAt": 1792796306314
+    },
+    {
+      "id": "act_1792796306308_gz1u",
+      "type": "gift",
+      "title": "🎁 Gabriela Pie envió Leon (+25 monedas)",
+      "subtitle": "Acumulado saludo: 25/10 monedas • Histórico: 25",
+      "meta": {
+        "eventId": "g25",
+        "userId": "u2",
+        "username": "Gabriela Pie",
+        "giftName": "Leon",
+        "repeatCount": 1,
+        "unitCoins": 25,
+        "totalCoins": 25,
+        "userAccumulatedBalance": 25,
+        "userHistoricalTotal": 25,
+        "timestamp": "2026-10-23T22:58:26.308Z",
+        "platform": "TikTok LIVE",
+        "isSimulated": false
+      },
+      "timestamp": "02:58:26 p. m.",
+      "createdAt": 1792796306312
+    }
+  ],
+  "stats": {
+    "totalCoinsReceived": 25,
+    "totalGiftsReceived": 1,
+    "totalGreetingsPlayed": 1,
+    "totalCallsPlayed": 0,
+    "totalSongsRequested": 1,
+    "totalSongsPlayed": 0,
+    "totalFollowersDetected": 0,
+    "totalLikesReceived": 70623
+  }
+}
