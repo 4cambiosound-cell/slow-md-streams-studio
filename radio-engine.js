@@ -334,11 +334,23 @@ class RadioInteractiveEngine {
   }
 
   saveData() {
-    try {
-      fs.writeFileSync(RADIO_DATA_FILE, JSON.stringify(this.data, null, 2), 'utf8');
-    } catch (err) {
-      console.error('[RadioEngine] Error guardando radio-data.json:', err.message);
-    }
+    if (this._saveTimeout) return;
+    this._saveTimeout = setTimeout(() => {
+      this._saveTimeout = null;
+      try {
+        const tmpFile = `${RADIO_DATA_FILE}.tmp`;
+        fs.writeFileSync(tmpFile, JSON.stringify(this.data, null, 2), 'utf8');
+        try {
+          fs.renameSync(tmpFile, RADIO_DATA_FILE);
+        } catch (renameErr) {
+          // Si rename falla por bloqueo de Windows, fallback con copy
+          fs.copyFileSync(tmpFile, RADIO_DATA_FILE);
+          try { fs.unlinkSync(tmpFile); } catch (_) {}
+        }
+      } catch (err) {
+        console.error('[RadioEngine] Error guardando radio-data.json:', err.message);
+      }
+    }, 1000);
   }
 
   normalizeUserKey(str) {
