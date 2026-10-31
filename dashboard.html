@@ -564,6 +564,13 @@
             </div>
             <span class="badge-status badge-active">ACTIVO</span>
           </li>
+          <li class="nav-item" onclick="seleccionarWidget('impresora-live')">
+            <div class="nav-item-left">
+              <span class="nav-item-icon">🖨️</span>
+              <span>Impresora TikTok Live</span>
+            </div>
+            <span class="badge-status badge-active">ACTIVO</span>
+          </li>
         </ul>
       </div>
 
@@ -663,6 +670,9 @@
       <!-- WIDGET 2: CAJA DE COMENTARIOS TTS & ALERTAS 3D (IFRAME EN VIVO) -->
       <iframe id="frame-comentarios-tts" class="widget-frame" src="/comentarios-tts.html?view=panel"></iframe>
 
+      <!-- WIDGET 3: IMPRESORA DE REGALOS 3D (IFRAME EN VIVO) -->
+      <iframe id="frame-impresora-live" class="widget-frame" src="/impresora-overlay.html?view=panel"></iframe>
+
       <!-- VISTA PLACEHOLDER: RULETA DE RETOS -->
       <div id="view-ruleta" class="soon-placeholder-view">
         <div class="soon-icon-box">🎡</div>
@@ -743,6 +753,13 @@
         overlayPath: '/comentarios-tts.html?view=overlay',
         panelPath: '/comentarios-tts.html?view=panel',
         frameId: 'frame-comentarios-tts'
+      },
+      'impresora-live': {
+        title: '🖨️ IMPRESORA DE REGALOS 3D (TIKTOK LIVE)',
+        tag: 'Widget Activo',
+        overlayPath: '/impresora-overlay.html?view=overlay',
+        panelPath: '/impresora-overlay.html?view=panel',
+        frameId: 'frame-impresora-live'
       },
       'ruleta': {
         title: '🎡 RULETA DE RETOS',

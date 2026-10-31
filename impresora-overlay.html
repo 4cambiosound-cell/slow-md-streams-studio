@@ -625,15 +625,15 @@
     <div class="desk-surface"></div>
 
     <!-- 1. HUD SUPERIOR -->
-    <div class="top-hud">
+    <div class="top-hud" id="top-hud-panel">
       <div class="hud-box">
         <div class="hud-row-top">
           <div class="brand-logo">
             <strong>SLOW MD</strong> • IMPRESORA EN VIVO
           </div>
           <div class="live-badge">
-            <span class="live-dot"></span>
-            EN VIVO
+            <span class="live-dot" id="hud-live-dot"></span>
+            <span id="hud-live-label">EN VIVO</span>
           </div>
         </div>
 
@@ -642,17 +642,28 @@
             <span id="queue-text">Cola: 0 en espera</span>
           </div>
           <div class="status-conn status-offline" id="status-badge">
-            <span id="status-text">Conector Offline (Simulador Activo)</span>
+            <span id="status-text">Conectando a la nube...</span>
           </div>
         </div>
 
+        <!-- Barra de conexión directa a TikTok Live desde la Web (igual que la lista de canciones) -->
+        <div id="printer-connect-controls" style="display: flex; gap: 6px; margin-top: 2px;">
+          <input type="text" id="printer-username-input" placeholder="Usuario TikTok (slowmdoficial)" value="slowmdoficial" style="flex: 1; padding: 6px 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; font-size: 11px; font-weight: 700; outline: none;">
+          <button class="btn-quick-test btn-quick-vip" id="btn-printer-connect" onclick="toggleConexionTikTok()" style="flex: 0 0 auto; padding: 6px 12px;">
+            🔌 Conectar Live
+          </button>
+          <button class="btn-quick-test" onclick="copiarLinkOverlayImpresora()" style="flex: 0 0 auto; padding: 6px 10px;" title="Copiar link limpio para OBS / TikTok Live Studio">
+            📋 Link Overlay
+          </button>
+        </div>
+
         <!-- Botones directos de prueba rápida -->
-        <div class="quick-test-bar">
+        <div class="quick-test-bar" id="printer-test-controls">
           <button class="btn-quick-test btn-quick-vip" onclick="simularPrueba(true)">
-            <span>🌹</span> Probar Regalo 1 Moneda (VIP)
+            <span>🌹</span> Probar Regalo VIP
           </button>
           <button class="btn-quick-test" onclick="simularPrueba(false)">
-            <span>👤</span> Probar Entrada al Live
+            <span>👤</span> Probar Entrada
           </button>
           <button class="btn-quick-test" style="flex: 0 0 40px;" id="btn-sound" onclick="toggleAudio()" title="Silenciar / Activar sonido">
             🔊
@@ -1006,7 +1017,7 @@
       }
       if (cleanId && cleanId.toLowerCase() !== 'usuario' && cleanId.toLowerCase() !== 'espectador') {
         try {
-          const resp = await fetch(`http://localhost:3000/api/hd-avatar?user=${encodeURIComponent(cleanId)}`);
+          const resp = await fetch(`/api/hd-avatar?user=${encodeURIComponent(cleanId)}`);
           if (resp.ok) {
             const data = await resp.json();
             if (data && data.avatarUrl && !data.avatarUrl.includes('dicebear.com')) {
@@ -1254,25 +1265,89 @@
     }
 
     // -------------------------------------------------------------
-    // CONEXIÓN WEBSOCKET INTELIGENTE (PUERTO 3000)
+    // CONEXIÓN WEBSOCKET EN LA NUBE Y LOCAL (IGUAL QUE LA LISTA DE CANCIONES)
     // -------------------------------------------------------------
     let ws = null;
-    let intentoPuerto = 3000;
+    let wsTimer = null;
+    let tiktokStatus = 'disconnected';
+    let tiktokUsername = localStorage.getItem('printer_tiktok_user') || 'slowmdoficial';
+
+    function actualizarEstadoUI(status, username) {
+      tiktokStatus = status || 'disconnected';
+      if (username) {
+        tiktokUsername = username.replace(/^@/, '').trim();
+        const inp = document.getElementById('printer-username-input');
+        if (inp && document.activeElement !== inp) inp.value = tiktokUsername;
+      }
+
+      const badge = document.getElementById('status-badge');
+      const text = document.getElementById('status-text');
+      const btn = document.getElementById('btn-printer-connect');
+
+      if (status === 'connected') {
+        if (badge) badge.className = 'status-conn status-online';
+        if (text) text.textContent = `🟢 En Vivo: @${tiktokUsername}`;
+        if (btn) btn.textContent = '🔌 Desconectar';
+      } else if (status === 'connecting') {
+        if (badge) badge.className = 'status-conn status-offline';
+        if (text) text.textContent = `⏳ Esperando Live de @${tiktokUsername}...`;
+        if (btn) btn.textContent = '⏳ Conectando...';
+      } else {
+        if (badge) badge.className = 'status-conn status-offline';
+        if (text) text.textContent = `⚪ Desconectado (@${tiktokUsername})`;
+        if (btn) btn.textContent = '🔌 Conectar Live';
+      }
+    }
+
+    function toggleConexionTikTok() {
+      getAudio();
+      const inp = document.getElementById('printer-username-input');
+      const user = (inp ? inp.value : tiktokUsername).replace(/^@/, '').trim() || 'slowmdoficial';
+      tiktokUsername = user;
+      localStorage.setItem('printer_tiktok_user', user);
+
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        conectarWebSocket();
+        return;
+      }
+
+      if (tiktokStatus === 'connected') {
+        ws.send(JSON.stringify({ action: 'disconnect' }));
+      } else {
+        actualizarEstadoUI('connecting', user);
+        ws.send(JSON.stringify({ action: 'connect', username: user }));
+      }
+    }
+
+    function copiarLinkOverlayImpresora() {
+      const overlayUrl = `${window.location.origin}/impresora-overlay.html?view=overlay`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(overlayUrl).then(() => {
+          mostrarAlertaVip('✅ ¡Link de Overlay copiado para OBS / TikTok Live Studio!');
+        }).catch(() => {
+          prompt('Copia este link para OBS / TikTok Live Studio:', overlayUrl);
+        });
+      } else {
+        prompt('Copia este link para OBS / TikTok Live Studio:', overlayUrl);
+      }
+    }
 
     function conectarWebSocket() {
       const badge = document.getElementById('status-badge');
       const text = document.getElementById('status-text');
 
-      const url = `ws://localhost:${intentoPuerto}`;
-      console.log(`[WS] Intentando conectar a ${url}...`);
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = location.host ? `${proto}//${location.host}` : 'ws://localhost:3000';
+      console.log(`[WS] Conectando impresora a ${url}...`);
 
       try {
         ws = new WebSocket(url);
 
         ws.onopen = () => {
-          badge.className = 'status-conn status-online';
-          text.textContent = `🟢 Conectado a TikTok Live (Puerto ${intentoPuerto})`;
-          console.log(`[WS] ¡Conexión exitosa a ${url}!`);
+          console.log(`[WS] ¡Conexión WebSocket exitosa a ${url}!`);
+          if (badge) badge.className = 'status-conn status-online';
+          if (text) text.textContent = `🟢 Nube Conectada • Verificando @${tiktokUsername}...`;
+          ws.send(JSON.stringify({ action: 'getStatus' }));
         };
 
         ws.onmessage = (event) => {
@@ -1280,14 +1355,16 @@
             const data = JSON.parse(event.data);
             const tipo = (data.type || '').toUpperCase();
 
-            // Si el servidor indica que la conexión con TikTok se desconectó, pedir reconexión automática
+            // Sincronizar estado de conexión con TikTok igual que la lista de canciones
             if (tipo === 'STATUS') {
-              if (data.status === 'disconnected' || data.status === 'error') {
+              actualizarEstadoUI(data.status, data.username || tiktokUsername);
+              // Si aún no está conectado ni fue desconectado manualmente, conectar automáticamente al abrir
+              if (data.status === 'disconnected') {
                 setTimeout(() => {
-                  if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ action: 'connect', username: data.username || 'slowmdoficial' }));
+                  if (ws && ws.readyState === WebSocket.OPEN && tiktokStatus === 'disconnected') {
+                    ws.send(JSON.stringify({ action: 'connect', username: tiktokUsername || 'slowmdoficial' }));
                   }
-                }, 3000);
+                }, 1500);
               }
               return;
             }
@@ -1347,10 +1424,10 @@
         };
 
         ws.onclose = () => {
-          badge.className = 'status-conn status-offline';
-          text.textContent = `Conector Offline (Reintentando puerto 3000...)`;
-          intentoPuerto = 3000;
-          setTimeout(conectarWebSocket, 2000);
+          if (badge) badge.className = 'status-conn status-offline';
+          if (text) text.textContent = `Reconectando con servidor en la nube...`;
+          clearTimeout(wsTimer);
+          wsTimer = setTimeout(conectarWebSocket, 2500);
         };
 
         ws.onerror = () => {
@@ -1358,8 +1435,8 @@
         };
 
       } catch (err) {
-        intentoPuerto = 3000;
-        setTimeout(conectarWebSocket, 2000);
+        clearTimeout(wsTimer);
+        wsTimer = setTimeout(conectarWebSocket, 2500);
       }
     }
 
@@ -1382,6 +1459,23 @@
 
     // Inicializar al cargar la página
     window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const userParam = params.get('user');
+      if (userParam) {
+        tiktokUsername = userParam.replace(/^@/, '').trim();
+        localStorage.setItem('printer_tiktok_user', tiktokUsername);
+      }
+      const inp = document.getElementById('printer-username-input');
+      if (inp) inp.value = tiktokUsername;
+
+      // Si se abre con ?view=overlay en OBS / TikTok Live Studio, ocultar controles de prueba para dejar limpia la pantalla
+      if (params.get('view') === 'overlay') {
+        const connBar = document.getElementById('printer-connect-controls');
+        const testBar = document.getElementById('printer-test-controls');
+        if (connBar) connBar.style.display = 'none';
+        if (testBar) testBar.style.display = 'none';
+      }
+
       conectarWebSocket();
 
       // Demo de bienvenida al abrir con la foto real en Ultra HD (1080x1080) de @slowmdoficial
