@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impresora en Vivo TikTok Live - Slow MD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.45);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.5);
+      --font-main: 'Montserrat', -apple-system, sans-serif;
+      --font-hand: 'Caveat', cursive, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: #050608;
+      color: #fff;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Contenedor Vertical 9:16 para Live (1080x1920) */
+    .stream-canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 580px;
+      max-height: 1030px;
+      aspect-ratio: 9 / 16;
+      background: radial-gradient(circle at 50% 25%, #181215 0%, #090a0e 70%, #030406 100%);
+      overflow: hidden;
+      border: 1px solid rgba(255, 15, 59, 0.25);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mesa de madera en la parte inferior */
+    .desk-surface {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 68%;
+      background: linear-gradient(180deg, #180e08 0%, #29160c 35%, #110803 100%);
+      box-shadow: inset 0 25px 40px rgba(0, 0, 0, 0.9);
+      z-index: 1;
+    }
+
+    .desk-surface::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.015) 0px,
+        rgba(0, 0, 0, 0.04) 6px,
+        transparent 14px
+      );
+      opacity: 0.7;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* HUD SUPERIOR: INFORMACIÓN DEL DIRECTO Y COLA                  */
+    /* ------------------------------------------------------------- */
+    .top-hud {
+      position: relative;
+      z-index: 50;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hud-box {
+      background: rgba(12, 13, 18, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .hud-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-logo strong {
+      color: var(--blood-red);
+      text-shadow: 0 0 10px var(--blood-red-glow);
+    }
+
+    .live-badge {
+      background: rgba(255, 15, 59, 0.2);
+      border: 1px solid var(--blood-red);
+      color: #ff3355;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--blood-red);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--blood-red);
+      animation: pulseDot 1.2s infinite alternate;
+    }
+
+    @keyframes pulseDot {
+      from { opacity: 0.3; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1.3); }
+    }
+
+    .hud-row-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .queue-pill {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .status-conn {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .status-online { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+    .status-offline { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+
+    /* Barra de botones de prueba rápida */
+    .quick-test-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .btn-quick-test {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 6px 8px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .btn-quick-test:hover {
+      background: rgba(255, 15, 59, 0.25);
+      border-color: var(--blood-red);
+      transform: translateY(-1px);
+    }
+
+    .btn-quick-vip {
+      border-color: rgba(255, 184, 0, 0.5);
+      background: rgba(255, 184, 0, 0.1);
+    }
+    .btn-quick-vip:hover {
+      background: rgba(255, 184, 0, 0.25);
+    }
+
+    /* ------------------------------------------------------------- */
+    /* LA IMPRESORA REALISTA                                         */
+    /* ------------------------------------------------------------- */
+    .printer-assembly {
+      position: absolute;
+      top: 175px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 480px;
+      height: 640px;
+      z-index: 5;
+    }
+
+    /* 1. Bandeja receptora inferior (detrás del papel, Z-INDEX: 2) */
+    .printer-tray-base {
+      position: absolute;
+      top: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 380px;
+      height: 480px;
+      background: linear-gradient(180deg, #181920 0%, #0d0e12 100%);
+      border: 1px solid #2d2f3c;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+      z-index: 2;
+    }
+
+    .tray-ribs {
+      position: absolute;
+      inset: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      opacity: 0.35;
+    }
+    .rib-line {
+      width: 4px;
+      height: 100%;
+      background: #000;
+      border-right: 1px solid #333;
+    }
+
+    /* 2. VENTANA DE LA RANURA CON OVERFLOW HIDDEN (Z-INDEX: 10)     */
+    /* Todo lo que aún está dentro de la impresora queda 100% oculto */
+    .slot-exit-window {
+      position: absolute;
+      top: 124px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 370px;
+      height: 500px;
+      overflow: hidden; /* CORTA LA HOJA A NIVEL DE LA RANURA */
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* 3. HOJA POLAROID GRANDE Y PROMINENTE                          */
+    .paper-sheet {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      /* Comienza retraída adentro de la ranura */
+      transform: translateX(-50%) translateY(-82%);
+      width: 340px;
+      height: 460px;
+      background: #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 16px 20px;
+      transition: transform 0.09s linear, opacity 0.4s ease;
+    }
+
+    /* Estado de salida suave fuera de pantalla */
+    .paper-sheet.sliding-away {
+      transform: translateX(-50%) translateY(560px) rotate(6deg) scale(0.9);
+      opacity: 0;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
+    }
+
+    /* Marco de foto grande */
+    .photo-frame-inner {
+      position: relative;
+      width: 308px;
+      height: 330px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    /* LA FOTO ESTÁ COMPLETAMENTE PEGADA A LA HOJA (CERO DESLIZAMIENTO RELATIVO) */
+    .photo-printed-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Microrayado de inyección de tinta */
+    .ink-lines-effect {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.025) 0px,
+        rgba(0,0,0,0.025) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+    }
+
+    /* Pie de foto Polaroid grande */
+    .polaroid-caption {
+      width: 100%;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+    }
+
+    .caption-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .camera-svg {
+      width: 28px;
+      height: 28px;
+      color: #0f172a;
+      flex-shrink: 0;
+    }
+
+    .polaroid-username {
+      font-family: var(--font-hand);
+      font-size: 30px;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1;
+    }
+
+    .polaroid-vip-badge {
+      display: none;
+      background: #fef3c7;
+      border: 1px solid var(--gold-vip);
+      color: #b45309;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(255, 184, 0, 0.35);
+    }
+
+    /* Sello Gracias por estar aquí */
+    .stamp-badge {
+      position: absolute;
+      top: 42%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-8deg) scale(2);
+      border: 3px solid var(--blood-red);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--blood-red);
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+      padding: 7px 14px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .stamp-badge.show {
+      opacity: 0.96;
+      transform: translate(-50%, -50%) rotate(-8deg) scale(1);
+    }
+
+    /* 4. CARCASA SUPERIOR FRONTAL (TAPA EL PAPEL Y CONTIENE EL CABEZAL, Z-INDEX: 25) */
+    .printer-body-front {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 460px;
+      height: 135px;
+      background: linear-gradient(180deg, #2b2e38 0%, #1a1c22 75%, #0f1014 100%);
+      border: 1px solid #3d414e;
+      border-radius: 18px 18px 6px 6px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.95), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px 20px 0;
+    }
+
+    .printer-top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .printer-brand-logo {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .printer-led-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .led-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .led-printing {
+      background: #00e5ff;
+      box-shadow: 0 0 10px #00e5ff;
+      animation: blink 0.25s infinite alternate;
+    }
+
+    @keyframes blink {
+      from { opacity: 0.3; }
+      to { opacity: 1; }
+    }
+
+    /* Ranura física de salida: el cabezal se mueve de derecha a izquierda aquí */
+    .printer-slot-opening {
+      position: relative;
+      width: 370px;
+      height: 24px;
+      align-self: center;
+      background: #050608;
+      border: 2px solid #262933;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      box-shadow: inset 0 8px 14px #000000;
+      overflow: hidden;
+      margin-bottom: -1px;
+    }
+
+    /* Riel horizontal con el cabezal motorizado que se desplaza */
+    .printhead-slider {
+      position: absolute;
+      top: 3px;
+      left: 10px;
+      width: 58px;
+      height: 18px;
+      background: linear-gradient(180deg, #475569 0%, #1e293b 100%);
+      border: 1px solid #00e5ff;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 229, 255, 0.5);
+      transition: left 0.07s linear;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .printhead-optic {
+      width: 7px;
+      height: 7px;
+      background: #00e5ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #00e5ff;
+    }
+
+    /* Papel virgen en la bandeja trasera superior */
+    .printer-paper-feed-top {
+      position: absolute;
+      top: -26px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 290px;
+      height: 32px;
+      background: #f8fafc;
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+      z-index: 20;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* PIE DE PANTALLA: REGLAS PARA EL PÚBLICO                       */
+    /* ------------------------------------------------------------- */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      background: rgba(12, 13, 18, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+
+    .rule-item strong {
+      color: #fff;
+    }
+
+    /* Letrero luminoso encima de la impresora */
+    .printer-cta-banner {
+      align-self: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(90deg, rgba(255, 15, 59, 0.18) 0%, rgba(255, 184, 0, 0.25) 50%, rgba(255, 15, 59, 0.18) 100%);
+      border: 1.5px solid rgba(255, 184, 0, 0.75);
+      border-radius: 12px;
+      padding: 7px 18px;
+      box-shadow: 0 0 18px rgba(255, 184, 0, 0.35), inset 0 0 10px rgba(255, 184, 0, 0.15);
+      animation: ctaPulse 2s infinite ease-in-out;
+      margin: 2px 0;
+    }
+
+    .printer-cta-text {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(255, 184, 0, 0.65);
+      white-space: nowrap;
+    }
+
+    .printer-cta-text span {
+      color: var(--gold-vip);
+    }
+
+    @keyframes ctaPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 16px rgba(255, 184, 0, 0.35), inset 0 0 10px rgba(255, 184, 0, 0.15);
+      }
+      50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 24px rgba(255, 184, 0, 0.65), inset 0 0 14px rgba(255, 184, 0, 0.3);
+      }
+    }
+
+    /*Alerta VIP flotante */
+    .vip-alert-toast {
+      position: absolute;
+      top: 130px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: linear-gradient(90deg, #b45309 0%, #d97706 100%);
+      border: 1px solid var(--gold-vip);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 15px var(--gold-vip-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .vip-alert-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="stream-canvas" id="canvas-root">
+    
+    <!-- Mesa de fondo -->
+    <div class="desk-surface"></div>
+
+    <!-- 1. HUD SUPERIOR -->
+    <div class="top-hud">
+      <div class="hud-box">
+        <div class="hud-row-top">
+          <div class="brand-logo">
+            <strong>SLOW MD</strong> • IMPRESORA EN VIVO
+          </div>
+          <div class="live-badge">
+            <span class="live-dot"></span>
+            EN VIVO
+          </div>
+        </div>
+
+        <div class="hud-row-sub">
+          <div class="queue-pill">
+            <span id="queue-text">Cola: 0 en espera</span>
+          </div>
+          <div class="status-conn status-offline" id="status-badge">
+            <span id="status-text">Conector Offline (Simulador Activo)</span>
+          </div>
+        </div>
+
+        <!-- Botones directos de prueba rápida -->
+        <div class="quick-test-bar">
+          <button class="btn-quick-test btn-quick-vip" onclick="simularPrueba(true)">
+            <span>🌹</span> Probar Regalo 1 Moneda (VIP)
+          </button>
+          <button class="btn-quick-test" onclick="simularPrueba(false)">
+            <span>👤</span> Probar Entrada al Live
+          </button>
+          <button class="btn-quick-test" style="flex: 0 0 40px;" id="btn-sound" onclick="toggleAudio()" title="Silenciar / Activar sonido">
+            🔊
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerta VIP flotante -->
+    <div class="vip-alert-toast" id="vip-toast">
+      <span>⭐</span> <span id="vip-toast-text">¡@usuario mandó una Rosa y salta al 1er puesto!</span>
+    </div>
+
+    <!-- 2. CONJUNTO DE LA IMPRESORA REALISTA -->
+    <div class="printer-assembly">
+      
+      <!-- Hojas en la bandeja superior trasera de alimentación -->
+      <div class="printer-paper-feed-top"></div>
+
+      <!-- Carcasa superior frontal de la impresora (Z-INDEX: 25) -->
+      <div class="printer-body-front">
+        <div class="printer-top-controls">
+          <div class="printer-brand-logo">SLOW MD PHOTO LAB</div>
+          <div class="printer-led-group">
+            <span style="font-size: 9px; color: #94a3b8; font-weight: 700;">LIVE</span>
+            <div class="led-dot" id="printer-led"></div>
+          </div>
+        </div>
+
+        <!-- Letrero llamativo encima de la impresora -->
+        <div class="printer-cta-banner">
+          <span style="font-size: 16px;">🎁</span>
+          <div class="printer-cta-text">Envía regalo y <span>salta la fila</span></div>
+          <span style="font-size: 15px;">⚡</span>
+        </div>
+
+        <!-- Ranura física de salida: el cabezal se mueve de derecha a izquierda aquí -->
+        <div class="printer-slot-opening">
+          <div class="printhead-slider" id="printhead">
+            <div class="printhead-optic"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ventana de salida con OVERFLOW HIDDEN: de aquí nace y sale la hoja -->
+      <div class="slot-exit-window">
+        <!-- Hoja Polaroid en tamaño grande -->
+        <div class="paper-sheet" id="paper-sheet">
+          <div class="photo-frame-inner">
+            <!-- LA FOTO ESTÁ FIRMEMENTE PEGADA A LA HOJA (CERO DESLIZAMIENTO RELATIVO) -->
+            <img id="photo-img" class="photo-printed-img" src="" alt="Avatar">
+            <div class="ink-lines-effect"></div>
+          </div>
+
+          <div class="polaroid-caption">
+            <div class="caption-left">
+              <svg class="camera-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <div class="polaroid-username" id="polaroid-user">@slowmdoficial</div>
+            </div>
+            <div class="polaroid-vip-badge" id="polaroid-vip">
+              <span>🌹 VIP</span>
+            </div>
+          </div>
+
+          <div class="stamp-badge" id="stamp-badge">Gracias por estar aquí</div>
+        </div>
+      </div>
+
+      <!-- Bandeja receptora inferior de la impresora (detrás del papel) -->
+      <div class="printer-tray-base">
+        <div class="tray-ribs">
+          <div class="rib-line"></div>
+          <div class="rib-line"></div>
+          <div class="rib-line"></div>
+          <div class="rib-line"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. PIE DE PANTALLA: REGLAS -->
+    <div class="bottom-bar">
+      <div class="rule-item">
+        <span style="font-size: 18px;">🚪</span>
+        <div>
+          <div>Entra al live</div>
+          <span style="font-size: 9px; color: #94a3b8;">Impresión por orden</span>
+        </div>
+      </div>
+      <div style="width: 1px; height: 26px; background: rgba(255,255,255,0.15);"></div>
+      <div class="rule-item">
+        <span style="font-size: 18px;">🌹</span>
+        <div>
+          <div>Manda <strong>1 Rosa (1🪙)</strong></div>
+          <span style="font-size: 9px; color: var(--gold-vip); font-weight: 800;">¡Salto VIP a primer puesto!</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- SINTETIZADOR ACÚSTICO REALISTA DE IMPRESORA DE INYECCIÓN      -->
+  <!-- ============================================================= -->
+  <script>
+    /**
+     * SINTETIZADOR MECÁNICO DE IMPRESORA EPSON / CANON PHOTO
+     * Recrea acústicamente:
+     * 1. Zumbido PWM del motor paso a paso del cabezal (stepper motor whine).
+     * 2. Fricción mecánica de la correa dentada deslizándose sobre el riel metálico.
+     * 3. Tracción y chasquido sutil de los rodillos de arrastre de papel.
+     * 4. Aceleración y eyección final del papel al completarse.
+     */
+
+    // Avatares locales embebidos en data URI (cero fallas de red)
+    const AVATARES_LOCALES = [
+      crearAvatarSvg('#ff0f3b', '#1e293b', '🔥'),
+      crearAvatarSvg('#3b82f6', '#0f172a', '⚡'),
+      crearAvatarSvg('#10b981', '#064e3b', '👑'),
+      crearAvatarSvg('#b347eb', '#3b0764', '⭐'),
+      crearAvatarSvg('#f59e0b', '#78350f', '🎧')
+    ];
+
+    function crearAvatarSvg(bgColor, secondaryColor, emoji) {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+          <rect width="200" height="200" fill="${secondaryColor}"/>
+          <circle cx="100" cy="100" r="75" fill="${bgColor}"/>
+          <text x="100" y="125" font-size="70" text-anchor="middle" font-family="sans-serif">${emoji}</text>
+        </svg>
+      `;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    const state = {
+      queue: [],
+      isPrinting: false,
+      currentJob: null,
+      soundEnabled: true,
+      printDurationMs: 6800, // Duración de la salida de la hoja
+      holdDurationMs: 4500   // Duración de la foto completa en bandeja
+    };
+
+    // Sintetizador Web Audio API
+    let audioCtx = null;
+    let noiseBuffer = null;
+
+    function getAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Buffer de ruido blanco precalculado para fricción mecánica
+    function getNoiseBuffer(ctx) {
+      if (!noiseBuffer) {
+        const bufferSize = ctx.sampleRate * 2;
+        noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+      }
+      return noiseBuffer;
+    }
+
+    // SONIDO REALISTA DE CABEZAL (CORREA DENTADA + MOTOR PASO A PASO)
+    function sonidoCabezalImpresora() {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudio();
+        const now = ctx.currentTime;
+        const dur = 0.085; // duración de cada pasada rápida del cabezal
+
+        // 1. Componente de motor paso a paso (zumbido de bobinas PWM de impresora)
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.type = 'sawtooth';
+        // Frecuencia acústica típica de motor de carro de impresora (800Hz - 1100Hz)
+        osc.frequency.setValueAtTime(800 + Math.random() * 80, now);
+        osc.frequency.linearRampToValueAtTime(1020 + Math.random() * 60, now + dur * 0.5);
+        osc.frequency.linearRampToValueAtTime(780 + Math.random() * 50, now + dur);
+
+        // Filtro de resonancia de chasis plástico de impresora
+        const oscFilter = ctx.createBiquadFilter();
+        oscFilter.type = 'bandpass';
+        oscFilter.frequency.setValueAtTime(920, now);
+        oscFilter.Q.setValueAtTime(3.2, now);
+
+        osc.connect(oscFilter);
+        oscFilter.connect(oscGain);
+
+        oscGain.gain.setValueAtTime(0.001, now);
+        oscGain.gain.linearRampToValueAtTime(0.045, now + 0.015);
+        oscGain.gain.linearRampToValueAtTime(0.035, now + dur - 0.02);
+        oscGain.gain.linearRampToValueAtTime(0.001, now + dur);
+
+        osc.start(now);
+        osc.stop(now + dur);
+
+        // 2. Componente de fricción mecánica (ruido de correa dentada y riel metálico)
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = getNoiseBuffer(ctx);
+
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.setValueAtTime(2400, now);
+        noiseFilter.Q.setValueAtTime(2.2, now);
+
+        const noiseGain = ctx.createGain();
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+
+        noiseGain.gain.setValueAtTime(0.001, now);
+        noiseGain.gain.linearRampToValueAtTime(0.035, now + 0.02);
+        noiseGain.gain.linearRampToValueAtTime(0.001, now + dur);
+
+        oscGain.connect(ctx.destination);
+        noiseGain.connect(ctx.destination);
+
+        noiseSource.start(now);
+        noiseSource.stop(now + dur);
+      } catch (e) {}
+    }
+
+    // SONIDO DE TRACCIÓN Y ARRASTRE DE RODILLO DE PAPEL
+    function sonidoAvanceRodillo() {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudio();
+        const now = ctx.currentTime;
+
+        // Tracción de goma y clic mecánico de diente de avance
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.14);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, now);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.start(now);
+        osc.stop(now + 0.16);
+      } catch (e) {}
+    }
+
+    // SONIDO DE EYECCIÓN RÁPIDA FINAL DE LA HOJA
+    function sonidoExpulsionFinal() {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudio();
+        const now = ctx.currentTime;
+
+        // Giro acelerado del rodillo expulsando el papel: 'whiiirrr-clack'
+        const noise = ctx.createBufferSource();
+        noise.buffer = getNoiseBuffer(ctx);
+
+        const nFilter = ctx.createBiquadFilter();
+        nFilter.type = 'bandpass';
+        nFilter.frequency.setValueAtTime(1000, now);
+        nFilter.frequency.exponentialRampToValueAtTime(2200, now + 0.2);
+        nFilter.frequency.exponentialRampToValueAtTime(700, now + 0.35);
+
+        const nGain = ctx.createGain();
+        noise.connect(nFilter);
+        nFilter.connect(nGain);
+        nGain.connect(ctx.destination);
+
+        nGain.gain.setValueAtTime(0.001, now);
+        nGain.gain.linearRampToValueAtTime(0.055, now + 0.12);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        noise.start(now);
+        noise.stop(now + 0.4);
+
+        // Chime electrónico moderno de foto lista (estilo Canon/Epson)
+        setTimeout(() => {
+          sonidoChimeTerminado();
+        }, 380);
+      } catch (e) {}
+    }
+
+    function sonidoChimeTerminado() {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudio();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, now);       // E5
+        osc.frequency.setValueAtTime(880, now + 0.12);    // A5
+        osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.65);
+      } catch (e) {}
+    }
+
+    // Caché local de avatares 1080x1080 HD y control anti-repetición
+    const hdAvatarCache = new Map();
+    const usuariosImpresosRecientes = new Map(); // userKey -> timestamp
+
+    function crearAvatarHDRespaldo(nombre) {
+      const inicial = String(nombre || 'S').replace(/^@/, '').trim().charAt(0).toUpperCase() || 'S';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f172a"/>
+            <stop offset="50%" stop-color="#1e1b4b"/>
+            <stop offset="100%" stop-color="#ff0f3b"/>
+          </linearGradient>
+        </defs>
+        <rect width="800" height="800" fill="url(#bg)"/>
+        <circle cx="400" cy="400" r="250" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="6"/>
+        <text x="400" y="485" font-size="260" font-weight="900" fill="#ffffff" text-anchor="middle" font-family="Montserrat, sans-serif">${inicial}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    async function obtenerAvatarUltraHD(handleOrUser, avatarActual) {
+      const cleanId = String(handleOrUser || '').replace(/^@/, '').trim();
+      // Si ya es 1080x1080 real de TikTok CDN, usarlo directo
+      if (avatarActual && !avatarActual.includes('dicebear.com') && avatarActual.includes('1080:1080')) {
+        if (cleanId) hdAvatarCache.set(cleanId.toLowerCase(), avatarActual);
+        return avatarActual;
+      }
+      if (cleanId && hdAvatarCache.has(cleanId.toLowerCase())) {
+        return hdAvatarCache.get(cleanId.toLowerCase());
+      }
+      if (cleanId && cleanId.toLowerCase() !== 'usuario' && cleanId.toLowerCase() !== 'espectador') {
+        try {
+          const resp = await fetch(`http://localhost:3000/api/hd-avatar?user=${encodeURIComponent(cleanId)}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.avatarUrl && !data.avatarUrl.includes('dicebear.com')) {
+              hdAvatarCache.set(cleanId.toLowerCase(), data.avatarUrl);
+              return data.avatarUrl;
+            }
+          }
+        } catch (e) {}
+      }
+      if (avatarActual && !avatarActual.includes('dicebear.com')) {
+        return avatarActual;
+      }
+      return '';
+    }
+
+    // -------------------------------------------------------------
+    // ENCOLAR TRABAJOS Y PRIORIDADES (VIP = CUALQUIER REGALO 1+ MONEDAS)
+    // -------------------------------------------------------------
+    function encolarFoto(usuario, avatar, esVip = false, regalo = null, handleLookup = '', coins = 0) {
+      const cleanName = String(usuario || '').replace(/^@/, '').trim();
+      // Bloquear impresiones vacías o de sistema (@Usuario / @Espectador)
+      if (!cleanName || cleanName.toLowerCase() === 'usuario' || cleanName.toLowerCase() === 'espectador') {
+        return;
+      }
+
+      const userFormatted = usuario.startsWith('@') ? usuario : '@' + usuario;
+      const lookupKey = (handleLookup || cleanName).replace(/^@/, '').trim();
+      const totalCoins = Number(coins) || (esVip ? 1 : 0);
+
+      const job = {
+        id: 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        user: userFormatted,
+        lookupKey: lookupKey,
+        avatar: (avatar && !avatar.includes('dicebear.com')) ? avatar : '',
+        isVip: Boolean(esVip),
+        gift: regalo,
+        coins: totalCoins,
+        hdPromise: null
+      };
+
+      // Resolver foto en Ultra HD (1080x1080) en segundo plano inmediatamente
+      job.hdPromise = obtenerAvatarUltraHD(lookupKey, job.avatar).then((hdUrl) => {
+        if (hdUrl) {
+          job.avatar = hdUrl;
+          // Si este trabajo ya se está imprimiendo en este instante, actualizar la imagen en vivo a HD
+          if (state.currentJob && state.currentJob.id === job.id) {
+            const photoImg = document.getElementById('photo-img');
+            if (photoImg && photoImg.src !== hdUrl) {
+              photoImg.src = hdUrl;
+            }
+          }
+        }
+        return hdUrl;
+      });
+
+      if (esVip) {
+        // Si ya hay otros en la cola, colocar este VIP delante de los normales y ordenar por mayor cantidad de monedas
+        const insertIdx = state.queue.findIndex(item => !item.isVip || (item.coins || 0) < totalCoins);
+        if (insertIdx === -1) {
+          state.queue.push(job);
+        } else {
+          state.queue.splice(insertIdx, 0, job);
+        }
+        const coinTxt = totalCoins > 1 ? ` (${totalCoins}🪙)` : '';
+        mostrarAlertaVip(`¡${job.user} envió ${regalo || 'Regalo'}${coinTxt} y salta al 1er puesto VIP!`);
+      } else {
+        state.queue.push(job);
+      }
+
+      actualizarContador();
+
+      if (!state.isPrinting) {
+        siguienteImpresion();
+      }
+    }
+
+    function siguienteImpresion() {
+      if (state.queue.length === 0) {
+        state.isPrinting = false;
+        state.currentJob = null;
+        actualizarContador();
+        document.getElementById('printer-led').className = 'led-dot';
+        return;
+      }
+
+      state.isPrinting = true;
+      state.currentJob = state.queue.shift();
+      actualizarContador();
+
+      ejecutarCicloDeImpresion(state.currentJob);
+    }
+
+    function actualizarContador() {
+      const qText = document.getElementById('queue-text');
+      if (qText) {
+        qText.textContent = `Cola: ${state.queue.length} en espera`;
+      }
+    }
+
+    function mostrarAlertaVip(mensaje) {
+      const toast = document.getElementById('vip-toast');
+      const text = document.getElementById('vip-toast-text');
+      if (!toast || !text) return;
+      text.textContent = mensaje;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3800);
+    }
+
+    // -------------------------------------------------------------
+    // CICLO DE IMPRESIÓN MECÁNICA FÍSICA
+    // -------------------------------------------------------------
+    async function ejecutarCicloDeImpresion(job) {
+      const paper = document.getElementById('paper-sheet');
+      const photoImg = document.getElementById('photo-img');
+      const userText = document.getElementById('polaroid-user');
+      const vipBadge = document.getElementById('polaroid-vip');
+      const stamp = document.getElementById('stamp-badge');
+      const carriage = document.getElementById('printhead');
+      const led = document.getElementById('printer-led');
+
+      // LED en azul parpadeante de imprimiendo
+      led.className = 'led-dot led-printing';
+
+      // Esperar hasta 900ms a que termine de resolver la foto en 1080x1080 Ultra HD
+      if (job.hdPromise) {
+        try {
+          await Promise.race([
+            job.hdPromise,
+            new Promise((r) => setTimeout(r, 900))
+          ]);
+        } catch (e) {}
+      }
+
+      // Si era una entrada normal y la cuenta no tiene foto de perfil válida, saltar al siguiente para no sacar hojas vacías
+      if (!job.avatar && !job.isVip) {
+        siguienteImpresion();
+        return;
+      }
+
+      const finalSrc = job.avatar || crearAvatarHDRespaldo(job.user);
+
+      // 1. Cargar datos y manejo de error de imagen
+      userText.textContent = job.user;
+      photoImg.onerror = () => {
+        photoImg.onerror = null;
+        photoImg.src = crearAvatarHDRespaldo(job.user);
+      };
+      photoImg.src = finalSrc;
+
+      if (job.isVip) {
+        vipBadge.style.display = 'block';
+        const coinLabel = job.coins > 1 ? ` (${job.coins}🪙)` : '';
+        vipBadge.innerHTML = `<span>👑 ${job.gift || '🌹'}${coinLabel} VIP</span>`;
+      } else {
+        vipBadge.style.display = 'none';
+      }
+
+      // 2. La hoja comienza completamente adentro de la ranura (-82%)
+      paper.className = 'paper-sheet';
+      paper.style.transform = 'translateX(-50%) translateY(-82%)';
+      stamp.classList.remove('show');
+
+      // Sonido inicial del rodillo tragando la hoja
+      sonidoAvanceRodillo();
+
+      const totalPasadas = 44;
+      const pasoTiempo = state.printDurationMs / totalPasadas;
+      let pasoActual = 0;
+
+      // Límites de recorrido del cabezal dentro de la ranura
+      const minLeft = 10;
+      const maxLeft = 295;
+
+      const printInterval = setInterval(() => {
+        pasoActual++;
+        const progreso = pasoActual / totalPasadas; // 0.0 a 1.0
+
+        // A. CABEZAL SE MUEVE DE DERECHA A IZQUIERDA EN LA RANURA
+        const haciaDerecha = pasoActual % 2 === 1;
+        carriage.style.left = (haciaDerecha ? maxLeft : minLeft) + 'px';
+        
+        // Sonido realista del cabezal (correa dentada + motor paso a paso)
+        sonidoCabezalImpresora();
+
+        // Cada 6 pasadas suena un clic sutil de tracción de engranaje de avance
+        if (pasoActual % 6 === 0) {
+          sonidoAvanceRodillo();
+        }
+
+        // B. LA HOJA SALE FÍSICAMENTE DE LA RANURA HACIA LA BANDEJA:
+        // Pasa suavemente de -82% a 0%
+        const avanceY = -82 + (progreso * 82);
+        paper.style.transform = `translateX(-50%) translateY(${avanceY}%)`;
+
+        if (pasoActual >= totalPasadas) {
+          clearInterval(printInterval);
+          finalizarImpresion(job);
+        }
+      }, pasoTiempo);
+    }
+
+    function finalizarImpresion(job) {
+      const paper = document.getElementById('paper-sheet');
+      const stamp = document.getElementById('stamp-badge');
+      const led = document.getElementById('printer-led');
+
+      // Hoja completamente asentada en la bandeja
+      paper.style.transform = 'translateX(-50%) translateY(0%)';
+      stamp.classList.add('show');
+      led.className = 'led-dot'; // Vuelve a verde normal
+
+      // Sonido de eyección rápida final y chime electrónico de foto terminada
+      sonidoExpulsionFinal();
+
+      // Pausa de 4.5 segundos mostrando la foto completa al público del live
+      setTimeout(() => {
+        // La hoja se desliza fuera de pantalla hacia abajo
+        paper.classList.add('sliding-away');
+
+        setTimeout(() => {
+          // Continuar con la siguiente foto en cola
+          siguienteImpresion();
+        }, 800);
+
+      }, state.holdDurationMs);
+    }
+
+    // -------------------------------------------------------------
+    // PRUEBAS RÁPIDAS DIRECTAS DESDE LOS BOTONES (CON FOTOS REALES HD)
+    // -------------------------------------------------------------
+    const CUENTAS_PRUEBA_HD = ['slowmdoficial', 'tiktok', 'karolg', 'feid', 'badbunny'];
+
+    function simularPrueba(esVip = false) {
+      getAudio(); // desbloquear audio al hacer clic
+      const handle = CUENTAS_PRUEBA_HD[Math.floor(Math.random() * CUENTAS_PRUEBA_HD.length)];
+      encolarFoto('@' + handle, '', esVip, esVip ? 'Rosa 🌹' : null, handle, esVip ? 1 : 0);
+    }
+
+    function toggleAudio() {
+      state.soundEnabled = !state.soundEnabled;
+      const btn = document.getElementById('btn-sound');
+      if (btn) btn.textContent = state.soundEnabled ? '🔊' : '🔇';
+    }
+
+    // -------------------------------------------------------------
+    // CONEXIÓN WEBSOCKET INTELIGENTE (PUERTO 3000)
+    // -------------------------------------------------------------
+    let ws = null;
+    let intentoPuerto = 3000;
+
+    function conectarWebSocket() {
+      const badge = document.getElementById('status-badge');
+      const text = document.getElementById('status-text');
+
+      const url = `ws://localhost:${intentoPuerto}`;
+      console.log(`[WS] Intentando conectar a ${url}...`);
+
+      try {
+        ws = new WebSocket(url);
+
+        ws.onopen = () => {
+          badge.className = 'status-conn status-online';
+          text.textContent = `🟢 Conectado a TikTok Live (Puerto ${intentoPuerto})`;
+          console.log(`[WS] ¡Conexión exitosa a ${url}!`);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            const tipo = (data.type || '').toUpperCase();
+
+            // Si el servidor indica que la conexión con TikTok se desconectó, pedir reconexión automática
+            if (tipo === 'STATUS') {
+              if (data.status === 'disconnected' || data.status === 'error') {
+                setTimeout(() => {
+                  if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ action: 'connect', username: data.username || 'slowmdoficial' }));
+                  }
+                }, 3000);
+              }
+              return;
+            }
+
+            // Ignorar eventos que no son de espectadores reales
+            if (tipo !== 'GIFT' && tipo !== 'MEMBER' && tipo !== 'JOIN' && tipo !== 'FOLLOW' && tipo !== 'CHAT' && tipo !== 'LIKE' && tipo !== 'SHARE') {
+              return;
+            }
+
+            // Extraer identificador único (@uniqueId) para consultar foto 1080x1080 HD
+            const rawHandle = (data.displayId || data.handle || '').replace(/^@/, '').trim();
+            const rawUser = (data.user || data.nickname || rawHandle || '').replace(/^@/, '').trim();
+
+            // Descartar eventos vacíos o genéricos (@Usuario / @Espectador)
+            if (!rawUser || rawUser.toLowerCase() === 'usuario' || rawUser.toLowerCase() === 'espectador') {
+              return;
+            }
+
+            const usuarioMostrar = '@' + (rawHandle || rawUser);
+            const lookupKey = (rawHandle || rawUser).toLowerCase();
+
+            // Extraer avatar de TikTok (descartando los cuadros pixelados de dicebear)
+            let avatar = data.avatarUrl || data.avatar || '';
+            if (avatar.includes('dicebear.com')) {
+              avatar = '';
+            }
+
+            // 1. CUALQUIER REGALO EN VIVO (1 moneda, 30 monedas, 100 monedas... = TODOS SON VIP Y SALTAN AL 1ER PUESTO)
+            if (tipo === 'GIFT') {
+              const regalo = data.giftName || data.gift || 'Rosa 🌹';
+              const diamonds = Math.max(1, Number(data.diamondCount) || 1);
+              const repeat = Math.max(1, Number(data.repeatCount) || 1);
+              const totalCoins = diamonds * repeat;
+              console.log(`[LIVE] Regalo VIP recibido: ${regalo} (${totalCoins} monedas) de ${usuarioMostrar}`);
+              encolarFoto(usuarioMostrar, avatar, true, regalo, rawHandle || rawUser, totalCoins);
+            }
+            // 2. NUEVO SEGUIDOR (FOLLOW = Salto VIP)
+            else if (tipo === 'FOLLOW') {
+              console.log(`[LIVE] Nuevo seguidor: ${usuarioMostrar}`);
+              encolarFoto(usuarioMostrar, avatar, true, 'Seguidor ⭐', rawHandle || rawUser, 1);
+            }
+            // 3. ENTRADA AL LIVE (MEMBER / JOIN) O INTERACCIÓN (CHAT / LIKE / SHARE)
+            else if (tipo === 'MEMBER' || tipo === 'JOIN' || tipo === 'CHAT' || tipo === 'LIKE' || tipo === 'SHARE') {
+              // Evitar imprimir repetidamente a la misma persona en menos de 4 minutos por entradas/interacciones normales
+              const ahora = Date.now();
+              const ultimaVez = usuariosImpresosRecientes.get(lookupKey) || 0;
+              if (ahora - ultimaVez < 240000) {
+                return;
+              }
+              usuariosImpresosRecientes.set(lookupKey, ahora);
+              console.log(`[LIVE] Espectador en cola (${tipo}): ${usuarioMostrar}`);
+              encolarFoto(usuarioMostrar, avatar, false, null, rawHandle || rawUser, 0);
+            }
+          } catch (e) {
+            console.error('Error procesando evento de TikTok:', e);
+          }
+        };
+
+        ws.onclose = () => {
+          badge.className = 'status-conn status-offline';
+          text.textContent = `Conector Offline (Reintentando puerto 3000...)`;
+          intentoPuerto = 3000;
+          setTimeout(conectarWebSocket, 2000);
+        };
+
+        ws.onerror = () => {
+          ws.close();
+        };
+
+      } catch (err) {
+        intentoPuerto = 3000;
+        setTimeout(conectarWebSocket, 2000);
+      }
+    }
+
+    // Compatibilidad adicional directa con capas de Meld Studio
+    window.addEventListener('message', (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (!data) return;
+        const user = (data.user || data.nickname || '').replace(/^@/, '').trim();
+        if (!user || user.toLowerCase() === 'usuario') return;
+        const avatar = data.avatar || data.profilePictureUrl || '';
+        if (data.type === 'gift' || data.event === 'gift') {
+          const gift = data.giftName || data.gift || 'Rosa 🌹';
+          encolarFoto('@' + user, avatar, true, gift, user);
+        } else if (data.type === 'join' || data.event === 'member') {
+          encolarFoto('@' + user, avatar, false, null, user);
+        }
+      } catch (e) {}
+    });
+
+    // Inicializar al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      conectarWebSocket();
+
+      // Demo de bienvenida al abrir con la foto real en Ultra HD (1080x1080) de @slowmdoficial
+      setTimeout(() => {
+        encolarFoto('@slowmdoficial', '', true, 'Rosa 🌹', 'slowmdoficial');
+      }, 800);
+    });
+  </script>
+</body>
+</html>

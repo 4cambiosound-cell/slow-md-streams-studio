@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
-const { TikTokLiveConnection, WebcastEvent } = require('tiktok-live-connector');
+const { TikTokLiveConnection, WebcastEvent, fetchRoomInfoFromApiLiveRoute } = require('tiktok-live-connector');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 const { RadioInteractiveEngine } = require('./radio-engine');
 
@@ -43,11 +43,10 @@ let botConfig = {
     sharesReq: 10,
     rosesReq: 5,
     giftCategories: {
-      desbloquear: ['rosa', 'corazón con los dedos', 'tik tok'],
-      subirPosicion: ['rosa x10', 'corazón dedos x2', 'mención x2'],
-      puesto3: ['sombrero y bigote'],
-      puesto2: ['gafas de sol'],
-      puesto1: ['money gun']
+      desbloquear: ['gorra', 'cap'],
+      subirPosicion: ['sombrero con bigote', 'sombrero y bigote', 'hat and mustache'],
+      puesto2: ['corazón en las manos', 'corazon en las manos', 'hand heart', 'hands heart'],
+      puesto1: ['money gun', 'pistola de dinero']
     },
     vipMinDiamonds: 100
   },
@@ -65,6 +64,7 @@ let botConfig = {
     rate: 1.0,
     pitch: 1.0,
     audioOutput: 'both',
+    commentReaderMode: 'all',
     tiktokVoice: false,
     followersOnly: false,
     antiSpam: true
@@ -79,7 +79,12 @@ try {
       requireFollowerToRequest: false, // Ya no es necesario seguir al canal para entrar o agregar canción
       freeLikesReq: Math.max(1, Number(loaded.freeLikesReq || loaded.rules?.likesReq || 5000)),
       rules: { ...botConfig.rules, ...(loaded.rules || {}) },
-      tts: { ...botConfig.tts, ...(loaded.tts || {}), tiktokVoice: false }
+      tts: {
+        ...botConfig.tts,
+        ...(loaded.tts || {}),
+        commentReaderMode: loaded.tts?.commentReaderMode || 'all',
+        tiktokVoice: false
+      }
     };
     // Si tenía una voz robótica antigua o de TikTok, migrar automáticamente a voz neuronal realista
     if (!botConfig.tts.voiceURI || !botConfig.tts.voiceURI.endsWith('Neural')) {
@@ -348,6 +353,28 @@ const mimeTypes = {
   '.webp': 'image/webp'
 };
 
+// Caché de avatares en Ultra HD (1080x1080) de TikTok
+const hdAvatarCache = new Map();
+let hdLookupWebClient = null;
+async function resolveHdAvatar(uniqueId, fallbackAvatar = '') {
+  const cleanId = String(uniqueId || '').replace(/^@/, '').trim();
+  if (!cleanId || cleanId.toLowerCase() === 'usuario' || cleanId.startsWith('user_')) return fallbackAvatar;
+  if (hdAvatarCache.has(cleanId)) return hdAvatarCache.get(cleanId);
+  try {
+    if (!hdLookupWebClient) {
+      hdLookupWebClient = new TikTokLiveConnection('tiktok', {}).webClient;
+    }
+    const res = await fetchRoomInfoFromApiLiveRoute({ webClient: hdLookupWebClient, uniqueId: cleanId });
+    const u = res?.data?.user;
+    const hdUrl = u?.avatarLarger || u?.avatarMedium || u?.avatarThumb || '';
+    if (hdUrl) {
+      hdAvatarCache.set(cleanId, hdUrl);
+      return hdUrl;
+    }
+  } catch (e) {}
+  return fallbackAvatar;
+}
+
 const server = http.createServer((req, res) => {
   // Soporte CORS para overlays en OBS, Meld Studio o ventanas externas
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -370,6 +397,16 @@ const server = http.createServer((req, res) => {
     reqUrl = '/index.html';
   } else if (reqUrl === '/radio' || reqUrl === '/radio-panel' || reqUrl === '/radio-live' || reqUrl === '/radio-live.html' || reqUrl === '/radio-overlay' || reqUrl === '/radio/overlay') {
     reqUrl = '/radio-live.html';
+  } else if (reqUrl === '/api/hd-avatar') {
+    const userParam = (params.get('user') || '').replace(/^@/, '').trim();
+    resolveHdAvatar(userParam, '').then((avatarUrl) => {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ user: userParam, avatarUrl: avatarUrl || '' }));
+    }).catch(() => {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ user: userParam, avatarUrl: '' }));
+    });
+    return;
   } else if (reqUrl === '/api/radio/youtube-search') {
     const q = (params.get('q') || '').trim();
     const title = (params.get('title') || '').trim();
@@ -506,8 +543,8 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = mimeTypes[ext] || 'application/octet-stream';
 
-    // Evitar caché para los datos sincronizados
-    if (reqUrl.includes('queue-data.json') || reqUrl.includes('bot-config.json')) {
+    // Evitar caché para overlays HTML y datos sincronizados en Meld Studio / OBS
+    if (ext === '.html' || reqUrl.includes('queue-data.json') || reqUrl.includes('bot-config.json')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
@@ -719,6 +756,51 @@ function usuarioTieneQuiereme(userIdentifier, extraInfo = {}) {
   return keys.some(k => quieremeUsers.has(k));
 }
 
+function crearDiscoDesdeUsuario(userKey, userIdentifier, metodoEntrada, extraInfo = {}, isVip = false, isBlindado = false) {
+  const data = getUserStepData(userKey, userIdentifier, extraInfo.handle, extraInfo.avatarUrl);
+  const songTitleUsed = data.pendingSongTitle || '';
+  const songUrlUsed = data.pendingSongUrl || '';
+  const linkMeta = (!songTitleUsed && songUrlUsed) ? detectarLinkCancion(songUrlUsed) : null;
+  const initialTitle = songTitleUsed || (linkMeta ? `Canción de @${data.name} (${linkMeta.label})` : 'Esperando Escucha, (Canción + Artista) o link...');
+  const initialUrl = songUrlUsed || '';
+  const initialPlatform = songTitleUsed ? 'youtube' : (linkMeta ? linkMeta.platform : '');
+
+  // Consumir inmediatamente la calificación y canción pendiente para que NUNCA se duplique ni reaparezca tras ser escuchada
+  data.giftedHeart = false;
+  data.entryGiftLabel = '';
+  data.likesGiven = 0;
+  data.readyForUnlockLog = false;
+  data.pendingSongTitle = '';
+  data.pendingSongUrl = '';
+  serverUserLikes.set(userKey, 0);
+  if (data.handle) {
+    serverUserLikes.set(normalizarUserKey(data.handle), 0);
+  }
+
+  const nuevoDisco = {
+    id: (isBlindado ? 'vip1_' : 'disk_') + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    title: initialTitle,
+    songUrl: initialUrl,
+    songPlatform: initialPlatform,
+    platform: initialPlatform,
+    user: data.name || userIdentifier,
+    handle: data.handle || extraInfo.handle || '',
+    avatarUrl: data.avatarUrl || extraInfo.avatarUrl || '',
+    gift: metodoEntrada,
+    status: 'unlocked',
+    priority: isVip ? 'vip' : 'normal',
+    vip150: Boolean(isBlindado),
+    overtakenCount: 0,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  if (linkMeta && !songTitleUsed) {
+    resolverTituloDeLink(nuevoDisco, linkMeta.url, linkMeta.label, false);
+  }
+
+  return { nuevoDisco, songTitleUsed };
+}
+
 function verificarCompletitudPasos(userKey, extraInfo = {}) {
   const data = userSteps.get(userKey);
   if (!data) return false;
@@ -726,14 +808,14 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
   // Si la lista está bloqueada (por comando 0 o meta de likes), no entra todavía
   if (botConfig.queueLocked) return false;
 
-  // Entrada a la lista sin requisito de seguir: basta con enviar Corazón con los dedos o llegar a los Likes Gratis configurados (D-X)
+  // Entrada a la lista sin requisito de seguir: basta con enviar Gorra (x1) o llegar a los 5,000 Likes Gratis configurados (D-X)
   const freeLikesNeeded = getFreeLikesReq();
   const totalUserLikes = Math.max(data.likesGiven || 0, serverUserLikes.get(userKey) || 0);
   const hasEntryQualification = Boolean(data.giftedHeart || totalUserLikes >= freeLikesNeeded);
 
   if (hasEntryQualification) {
-    const viaCorazon = Boolean(data.giftedHeart);
-    const metodoEntrada = viaCorazon ? 'Corazón con los dedos' : `${freeLikesNeeded.toLocaleString()} Likes Gratis`;
+    const viaGift = Boolean(data.giftedHeart);
+    const metodoEntrada = viaGift ? (data.entryGiftLabel || 'Gorra 🧢') : `${freeLikesNeeded.toLocaleString()} Likes (Sin Prioridad)`;
 
     // Verificar si ya tiene disco o canción en la cola
     const idx = queueState.queue.findIndex(s => {
@@ -743,46 +825,9 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
     });
 
     if (idx === -1) {
-      const songTitleUsed = data.pendingSongTitle || '';
-      const songUrlUsed = data.pendingSongUrl || '';
-      const linkMeta = (!songTitleUsed && songUrlUsed) ? detectarLinkCancion(songUrlUsed) : null;
-      const initialTitle = songTitleUsed || (linkMeta ? `Canción de @${data.name} (${linkMeta.label})` : 'Esperando Escucha, (Canción + Artista) o link...');
-      const initialUrl = songUrlUsed || '';
-      const initialPlatform = songTitleUsed ? 'youtube' : (linkMeta ? linkMeta.platform : '');
-
-      // Consumir inmediatamente la calificación y canción pendiente para que NUNCA se duplique ni reaparezca tras ser escuchada
-      data.giftedHeart = false;
-      data.likesGiven = 0;
-      data.readyForUnlockLog = false;
-      data.pendingSongTitle = '';
-      data.pendingSongUrl = '';
-      serverUserLikes.set(userKey, 0);
-      if (data.handle) {
-        serverUserLikes.set(normalizarUserKey(data.handle), 0);
-      }
-
-      const nuevoDisco = {
-        id: 'disk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        title: initialTitle,
-        songUrl: initialUrl,
-        songPlatform: initialPlatform,
-        platform: initialPlatform,
-        user: data.name,
-        handle: data.handle || '',
-        avatarUrl: data.avatarUrl || extraInfo.avatarUrl || '',
-        gift: metodoEntrada,
-        status: 'unlocked',
-        priority: 'normal',
-        vip150: false,
-        overtakenCount: 0,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+      const { nuevoDisco, songTitleUsed } = crearDiscoDesdeUsuario(userKey, data.name, metodoEntrada, extraInfo, false, false);
       queueState.queue.push(nuevoDisco);
       saveQueueData();
-
-      if (linkMeta && !songTitleUsed) {
-        resolverTituloDeLink(nuevoDisco, linkMeta.url, linkMeta.label, false);
-      }
 
       const announcement = songTitleUsed
         ? `¡${data.name} entró a la lista con "${songTitleUsed}" (${metodoEntrada})!`
@@ -800,14 +845,15 @@ function verificarCompletitudPasos(userKey, extraInfo = {}) {
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`⭐ ${data.name} entró a la lista (${metodoEntrada}) -> Disco añadido (${initialTitle})`, 'queue');
+      addLog(`⭐ ${data.name} entró a la lista (${metodoEntrada}) -> Disco añadido (${nuevoDisco.title})`, 'queue');
       return true;
     } else if (queueState.queue[idx].status === 'locked') {
-      // Si tenía un tema bloqueado en la lista, desbloquearlo gratis o con Corazón con los dedos
+      // Si tenía un tema bloqueado en la lista, desbloquearlo gratis o con Gorra
       const s = queueState.queue[idx];
       s.status = 'unlocked';
       s.gift = metodoEntrada;
       data.giftedHeart = false;
+      data.entryGiftLabel = '';
       data.likesGiven = 0;
       data.readyForUnlockLog = false;
       serverUserLikes.set(userKey, 0);
@@ -1333,8 +1379,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     // 1. (...) -> Explicación de cómo agregar canción a la lista
     if (text === '...' || text === '…' || /^\.{3,}$/.test(text)) {
       const freeLikes = getFreeLikesReq();
-      const voiceMsg = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe Escucha más el nombre de la canción más el artista, ponlo entre paréntesis, o pega tu link en el chat.`;
-      const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
+      const voiceMsg = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes para entrar sin prioridad. Para adelantar un puesto envía Sombrero con bigote, Corazón en las manos para ir al puesto número 2, o Money Gun para reacción inmediata en el puesto número 1. Escribe Escucha más el nombre de la canción más el artista, ponlo entre paréntesis, o pega tu link en el chat.`;
+      const bannerMsg = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero con bigote = +1 Puesto • 🫶 Corazón en las manos = Puesto #2 • 💸 Money Gun = #1 Inmediato`;
       broadcast({
         type: 'HOW_TO_ADD_HELP',
         user: userChatName,
@@ -1474,7 +1520,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   if (ayudaRegex.test(text) || ayudaCortaRegex.test(text) || ayudaPedirRegex.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
     const freeLikes = getFreeLikesReq();
-    const bannerMsg = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
+    const bannerMsg = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero con bigote = +1 Puesto • 🫶 Corazón en las manos = #2 • 💸 Money Gun = #1`;
     broadcast({
       type: 'HOW_TO_ADD_HELP',
       user: chatUser,
@@ -1632,8 +1678,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       const metaTxt = botConfig.lockTargetLikes ? ` hasta llegar a ${botConfig.lockTargetLikes.toLocaleString()} likes` : '';
       const freeLikes = getFreeLikesReq();
       const aviso = textSongInfo
-        ? `🔒 "${textSongInfo.title}" guardada • Da ${freeLikes.toLocaleString()} TapTap o envía Corazón con los dedos 🫰 mientras llegamos a la meta${metaTxt}`
-        : `🔒 Lista cerrada${metaTxt} • Da ${freeLikes.toLocaleString()} TapTap o envía Corazón con los dedos 🫰 para entrar al desbloquear`;
+        ? `🔒 "${textSongInfo.title}" guardada • Da ${freeLikes.toLocaleString()} TapTap o envía x1 Gorra 🧢 mientras llegamos a la meta${metaTxt}`
+        : `🔒 Lista cerrada${metaTxt} • Da ${freeLikes.toLocaleString()} TapTap o envía x1 Gorra 🧢 para entrar al desbloquear`;
       broadcast({
         type: 'CHAT_WARNING',
         user: chatName,
@@ -1641,14 +1687,14 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         message: aviso,
         bannerText: aviso
       });
-      addLog(`🔒 ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}"` : `link`} con la lista bloqueada (guardada como pendiente para cuando desbloquee con TapTap o Corazón con los dedos)`, 'chat');
+      addLog(`🔒 ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}"` : `link`} con la lista bloqueada (guardada como pendiente para cuando desbloquee con TapTap o Gorra)`, 'chat');
       return true;
     }
 
     const freeLikes = getFreeLikesReq();
     const bannerMsg = textSongInfo
-      ? `"${textSongInfo.title}" guardado • Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes para subirlo a la lista`
-      : `Para entrar a la lista: Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️`;
+      ? `"${textSongInfo.title}" guardado • Envía x1 Gorra 🧢, Sombrero con bigote 🎩, Corazón en las manos 🫶 (#2), Money Gun 💸 (#1) o da ${freeLikes.toLocaleString()} Likes`
+      : `Para entrar a la lista: Envía x1 Gorra 🧢 o da ${freeLikes.toLocaleString()} Likes • 🎩 Sombrero (+1) • 🫶 Corazón Manos (#2) • 💸 Money Gun (#1)`;
     broadcast({
       type: 'CHAT_WARNING',
       user: chatName,
@@ -1656,7 +1702,7 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       message: bannerMsg,
       bannerText: bannerMsg
     });
-    addLog(`⚠️ ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}" (${escuchaInfo ? 'Escucha' : 'Paréntesis'})` : `link de ${linkInfo.label}`} (guardado como pendiente hasta que envíe Corazón con los dedos o ${freeLikes} likes).`, 'chat');
+    addLog(`⚠️ ${chatName} envió ${textSongInfo ? `"${textSongInfo.title}" (${escuchaInfo ? 'Escucha' : 'Paréntesis'})` : `link de ${linkInfo.label}`} (guardado como pendiente hasta que envíe Gorra, regalo VIP o ${freeLikes} likes).`, 'chat');
     return true;
   }
 }
@@ -1721,6 +1767,21 @@ function processServerShare(userIdentifier, extraInfo = {}) {
 
 const recentSpecialGiftAnim = new Map();
 
+function triggerEpicGiftModal(giftType, userIdentifier, avatarUrl = '') {
+  const userKey = normalizarUserKey(userIdentifier);
+  const animKey = `${giftType}_${userKey}`;
+  const now = Date.now();
+  if (!recentSpecialGiftAnim.has(animKey) || (now - recentSpecialGiftAnim.get(animKey)) > 3500) {
+    recentSpecialGiftAnim.set(animKey, now);
+    broadcast({
+      type: 'EPIC_GIFT_ANIMATION',
+      giftType: giftType,
+      user: userIdentifier,
+      avatarUrl: avatarUrl || ''
+    });
+  }
+}
+
 function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, comment, extraInfo = {}) {
   if (extraInfo.displayId || extraInfo.nickname || extraInfo.userId) {
     registrarAliasServidor(userIdentifier, extraInfo.displayId, extraInfo.nickname, extraInfo.userId);
@@ -1733,14 +1794,11 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
   const giftIdNum = Number(extraInfo.giftId) || 0;
   const totalCoins = (Number(diamondCount) || 1) * (Number(repeatCount) || 1);
 
-  // DETECCIÓN ULTRA-ROBUSTA DE REGALOS ESPECIALES (EN ESPAÑOL, INGLÉS Y POR GIFT ID DE TIKTOK)
-  const isCorazonDedos =
-    giftIdNum === 5487 ||
-    (rawGiftText.includes('coraz') && (rawGiftText.includes('dedo') || rawGiftText.includes('finger'))) ||
-    rawGiftText.includes('finger heart') ||
-    rawGiftText.includes('corazón dedos') ||
-    rawGiftText.includes('corazon dedos');
+  if (comment && !extraInfo.isPendingStreak) {
+    processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
+  }
 
+  // DETECCIÓN DE QUIÉREME (PARA MODO FILTRADO DE VOZ Y ANIMACIÓN)
   const isQuiereme =
     giftIdNum === 7934 ||
     giftIdNum === 6093 ||
@@ -1751,53 +1809,11 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     rawGiftText.includes('heartme') ||
     rawGiftText.includes('team heart') ||
     rawGiftText.includes('corazón de equipo') ||
-    rawGiftText.includes('corazon de equipo') ||
-    rawGiftText.includes('corazón del equipo') ||
-    rawGiftText.includes('corazon del equipo') ||
-    rawGiftText.includes('love me') ||
-    rawGiftText.includes('love you') ||
-    rawGiftText.includes('cuddle');
+    rawGiftText.includes('corazon de equipo');
 
-  if (comment && !extraInfo.isPendingStreak) {
-    processServerChat(comment, userIdentifier, extraInfo.handle || extraInfo.displayId, extraInfo.userId);
-  }
-
-  // 1. CASO REGALO: CORAZÓN CON LOS DEDOS -> AGREGA DIRECTO A LA LISTA SIN NECESIDAD DE SEGUIR NI COMPARTIR
-  if (isCorazonDedos) {
-    const stepData = getUserStepData(userKey, userIdentifier, extraInfo.handle, extraInfo.avatarUrl);
-    stepData.giftedHeart = true;
-
-    const animKey = `corazon_${userKey}`;
-    const now = Date.now();
-    if (!recentSpecialGiftAnim.has(animKey) || (now - recentSpecialGiftAnim.get(animKey)) > 3500) {
-      recentSpecialGiftAnim.set(animKey, now);
-      broadcast({
-        type: 'EPIC_GIFT_ANIMATION',
-        giftType: 'corazon_dedos',
-        user: userIdentifier,
-        avatarUrl: extraInfo.avatarUrl || ''
-      });
-    }
-
-    verificarCompletitudPasos(userKey, extraInfo);
-  }
-
-  // 2. #3 CASO REGALO: QUIÉREME -> ACTIVA INMEDIATAMENTE LA LECTURA DE COMENTARIOS DEL USUARIO EN EL LIVE + ANIMACIÓN ÉPICA
   if (isQuiereme) {
     registrarUsuarioQuiereme(userIdentifier, extraInfo);
-
-    const animKey = `quiereme_${userKey}`;
-    const now = Date.now();
-    if (!recentSpecialGiftAnim.has(animKey) || (now - recentSpecialGiftAnim.get(animKey)) > 3500) {
-      recentSpecialGiftAnim.set(animKey, now);
-      broadcast({
-        type: 'EPIC_GIFT_ANIMATION',
-        giftType: 'quiereme',
-        user: userIdentifier,
-        avatarUrl: extraInfo.avatarUrl || ''
-      });
-      addLog(`💖 ${userIdentifier} envió Quiéreme -> Lectura de comentarios por voz activada durante todo el Live`, 'gift');
-    }
+    triggerEpicGiftModal('quiereme', userIdentifier, extraInfo.avatarUrl);
   }
 
   // Si es una racha en curso (streak tipo 1 que aún no ha finalizado), esperar al cierre de la racha para calcular las monedas totales
@@ -1805,59 +1821,92 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
     return;
   }
 
-  // 3. #8 SUBIDA DE POSICIONES SEGÚN VALOR EN MONEDAS DEL REGALO
-  // - 15 a 29 monedas: sube 1 posición
-  // - 30 a 149 monedas: sube 2 posiciones
-  // - 150+ monedas: se pone de #1 blindado (entra directo si no estaba y solo otro de 150+ lo pasa)
+  // DETECCIÓN ULTRA-ROBUSTA DE LOS 4 REGALOS OFICIALES (ESPAÑOL, INGLÉS, GIFT ID Y EQUIVALENCIA EN MONEDAS):
+  // 1. x1 Money Gun -> Puesto #1 con Reacción Inmediata (Blindado)
+  const isMoneyGunName =
+    giftIdNum === 7168 ||
+    giftIdNum === 5150 ||
+    rawGiftText.includes('money gun') ||
+    rawGiftText.includes('moneygun') ||
+    rawGiftText.includes('pistola de dinero') ||
+    rawGiftText.includes('lluvia de dinero') ||
+    rawGiftText.includes('make it rain');
+
+  // 2. x1 Corazón en las manos -> Entrar o saltar al Puesto #2
+  const isCorazonManosName =
+    giftIdNum === 5585 ||
+    giftIdNum === 5660 ||
+    (rawGiftText.includes('coraz') && rawGiftText.includes('mano')) ||
+    (rawGiftText.includes('heart') && rawGiftText.includes('hand')) ||
+    rawGiftText.includes('hand heart') ||
+    rawGiftText.includes('hands heart') ||
+    rawGiftText.includes('corazón en las manos') ||
+    rawGiftText.includes('corazon en las manos') ||
+    rawGiftText.includes('corazón con las manos') ||
+    rawGiftText.includes('corazon con las manos');
+
+  // 3. x1 Sombrero con bigote -> Adelantar 1 posición (y entrar si no estaba)
+  const isSombreroBigoteName =
+    (rawGiftText.includes('sombrero') && rawGiftText.includes('bigote')) ||
+    (rawGiftText.includes('hat') && (rawGiftText.includes('mustache') || rawGiftText.includes('moustache'))) ||
+    rawGiftText.includes('sombrero y bigote') ||
+    rawGiftText.includes('sombrero con bigote') ||
+    rawGiftText.includes('hat and mustache');
+
+  // 4. x1 Gorra -> Entrar a la lista
+  const isGorraName =
+    /\bgorra\b/i.test(rawGiftText) ||
+    /\bcap\b/i.test(rawGiftText) ||
+    rawGiftText.includes('baseball cap') ||
+    rawGiftText.includes('gorra');
+
+  // Buscar si el usuario ya está en la cola
   let idx = queueState.queue.findIndex(s => {
     const k = normalizarUserKey(s.user);
     const kh = s.handle ? normalizarUserKey(s.handle) : '';
     return k === userKey || (kh && kh === userKey);
   });
 
-  if (totalCoins >= 150) {
+  // Evaluar prioridad de regalo (Nombre exacto primero, o equivalente en monedas)
+  const isMoneyGun = isMoneyGunName || (!isCorazonManosName && !isSombreroBigoteName && !isGorraName && totalCoins >= 500);
+  const isCorazonManos = !isMoneyGun && (isCorazonManosName || (!isSombreroBigoteName && !isGorraName && totalCoins >= 100 && totalCoins < 500));
+  const isSombreroBigote = !isMoneyGun && !isCorazonManos && (isSombreroBigoteName || (!isGorraName && idx !== -1 && totalCoins >= 99));
+  const isGorra = !isMoneyGun && !isCorazonManos && !isSombreroBigote && (isGorraName || (idx === -1 && totalCoins >= 99));
+
+  // =========================================================================
+  // REGLA 4: x1 MONEY GUN (o 500+ monedas) -> REACCIÓN INMEDIATA PUESTO #1 BLINDADO
+  // =========================================================================
+  if (isMoneyGun) {
+    const labelGift = isMoneyGunName ? 'Money Gun 💸' : `${giftName} (${totalCoins} monedas) 💸`;
+    triggerEpicGiftModal('money_gun', userIdentifier, extraInfo.avatarUrl);
+
     if (idx === -1) {
-      // Entra directo al #1 blindado aunque no estuviera en la lista
-      const nuevoVip = {
-        id: 'vip150_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        title: 'Esperando link de canción...',
-        songUrl: '',
-        platform: '',
-        user: userIdentifier,
-        handle: extraInfo.handle || '',
-        avatarUrl: extraInfo.avatarUrl || '',
-        gift: `${giftName} (${totalCoins} monedas)`,
-        status: 'unlocked',
-        priority: 'vip',
-        vip150: true,
-        overtakenCount: 0,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      queueState.queue.unshift(nuevoVip);
+      const { nuevoDisco } = crearDiscoDesdeUsuario(userKey, userIdentifier, labelGift, extraInfo, true, true);
+      queueState.queue.unshift(nuevoDisco);
       saveQueueData();
-      const announcement = `👑 ¡@${userIdentifier} entró directo al PUESTO #1 BLINDADO con ${giftName} (${totalCoins} monedas)!`;
+      const announcement = `💸👑 ¡@${userIdentifier} entró con REACCIÓN INMEDIATA al PUESTO #1 con ${labelGift}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
         history: queueState.history,
         sound: 'top1',
         eventType: 'hands_top1',
-        songTitle: nuevoVip.title,
-        songUser: nuevoVip.user,
+        songTitle: nuevoDisco.title,
+        songUser: nuevoDisco.user,
         newPosition: 1,
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`👑 ¡${userIdentifier} entró directo al PUESTO #1 BLINDADO con ${giftName} (${totalCoins} monedas)!`, 'gift');
+      addLog(`💸👑 ¡${userIdentifier} entró directo al PUESTO #1 INMEDIATO BLINDADO con ${labelGift}!`, 'gift');
     } else {
       const s = queueState.queue[idx];
       s.status = 'unlocked';
       s.priority = 'vip';
       s.vip150 = true;
-      s.gift = `${giftName} (${totalCoins} monedas)`;
+      s.gift = labelGift;
       moverCancionConRebase(idx, 0);
       saveQueueData();
-      const announcement = `👑 ¡@${s.user} subió al PUESTO #1 BLINDADO con ${giftName} (${totalCoins} monedas)!`;
+      const announcement = `💸👑 ¡@${s.user} saltó a REACCIÓN INMEDIATA en el PUESTO #1 con ${labelGift}!`;
       broadcast({
         type: 'QUEUE_UPDATE',
         queue: queueState.queue,
@@ -1870,56 +1919,174 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
         skipVoice: true,
         announcement: announcement
       });
-      addLog(`👑 ¡${s.user} subió al PUESTO #1 BLINDADO con ${giftName} (${totalCoins} monedas)!`, 'gift');
+      addLog(`💸👑 ¡${s.user} subió al PUESTO #1 INMEDIATO BLINDADO con ${labelGift}!`, 'gift');
     }
     return;
   }
 
-  if (idx !== -1 && totalCoins >= 30 && totalCoins <= 149) {
-    const s = queueState.queue[idx];
-    s.gift = `${giftName} (${totalCoins} monedas)`;
-    const targetPos = calcularTargetConBlindaje(idx, 2);
-    moverCancionConRebase(idx, targetPos);
-    const newPos = targetPos + 1;
-    saveQueueData();
-    const announcement = `🚀 ¡@${s.user} subió 2 posiciones al Puesto #${newPos} con ${giftName} (${totalCoins} monedas)!`;
-    broadcast({
-      type: 'QUEUE_UPDATE',
-      queue: queueState.queue,
-      history: queueState.history,
-      sound: 'top1',
-      eventType: 'move_up',
-      songTitle: s.title,
-      songUser: s.user,
-      newPosition: newPos,
-      skipVoice: true,
-      announcement: announcement
-    });
-    addLog(`🚀 ¡${s.user} subió 2 posiciones al Puesto #${newPos} con ${giftName} (${totalCoins} monedas)!`, 'gift');
+  // =========================================================================
+  // REGLA 3: x1 CORAZÓN EN LAS MANOS (o 100-499 monedas) -> ENTRAR O SALTAR AL PUESTO #2
+  // =========================================================================
+  if (isCorazonManos) {
+    const labelGift = isCorazonManosName ? 'Corazón en las manos 🫶' : `${giftName} (${totalCoins} monedas) 🫶`;
+    triggerEpicGiftModal('corazon_manos', userIdentifier, extraInfo.avatarUrl);
+
+    if (idx === -1) {
+      const { nuevoDisco } = crearDiscoDesdeUsuario(userKey, userIdentifier, labelGift, extraInfo, true, false);
+      // Calcular el índice para el Puesto #2 (índice 1, o 0 si la lista está vacía), respetando si hay múltiples #1 blindados
+      let targetIdx = queueState.queue.length === 0 ? 0 : 1;
+      while (targetIdx < queueState.queue.length && queueState.queue[targetIdx - 1]?.vip150 && queueState.queue[targetIdx]?.vip150) {
+        targetIdx++;
+      }
+      targetIdx = Math.min(queueState.queue.length, targetIdx);
+      queueState.queue.splice(targetIdx, 0, nuevoDisco);
+      const finalPos = targetIdx + 1;
+      saveQueueData();
+
+      const announcement = `🫶🚀 ¡@${userIdentifier} entró directo al PUESTO #${finalPos} con ${labelGift}!`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'top1',
+        eventType: 'move_up',
+        songTitle: nuevoDisco.title,
+        songUser: nuevoDisco.user,
+        newPosition: finalPos,
+        skipVoice: true,
+        announcement: announcement
+      });
+      addLog(`🫶🚀 ¡${userIdentifier} entró directo al PUESTO #${finalPos} con ${labelGift}!`, 'gift');
+    } else {
+      const s = queueState.queue[idx];
+      s.status = 'unlocked';
+      s.priority = 'vip';
+      s.gift = labelGift;
+
+      // Si ya está en #1 (idx === 0), se mantiene en #1; de lo contrario salta al Puesto #2 (idx 1) respetando blindados
+      let targetIdx = idx === 0 ? 0 : 1;
+      for (let i = 0; i < idx; i++) {
+        if (queueState.queue[i] && queueState.queue[i].vip150) {
+          targetIdx = Math.max(targetIdx, i + 1);
+        }
+      }
+      targetIdx = Math.min(idx, targetIdx);
+      moverCancionConRebase(idx, targetIdx);
+      const finalPos = targetIdx + 1;
+      saveQueueData();
+
+      const announcement = `🫶🚀 ¡@${s.user} saltó directo al PUESTO #${finalPos} con ${labelGift}!`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'top1',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: finalPos,
+        skipVoice: true,
+        announcement: announcement
+      });
+      addLog(`🫶🚀 ¡${s.user} saltó al PUESTO #${finalPos} con ${labelGift}!`, 'gift');
+    }
     return;
   }
 
-  if (idx !== -1 && totalCoins >= 15 && totalCoins <= 29) {
-    const s = queueState.queue[idx];
-    s.gift = `${giftName} (${totalCoins} monedas)`;
-    const targetPos = calcularTargetConBlindaje(idx, 1);
-    moverCancionConRebase(idx, targetPos);
-    const newPos = targetPos + 1;
-    saveQueueData();
-    const announcement = `⬆️ ¡@${s.user} subió 1 posición al Puesto #${newPos} con ${giftName} (${totalCoins} monedas)!`;
-    broadcast({
-      type: 'QUEUE_UPDATE',
-      queue: queueState.queue,
-      history: queueState.history,
-      sound: 'subir',
-      eventType: 'move_up',
-      songTitle: s.title,
-      songUser: s.user,
-      newPosition: newPos,
-      skipVoice: true,
-      announcement: announcement
-    });
-    addLog(`⬆️ ¡${s.user} subió 1 posición al Puesto #${newPos} con ${giftName} (${totalCoins} monedas)!`, 'gift');
+  // =========================================================================
+  // REGLA 2: x1 SOMBRERO CON BIGOTE -> ADELANTAR 1 POSICIÓN (Y ENTRAR SI NO ESTABA)
+  // =========================================================================
+  if (isSombreroBigote) {
+    const labelGift = isSombreroBigoteName ? 'Sombrero con bigote 🎩🥸' : `${giftName} (${totalCoins} monedas) 🎩`;
+    triggerEpicGiftModal('sombrero_bigote', userIdentifier, extraInfo.avatarUrl);
+
+    if (idx === -1) {
+      // Si no estaba en la lista, lo mete y además lo adelanta 1 posición (respetando #1 blindado)
+      const { nuevoDisco } = crearDiscoDesdeUsuario(userKey, userIdentifier, labelGift, extraInfo, false, false);
+      queueState.queue.push(nuevoDisco);
+      const startIdx = queueState.queue.length - 1;
+      const targetPos = calcularTargetConBlindaje(startIdx, 1);
+      moverCancionConRebase(startIdx, targetPos);
+      const newPos = targetPos + 1;
+      saveQueueData();
+
+      const announcement = `🎩⬆️ ¡@${userIdentifier} entró y adelantó al Puesto #${newPos} con ${labelGift}!`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'subir',
+        eventType: 'move_up',
+        songTitle: nuevoDisco.title,
+        songUser: nuevoDisco.user,
+        newPosition: newPos,
+        skipVoice: true,
+        announcement: announcement
+      });
+      addLog(`🎩⬆️ ¡${userIdentifier} entró y adelantó 1 posición al Puesto #${newPos} con ${labelGift}!`, 'gift');
+    } else {
+      const s = queueState.queue[idx];
+      s.status = 'unlocked';
+      s.gift = labelGift;
+      const targetPos = calcularTargetConBlindaje(idx, 1);
+      moverCancionConRebase(idx, targetPos);
+      const newPos = targetPos + 1;
+      saveQueueData();
+
+      const announcement = `🎩⬆️ ¡@${s.user} adelantó 1 posición al Puesto #${newPos} con ${labelGift}!`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'subir',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: newPos,
+        skipVoice: true,
+        announcement: announcement
+      });
+      addLog(`🎩⬆️ ¡${s.user} adelantó 1 posición al Puesto #${newPos} con ${labelGift}!`, 'gift');
+    }
+    return;
+  }
+
+  // =========================================================================
+  // REGLA 1: x1 GORRA -> ENTRAR A LA LISTA (O ADELANTAR 1 PUESTO SI YA ESTABA EN LA FILA)
+  // =========================================================================
+  if (isGorra) {
+    const labelGift = isGorraName ? 'Gorra 🧢' : `${giftName} (${totalCoins} monedas) 🧢`;
+    triggerEpicGiftModal('gorra', userIdentifier, extraInfo.avatarUrl);
+
+    if (idx === -1) {
+      const stepData = getUserStepData(userKey, userIdentifier, extraInfo.handle, extraInfo.avatarUrl);
+      stepData.giftedHeart = true;
+      stepData.entryGiftLabel = labelGift;
+      verificarCompletitudPasos(userKey, extraInfo);
+    } else {
+      const s = queueState.queue[idx];
+      s.status = 'unlocked';
+      s.gift = labelGift;
+      const targetPos = calcularTargetConBlindaje(idx, 1);
+      moverCancionConRebase(idx, targetPos);
+      const newPos = targetPos + 1;
+      saveQueueData();
+
+      const announcement = `🧢⬆️ ¡@${s.user} subió al Puesto #${newPos} con ${labelGift}!`;
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        sound: 'subir',
+        eventType: 'move_up',
+        songTitle: s.title,
+        songUser: s.user,
+        newPosition: newPos,
+        skipVoice: true,
+        announcement: announcement
+      });
+      addLog(`🧢⬆️ ¡${s.user} ya estaba en la lista y subió al Puesto #${newPos} con ${labelGift}!`, 'gift');
+    }
     return;
   }
 }
@@ -2033,18 +2200,31 @@ async function connectToTikTok(rawUsername) {
       addLog(`🔒 Lista bloqueada automáticamente al conectar (Likes actuales: ${globalStreamLikes} / Meta: 4,000 likes). Discos en espera conservados.`, 'queue');
     }
 
+    const seenRoomViewers = new Set();
+
     const extractUserInfo = (data) => {
-      const u = data.user || {};
+      let u = data.user || data.operator || {};
+      if (!u.id && !u.displayId && !u.nickname && data.common?.displayText?.pieces) {
+        for (const piece of data.common.displayText.pieces) {
+          const pv = piece?.userValue?.user || piece?.userValue;
+          if (pv && (pv.displayId || pv.uniqueId || pv.nickname || pv.id)) {
+            u = pv;
+            break;
+          }
+        }
+      }
+
       let displayId = (u.displayId || u.uniqueId || data.uniqueId || '').replace(/^@/, '').trim();
       let nickname = (u.nickname || data.nickname || '').replace(/^@/, '').trim();
       let userId = String(u.id || u.idStr || data.userId || '').trim();
 
       if ((!displayId || !nickname) && data.common?.displayText?.pieces) {
         for (const piece of data.common.displayText.pieces) {
-          if (piece.userValue) {
-            displayId = displayId || (piece.userValue.displayId || piece.userValue.uniqueId || '').replace(/^@/, '').trim();
-            nickname = nickname || (piece.userValue.nickname || '').replace(/^@/, '').trim();
-            userId = userId || String(piece.userValue.id || '').trim();
+          const pv = piece?.userValue?.user || piece?.userValue;
+          if (pv) {
+            displayId = displayId || (pv.displayId || pv.uniqueId || '').replace(/^@/, '').trim();
+            nickname = nickname || (pv.nickname || '').replace(/^@/, '').trim();
+            userId = userId || String(pv.id || pv.idStr || '').trim();
           }
         }
       }
@@ -2074,9 +2254,24 @@ async function connectToTikTok(rawUsername) {
         if (displayId) knownFollowers.add(normalizarUserKey(displayId));
       }
 
-      let avatarUrl = u.profilePictureUrl || u.avatarThumb?.urlList?.[0] || u.avatarMedium?.urlList?.[0] || data.profilePictureUrl || '';
+      // Buscar la URL de mayor resolución disponible en las listas de TikTok
+      const pickBestUrl = (imgModel) => {
+        const list = imgModel?.urlList || imgModel?.urls || [];
+        if (!Array.isArray(list) || list.length === 0) return '';
+        return list.find(url => url && (url.includes('1080') || url.includes('720') || !url.includes('shrink:72'))) || list[0] || '';
+      };
+
+      let avatarUrl = (displayId && hdAvatarCache.get(displayId)) ||
+                      pickBestUrl(u.avatarLarge) ||
+                      pickBestUrl(u.avatarMedium) ||
+                      pickBestUrl(u.avatarJpg) ||
+                      u.profilePictureUrl ||
+                      pickBestUrl(u.avatarThumb) ||
+                      data.profilePictureUrl || '';
       if (!avatarUrl) {
         avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(chatName)}`;
+      } else if (displayId && avatarUrl.includes('1080:1080')) {
+        hdAvatarCache.set(displayId, avatarUrl);
       }
 
       return {
@@ -2153,14 +2348,24 @@ async function connectToTikTok(rawUsername) {
 
       const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId, info.isFollower, isModerator);
       if (!wasAction) {
-        // #3 Solo se leen en voz alta los comentarios de quienes hayan enviado un "Quiéreme" en este Live
-        // #4 Nunca se leen links en voz alta
+        // Lector de comentarios en voz alta (por defecto lee TODOS los comentarios salvo links/spam, con opción de filtrar desde el panel)
+        const readerMode = botConfig.tts?.commentReaderMode || 'all';
         const hasSentQuiereme = usuarioTieneQuiereme(info.chatName, info);
-        const canReadTTS = hasSentQuiereme && !contieneLink(comment);
+        const isInQueue = queueState.queue.some(s => normalizarUserKey(s.user) === userKey || (s.handle && normalizarUserKey(s.handle) === userKey));
+        let canReadTTS = false;
+        if (!contieneLink(comment)) {
+          if (readerMode === 'all') {
+            canReadTTS = true;
+          } else if (readerMode === 'quiereme') {
+            canReadTTS = hasSentQuiereme || isInQueue;
+          } else {
+            canReadTTS = false;
+          }
+        }
         const cleanUser = limpiarNombreParaVoz(info.chatName);
 
         if (canReadTTS) {
-          addLog(`🔊 Leyendo en voz alta a ${info.chatName} (Quiéreme activo): "${comment}"`, 'chat');
+          addLog(`🔊 Leyendo en voz alta a ${info.chatName}: "${comment}"`, 'chat');
         }
 
         broadcast({
@@ -2196,18 +2401,69 @@ async function connectToTikTok(rawUsername) {
 
       addLog(`➕ ${info.chatName} comenzó a seguirte`, 'follow');
       const announcement = `${info.chatName} se sumó a la comunidad`;
+      const lookupId = (info.displayId || info.handle || '').replace(/^@/, '').trim();
+      resolveHdAvatar(lookupId, info.avatarUrl).then((hdAvatar) => {
+        broadcast({
+          type: 'FOLLOW',
+          user: info.chatName,
+          displayId: info.displayId,
+          handle: info.handle,
+          nickname: info.nickname,
+          userId: info.userId,
+          avatarUrl: hdAvatar || info.avatarUrl,
+          announcement: announcement,
+          skipVoice: true,
+          timestamp: Date.now()
+        });
+      });
+    });
+
+    // Escuchar cuando espectadores entran al Live (MEMBER / JOIN real para la Impresora)
+    const handleMemberEvent = (data) => {
+      if (!data) return;
+      const info = extractUserInfo(data);
+      if (!info.displayId && (!info.nickname || info.chatName === 'Usuario')) return;
+      if (info.chatName === 'Usuario' || info.chatName.startsWith('user_')) return;
+
+      const viewerKey = (info.displayId || info.handle || info.chatName).toLowerCase();
+      if (!seenRoomViewers.has(viewerKey)) {
+        seenRoomViewers.add(viewerKey);
+        addLog(`👋 ${info.chatName} (${info.handle}) entró al Live`, 'info');
+      }
+
+      // Enviar inmediatamente el evento MEMBER para que la impresora arranque sin retraso
       broadcast({
-        type: 'FOLLOW',
-        user: info.chatName,
+        type: 'MEMBER',
+        user: info.chatName || info.nickname || info.handle,
         displayId: info.displayId,
         handle: info.handle,
         nickname: info.nickname,
         userId: info.userId,
         avatarUrl: info.avatarUrl,
-        announcement: announcement,
-        skipVoice: true,
         timestamp: Date.now()
       });
+
+      // Y precargar su foto 1080x1080 HD en caché en segundo plano
+      const lookupId = (info.displayId || info.handle || '').replace(/^@/, '').trim();
+      if (lookupId) {
+        resolveHdAvatar(lookupId, info.avatarUrl).catch(() => {});
+      }
+    };
+    tiktokConnection.on(WebcastEvent.MEMBER || 'member', handleMemberEvent);
+
+    // Detectar también espectadores presentes en la lista de la sala (ranks / seats) que entraron silenciosamente
+    tiktokConnection.on(WebcastEvent.ROOM_USER || 'roomUser', (data) => {
+      if (!data) return;
+      const list = [...(data.ranks || []), ...(data.seats || [])];
+      for (const item of list) {
+        if (item && item.user) {
+          const info = extractUserInfo({ user: item.user });
+          const viewerKey = (info.displayId || info.handle || info.chatName).toLowerCase();
+          if (viewerKey && info.chatName !== 'Usuario' && !info.chatName.startsWith('user_') && !seenRoomViewers.has(viewerKey)) {
+            handleMemberEvent({ user: item.user });
+          }
+        }
+      }
     });
 
     // Escuchar Regalos (Importante: en protobuf v3 repeatEnd es 0 para regalos sin racha como "Quiéreme", por lo que NO se debe descartar)
@@ -2248,20 +2504,23 @@ async function connectToTikTok(rawUsername) {
       });
 
       if (!isPendingStreak) {
-        broadcast({
-          type: 'GIFT',
-          user: info.chatName,
-          displayId: info.displayId,
-          handle: info.handle,
-          nickname: info.nickname,
-          userId: info.userId,
-          avatarUrl: info.avatarUrl,
-          giftName,
-          repeatCount,
-          diamondCount,
-          comment,
-          skipVoice: true,
-          timestamp: Date.now()
+        const lookupId = (info.displayId || info.handle || '').replace(/^@/, '').trim();
+        resolveHdAvatar(lookupId, info.avatarUrl).then((hdAvatar) => {
+          broadcast({
+            type: 'GIFT',
+            user: info.chatName,
+            displayId: info.displayId,
+            handle: info.handle,
+            nickname: info.nickname,
+            userId: info.userId,
+            avatarUrl: hdAvatar || info.avatarUrl,
+            giftName,
+            repeatCount,
+            diamondCount,
+            comment,
+            skipVoice: true,
+            timestamp: Date.now()
+          });
         });
       }
     });
@@ -2386,11 +2645,21 @@ async function connectToTikTok(rawUsername) {
       });
     });
 
+    const programarReconexionAutomatica = () => {
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => {
+        if (!tiktokConnection && currentStatus.status !== 'connected' && currentStatus.status !== 'disconnected_manual') {
+          connectToTikTok(username);
+        }
+      }, 6000);
+    };
+
     // Fin de transmisión
     tiktokConnection.on(WebcastEvent.STREAM_END, () => {
-      addLog(`La transmisión en vivo de @${username} ha finalizado.`, 'warn');
-      updateStatus('disconnected', { error: 'El En Vivo ha finalizado' });
+      addLog(`La transmisión en vivo de @${username} ha finalizado. Esperando nuevo Live...`, 'warn');
+      updateStatus('disconnected', { error: 'El En Vivo ha finalizado (Reconectando automáticamente...)' });
       tiktokConnection = null;
+      programarReconexionAutomatica();
     });
 
     // Errores de conexión
@@ -2400,9 +2669,10 @@ async function connectToTikTok(rawUsername) {
     });
 
     tiktokConnection.on('disconnected', () => {
-      addLog(`Desconectado de @${username}`, 'warn');
+      addLog(`Desconectado de @${username}. Reintentando en 6s...`, 'warn');
       updateStatus('disconnected', {});
       tiktokConnection = null;
+      programarReconexionAutomatica();
     });
 
   } catch (err) {
@@ -2779,14 +3049,24 @@ wss.on('connection', (ws, req) => {
           });
         }
       } else if (payload.action === 'testGift') {
-        const giftName = payload.giftName || 'Corazón con los dedos';
+        const giftName = payload.giftName || 'Gorra';
         const testUser = payload.user || 'Maria';
-        const diamondCount = Number(payload.diamondCount) || 1;
+        const diamondCount = Number(payload.diamondCount) || 99;
         processServerGift(testUser, giftName, 1, diamondCount, '', {
           displayId: testUser,
           handle: testUser,
           nickname: testUser,
           userId: 'test_' + Date.now(),
+          avatarUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(testUser)
+        });
+      } else if (payload.action === 'testLikes') {
+        const testUser = payload.user || 'Fan_TapTap';
+        const count = Number(payload.count) || getFreeLikesReq();
+        processServerLike(testUser, count, {
+          displayId: testUser,
+          handle: testUser,
+          nickname: testUser,
+          userId: 'test_like_' + Date.now(),
           avatarUrl: 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(testUser)
         });
       } else if (payload.action === 'getPlaylist') {

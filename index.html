@@ -1608,6 +1608,34 @@
           <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
         </div>
 
+        <!-- LECTOR DE COMENTARIOS Y CONTROL DE VOLUMEN RÁPIDO ARRIBA A LA VISTA -->
+        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.85)); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">🗣️</span>
+              <span style="font-size: 12.5px; font-weight: 900; color: #f8fafc; letter-spacing: 0.4px; text-transform: uppercase;">Lector de Comentarios en Vivo</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" id="btn-reader-mode" class="btn-action btn-secondary" onclick="alternarModoLectorComentarios()" style="padding: 5px 10px; font-size: 11px; border-color: #22c55e; color: #86efac; font-weight: 800;" title="Cambiar filtro de comentarios por si hay mucho spam">
+                🔊 Modo: Leer TODOS
+              </button>
+              <button type="button" id="btn-top-mute-tts" class="btn-action btn-secondary" onclick="toggleMuteRapidoTTS()" style="padding: 5px 10px; font-size: 11px; border-color: rgba(56,189,248,0.4); color: #7dd3fc; font-weight: 800;" title="Silenciar o reactivar voz rápidamente">
+                🔊 Sonido Activo
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 11.5px; font-weight: 800; color: #94a3b8; white-space: nowrap;">🎚️ Volumen Lector:</span>
+            <input type="range" id="top-tts-volume-slider" class="custom-range-slider" min="0" max="100" value="100" oninput="cambiarVolumenTTS(this.value)" style="flex: 1;">
+            <span class="slider-val-badge" id="top-tts-volume-val" style="min-width: 48px; text-align: center;">100%</span>
+          </div>
+
+          <div id="top-comment-reader-preview" style="font-size: 11.5px; color: #cbd5e1; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 6px 10px; border-left: 3px solid #38bdf8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            💬 <em>Esperando comentarios del chat en vivo...</em>
+          </div>
+        </div>
+
         <!-- BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS -->
         <div class="panel-player-bar" id="panel-player-bar">
           <div class="player-bar-header">
@@ -1652,13 +1680,14 @@
           <div class="card-title-bar">
             <h2>⚙️ Reglas de Entrada y Subida de Puestos</h2>
           </div>
-          <div style="font-size: 12.5px; line-height: 1.65; color: #cbd5e1;">
-            <div>1️⃣ <strong>Entrar a la Lista:</strong> Enviar <strong>Corazón con los dedos (🫰)</strong> o dar <strong><span id="rule-free-likes-val">5,000</span> Likes (Gratis)</strong> <em>(sin necesidad de seguir)</em></div>
-            <div>2️⃣ <strong>Comando Likes Gratis:</strong> Comenta <code>D-1000</code> desde tu perfil para cambiar la meta de likes gratis</div>
-            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha + Canción + Artista</code>, entre paréntesis <code>(Canción + Artista)</code> o pegar <strong>Link de YouTube, Spotify o BandLab</strong></div>
-            <div>🎁 <strong>Subir con Regalos:</strong> <code>15-29</code> monedas (+1 pos) • <code>30-149</code> (+2 pos) • <code>150+</code> (<strong>#1 Blindado</strong>)</div>
-            <div>💖 <strong>Voz TTS en Chat:</strong> Lee en voz alta todos los comentarios de quienes envíen un <strong>Quiéreme</strong> (sin links ni símbolos)</div>
-            <div>🔒 <strong>Bloqueo por Likes:</strong> Auto-bloqueo hasta <code>4,000</code> likes al iniciar o comando <code>0-50000</code> (limpia temas ya escuchados y solo entran quienes den TapTap durante el bloqueo)</div>
+          <div style="font-size: 12.5px; line-height: 1.7; color: #cbd5e1;">
+            <div>🧢 <strong>x1 Gorra:</strong> Entrar a la lista de canciones <em>(o regalo de 99 monedas)</em></div>
+            <div>🎩 <strong>x1 Sombrero con bigote:</strong> Adelantar <strong>1 posición</strong> <em>(también te mete si no estabas)</em></div>
+            <div>🫶 <strong>x1 Corazón en las manos:</strong> Entrar o saltar directo al <strong>Puesto #2</strong> <em>(o 100-499 monedas)</em></div>
+            <div>💸 <strong>x1 Money Gun:</strong> Reacción inmediata en el <strong>Puesto #1 Blindado</strong> <em>(o 500+ monedas)</em></div>
+            <div>❤️ <strong>x<span id="rule-free-likes-val">5,000</span> Likes:</strong> Entrar a la lista <strong>sin prioridad</strong> <em>(editable con <code>D-X</code>)</em></div>
+            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha + Canción + Artista</code>, <code>(Canción + Artista)</code> o pegar <strong>Link de YouTube, Spotify o BandLab</strong></div>
+            <div>🗣️ <strong>Lector de Comentarios:</strong> Lee todos los comentarios en voz alta con control de volumen en vivo y botón anti-spam</div>
           </div>
         </div>
 
@@ -1668,16 +1697,17 @@
             <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
           </div>
           <div class="sim-buttons-grid">
-            <button class="btn-sim" onclick="simular('corazon_dedos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫰 Corazón Dedos (Entrar)</button>
-            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">💖 Quiéreme (Activar Voz)</button>
+            <button class="btn-sim" onclick="simular('gorra')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🧢 x1 Gorra (Entrar)</button>
+            <button class="btn-sim" onclick="simular('sombrero_bigote')" style="border-color: #a855f7; color: #d8b4fe; font-weight:800;">🎩 x1 Sombrero c/ Bigote (+1)</button>
+            <button class="btn-sim" onclick="simular('corazon_manos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫶 x1 Corazón Manos (Puesto #2)</button>
+            <button class="btn-sim" onclick="simular('money_gun')" style="border-color: #eab308; color: #fde047; font-weight:800;">💸 x1 Money Gun (#1 Inmediato)</button>
+            <button class="btn-sim" onclick="simular('likes_5000')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">❤️ x5,000 Likes (Sin Prioridad)</button>
             <button class="btn-sim" onclick="simular('comando_escucha')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎤 Escucha + Canción</button>
             <button class="btn-sim" onclick="simular('parentesis_cancion')" style="border-color: #4ade80; color: #86efac; font-weight:800;">🎵 (Canción + Artista)</button>
             <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
-            <button class="btn-sim" onclick="simular('regalo_150')" style="border-color: #eab308; color: #fde047; font-weight:800;">👑 Regalo 150+ (#1 Blindado)</button>
             <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
             <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
             <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Gratis)</button>
-            <button class="btn-sim" onclick="simular('segunda_cancion')">⚠️ Pedir 2da Canción</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
             <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat (Voz)</button>
@@ -1834,7 +1864,9 @@
       ttsVoice: localStorage.getItem('tts_voice') || 'es-CO-GonzaloNeural',
       ttsAudioOutput: 'both',
       ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
+      ttsPrevVolume: 1.0,
       ttsSpeed: parseFloat(localStorage.getItem('tts_speed') || '1.0'),
+      commentReaderMode: 'all',
       voting: {
         active: false,
         song: null,
@@ -1882,9 +1914,10 @@
       return /(?:https?:\/\/|www\.|youtube\.com\/|youtu\.be\/|spotify\.com\/|spotify\.link\/|bandlab\.com\/)/i.test(String(texto));
     }
 
-    // AUDIO QUEUE PARA TTS LIMPIO SIN SOLAPAMIENTOS
+    // AUDIO QUEUE PARA TTS LIMPIO SIN SOLAPAMIENTOS Y CON CONTROL DE VOLUMEN EN TIEMPO REAL
     const ttsAudioQueue = [];
     let isPlayingAudio = false;
+    let currentTtsAudio = null;
 
     function hablarTTS(texto, forcePlayInPanel = false) {
       if (!texto) return;
@@ -1920,6 +1953,7 @@
       isPlayingAudio = true;
       const nextUrl = ttsAudioQueue.shift();
       const audio = new Audio(nextUrl);
+      currentTtsAudio = audio;
       
       const vol = state.ttsVolume !== undefined ? state.ttsVolume : 1.0;
       const spd = state.ttsSpeed !== undefined ? state.ttsSpeed : 1.0;
@@ -1927,14 +1961,17 @@
       audio.playbackRate = Math.max(0.5, Math.min(2, spd));
 
       audio.onended = () => {
+        currentTtsAudio = null;
         isPlayingAudio = false;
         procesarColaAudio();
       };
       audio.onerror = () => {
+        currentTtsAudio = null;
         isPlayingAudio = false;
         procesarColaAudio();
       };
       audio.play().catch(() => {
+        currentTtsAudio = null;
         isPlayingAudio = false;
         procesarColaAudio();
       });
@@ -1977,12 +2014,24 @@
               const outSel = document.getElementById('tts-audio-output');
               if (outSel) outSel.value = cfg.audioOutput;
             }
+            if (cfg.commentReaderMode) {
+              state.commentReaderMode = cfg.commentReaderMode;
+            }
             if (cfg.volume !== undefined) {
               state.ttsVolume = Number(cfg.volume);
+              if (state.ttsVolume > 0) state.ttsPrevVolume = state.ttsVolume;
+              if (currentTtsAudio) {
+                currentTtsAudio.volume = Math.max(0, Math.min(1, state.ttsVolume));
+              }
+              const pctVal = Math.round(state.ttsVolume * 100);
               const volSlider = document.getElementById('tts-volume-slider');
               const volBadge = document.getElementById('tts-volume-val');
-              if (volSlider) volSlider.value = Math.round(state.ttsVolume * 100);
-              if (volBadge) volBadge.textContent = Math.round(state.ttsVolume * 100) + '%';
+              const topSlider = document.getElementById('top-tts-volume-slider');
+              const topBadge = document.getElementById('top-tts-volume-val');
+              if (volSlider) volSlider.value = pctVal;
+              if (volBadge) volBadge.textContent = pctVal + '%';
+              if (topSlider) topSlider.value = pctVal;
+              if (topBadge) topBadge.textContent = pctVal + '%';
             }
             if (cfg.rate !== undefined) {
               state.ttsSpeed = Number(cfg.rate);
@@ -1991,6 +2040,7 @@
               if (spdSlider) spdSlider.value = state.ttsSpeed;
               if (spdBadge) spdBadge.textContent = state.ttsSpeed.toFixed(2) + 'x';
             }
+            actualizarUILectorComentarios();
           } else if (data.type === 'EXTRA_CONFIG') {
             if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
             if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
@@ -2101,7 +2151,11 @@
             hablarTTS(data.message);
           } else if (data.type === 'CHAT') {
             mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
-            // #3 Solo leer en voz alta si el usuario envió un "Quiéreme" (data.readTTS === true) y #4 nunca leer links
+            const previewEl = document.getElementById('top-comment-reader-preview');
+            if (previewEl) {
+              const iconTxt = data.readTTS ? '🔊' : '💬';
+              previewEl.innerHTML = `${iconTxt} <strong>@${escapeHtml(data.user || 'Usuario')}:</strong> ${escapeHtml(data.comment || '')}`;
+            }
             if (data.readTTS && !contieneLinkCliente(data.comment)) {
               const nombreLimpio = data.cleanUser || limpiarNombreCliente(data.user);
               hablarTTS(`${nombreLimpio} dice: ${data.comment}`);
@@ -2706,7 +2760,14 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const emojis = giftType === 'quiereme' ? ['💖', '💕', '👑', '💗', '✨'] : ['🫰', '❤️', '✨', '💖', '🔥'];
+      const emojiMap = {
+        money_gun: ['💸', '💵', '👑', '🔥', '✨'],
+        corazon_manos: ['🫶', '💖', '🚀', '✨', '❤️'],
+        sombrero_bigote: ['🎩', '🥸', '⬆️', '✨', '🔥'],
+        gorra: ['🧢', '🎵', '✨', '🎧', '🔥'],
+        quiereme: ['💖', '💕', '👑', '💗', '✨']
+      };
+      const emojis = emojiMap[giftType] || ['🧢', '❤️', '✨', '💖', '🔥'];
       const particles = [];
       const count = 55;
       for (let i = 0; i < count; i++) {
@@ -2750,7 +2811,7 @@
             ctx.font = `${p.size}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = giftType === 'quiereme' ? '#f43f5e' : '#ec4899';
+            ctx.shadowColor = giftType === 'money_gun' ? '#eab308' : (giftType === 'quiereme' ? '#f43f5e' : '#38bdf8');
             ctx.shadowBlur = 30;
             ctx.fillText(p.emoji, 0, 0);
             ctx.restore();
@@ -2778,16 +2839,40 @@
       const userName = user || 'Usuario';
       if (userEl) userEl.textContent = `@${userName}`;
 
-      if (giftType === 'quiereme') {
+      if (giftType === 'money_gun') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '💸👑';
+        if (title) title.textContent = '¡MONEY GUN — #1 INMEDIATO!';
+        if (subtext) subtext.textContent = '¡Reacción inmediata en el Puesto #1 Blindado!';
+        reproducirSonidoFanfarria();
+      } else if (giftType === 'corazon_manos') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '🫶🚀';
+        if (title) title.textContent = '¡CORAZÓN EN LAS MANOS!';
+        if (subtext) subtext.textContent = '¡Salto directo al Puesto #2 de la lista!';
+        reproducirSonidoQuiereme();
+      } else if (giftType === 'sombrero_bigote') {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🎩🥸';
+        if (title) title.textContent = '¡SOMBRERO CON BIGOTE!';
+        if (subtext) subtext.textContent = '¡Adelantó 1 posición en la lista de canciones!';
+        reproducirSonidoCorazonDedos();
+      } else if (giftType === 'gorra') {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🧢✨';
+        if (title) title.textContent = '¡GORRA RECIBIDA!';
+        if (subtext) subtext.textContent = '¡Disco agregado directamente a la lista!';
+        reproducirSonidoCorazonDedos();
+      } else if (giftType === 'quiereme') {
         modal.classList.add('quiereme');
         if (icon) icon.textContent = '💖👑';
         if (title) title.textContent = '¡REGALO QUIÉREME!';
-        if (subtext) subtext.textContent = '¡Lectura de comentarios en voz alta activada!';
+        if (subtext) subtext.textContent = '¡Destacado VIP en el chat del Live!';
         reproducirSonidoQuiereme();
       } else {
         modal.classList.remove('quiereme');
-        if (icon) icon.textContent = '🫰✨';
-        if (title) title.textContent = '¡CORAZÓN CON LOS DEDOS!';
+        if (icon) icon.textContent = '🧢✨';
+        if (title) title.textContent = '¡REGALO RECIBIDO!';
         if (subtext) subtext.textContent = '¡Disco agregado directamente a la lista!';
         reproducirSonidoCorazonDedos();
       }
@@ -2803,11 +2888,37 @@
 
     // SIMULADOR DE PRUEBAS
     function simular(tipo) {
-      if (tipo === 'corazon_dedos') {
+      if (tipo === 'gorra' || tipo === 'corazon_dedos') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón con los dedos', user: 'Maria_Gamer', diamondCount: 5 }));
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Gorra', user: 'Maria_Gamer', diamondCount: 99 }));
         } else {
-          mostrarAnimacionEpicaRegalo('corazon_dedos', 'Maria_Gamer');
+          mostrarAnimacionEpicaRegalo('gorra', 'Maria_Gamer');
+        }
+      } else if (tipo === 'sombrero_bigote') {
+        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Luis_Flow';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Sombrero con bigote', user: targetUser, diamondCount: 99 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('sombrero_bigote', targetUser);
+        }
+      } else if (tipo === 'corazon_manos') {
+        const targetUser = state.queue.length > 2 ? state.queue[state.queue.length - 1].user : 'Valeria_Music';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón en las manos', user: targetUser, diamondCount: 100 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('corazon_manos', targetUser);
+        }
+      } else if (tipo === 'money_gun' || tipo === 'regalo_150') {
+        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_MoneyGun';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Money Gun', user: targetUser, diamondCount: 500 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('money_gun', targetUser);
+        }
+      } else if (tipo === 'likes_5000') {
+        const freeLikes = state.freeLikesReq || 5000;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testLikes', user: 'Fan_Likes_' + Math.floor(Math.random() * 90 + 10), count: freeLikes }));
         }
       } else if (tipo === 'quiereme') {
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2835,11 +2946,6 @@
           ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
         } else {
           mostrarAlertaOverlay('desbloqueada', { title: 'Rick Astley - Never Gonna Give You Up', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
-        }
-      } else if (tipo === 'regalo_150') {
-        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_Diamante';
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corgi VIP', user: targetUser, diamondCount: 150 }));
         }
       } else if (tipo === 'bloqueo_likes') {
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2880,8 +2986,8 @@
         hablarTTS(msg);
       } else if (tipo === 'pregunta_ayuda') {
         const freeLikes = state.freeLikesReq || 5000;
-        const banner = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
-        const voice = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Luego escribe Escucha más el nombre de la canción más el artista, ponlo entre paréntesis, o pega tu link en el chat.`;
+        const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
+        const voice = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
         mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
         hablarTTS(voice);
       } else if (tipo === 'spam') {
@@ -2949,6 +3055,7 @@
     function cambiarSalidaAudioTTS(val) {
       state.ttsAudioOutput = val || 'both';
       localStorage.setItem('tts_audio_output', state.ttsAudioOutput);
+      actualizarUILectorComentarios();
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           action: 'updateTTSConfig',
@@ -2960,14 +3067,83 @@
     function cambiarVolumenTTS(val) {
       const v = Math.max(0, Math.min(100, parseFloat(val) || 0));
       state.ttsVolume = v / 100;
+      if (state.ttsVolume > 0) state.ttsPrevVolume = state.ttsVolume;
       localStorage.setItem('tts_volume', state.ttsVolume);
+      if (currentTtsAudio) {
+        currentTtsAudio.volume = Math.max(0, Math.min(1, state.ttsVolume));
+      }
+      const rounded = Math.round(v);
       const badge = document.getElementById('tts-volume-val');
-      if (badge) badge.textContent = Math.round(v) + '%';
+      const slider = document.getElementById('tts-volume-slider');
+      const topBadge = document.getElementById('top-tts-volume-val');
+      const topSlider = document.getElementById('top-tts-volume-slider');
+      if (badge) badge.textContent = rounded + '%';
+      if (slider && Number(slider.value) !== rounded) slider.value = rounded;
+      if (topBadge) topBadge.textContent = rounded + '%';
+      if (topSlider && Number(topSlider.value) !== rounded) topSlider.value = rounded;
+      actualizarUILectorComentarios();
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           action: 'updateTTSConfig',
           config: { volume: state.ttsVolume }
         }));
+      }
+    }
+
+    function toggleMuteRapidoTTS() {
+      if (state.ttsVolume > 0) {
+        state.ttsPrevVolume = state.ttsVolume;
+        cambiarVolumenTTS(0);
+      } else {
+        const restore = Math.round((state.ttsPrevVolume || 1.0) * 100);
+        cambiarVolumenTTS(restore > 0 ? restore : 100);
+      }
+    }
+
+    function alternarModoLectorComentarios() {
+      const current = state.commentReaderMode || 'all';
+      const next = current === 'all' ? 'quiereme' : (current === 'quiereme' ? 'off' : 'all');
+      state.commentReaderMode = next;
+      actualizarUILectorComentarios();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { commentReaderMode: next }
+        }));
+      }
+    }
+
+    function actualizarUILectorComentarios() {
+      const btnMode = document.getElementById('btn-reader-mode');
+      if (btnMode) {
+        const mode = state.commentReaderMode || 'all';
+        if (mode === 'all') {
+          btnMode.innerHTML = '🔊 Modo: Leer TODOS';
+          btnMode.style.borderColor = '#22c55e';
+          btnMode.style.color = '#86efac';
+        } else if (mode === 'quiereme') {
+          btnMode.innerHTML = '💖 Filtro: Solo con Regalo / En Lista';
+          btnMode.style.borderColor = '#f59e0b';
+          btnMode.style.color = '#fde047';
+        } else {
+          btnMode.innerHTML = '🔇 Lector de Chat: Pausado';
+          btnMode.style.borderColor = '#ef4444';
+          btnMode.style.color = '#fca5a5';
+        }
+      }
+
+      const btnMute = document.getElementById('btn-top-mute-tts');
+      if (btnMute) {
+        const isMuted = state.ttsVolume <= 0 || state.ttsAudioOutput === 'none';
+        if (isMuted) {
+          btnMute.innerHTML = '🔇 Silenciado';
+          btnMute.style.borderColor = '#ef4444';
+          btnMute.style.color = '#fca5a5';
+        } else {
+          btnMute.innerHTML = `🔊 ${Math.round((state.ttsVolume ?? 1) * 100)}%`;
+          btnMute.style.borderColor = 'rgba(56,189,248,0.4)';
+          btnMute.style.color = '#7dd3fc';
+        }
       }
     }
 
@@ -3008,8 +3184,8 @@
 
     function explicarComoPedir() {
       const freeLikes = state.freeLikesReq || 5000;
-      const banner = `1. Corazón con los dedos 🫰 o ${freeLikes.toLocaleString()} Likes • 2. Escribe Escucha + Canción + Artista, (Canción + Artista) o pega tu Link`;
-      const explicacion = `Para entrar a la lista envía un corazón con los dedos o llega a ${freeLikes} likes para agregar tu canción gratis. Cuando estés en la lista, escribe Escucha más el nombre de la canción más el artista, ponlo entre paréntesis, o pega tu link en el chat.`;
+      const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
+      const explicacion = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
       mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
       hablarTTS(explicacion);
     }
