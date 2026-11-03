@@ -1980,6 +1980,14 @@ function processServerLike(userIdentifier, count, extraInfo = {}) {
       queue: queueState.queue,
       history: queueState.history,
       eventType: 'progress_update',
+      songUser: s.user,
+      songTitle: s.title,
+      songPosition: idx + 1,
+      songLikes: s.likes || 0,
+      songRoses: s.roses || 0,
+      songCoins: s.coins || 0,
+      songStatus: s.status,
+      freeLikesReq: freeLikesNeeded,
       skipVoice: true
     });
     return;
@@ -2415,6 +2423,12 @@ function processServerGift(userIdentifier, giftName, repeatCount, diamondCount, 
       songTitle: s.title,
       songUser: s.user,
       newPosition: idx + 1,
+      songPosition: idx + 1,
+      songLikes: s.likes || 0,
+      songRoses: s.roses || 0,
+      songCoins: s.coins || 0,
+      songStatus: s.status,
+      freeLikesReq: getFreeLikesReq(),
       skipVoice: true
     });
     addLog(`🌹 Progreso de @${s.user}: ${s.roses || 0}/10 Rosas • ${s.coins || 0}/10 Monedas`, 'gift');

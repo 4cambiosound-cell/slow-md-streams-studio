@@ -1511,20 +1511,172 @@
       text-overflow: ellipsis;
     }
 
-    /* ESTILO ROJO CUANDO EL USUARIO PONE "LISTA" Y NO ESTÁ EN LA LISTA */
+    /* ===================================================================== */
+    /* "LISTA" COMPACTA: MISMO TAMAÑO Y ESTILO QUE LA TARJETA SUPERIOR        */
+    /* ===================================================================== */
+    .overlay-full-list-sheet {
+      top: clamp(30px, 4.5vh, 160px);
+      bottom: auto;
+      left: 50%;
+      right: auto;
+      width: 94%;
+      max-width: 2000px;
+      max-height: none;
+      transform: translateX(-50%) translateY(-20px) scale(0.94);
+      background: rgba(12, 16, 28, 0.97);
+      border: clamp(3px, 0.45vw, 10px) solid var(--cyan-neon);
+      border-radius: clamp(24px, 3.5vw, 64px);
+      padding: clamp(20px, 3.2vw, 68px) clamp(24px, 3.8vw, 80px);
+      gap: 0;
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6), 0 0 clamp(20px, 3vw, 55px) var(--cyan-glow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .overlay-full-list-sheet.show {
+      transform: translateX(-50%) translateY(0) scale(1);
+      opacity: 1;
+    }
     .overlay-full-list-sheet.not-in-list-red {
-      border-color: #ef4444 !important;
-      background: linear-gradient(180deg, rgba(69, 10, 10, 0.98), rgba(28, 5, 5, 0.99)) !important;
-      box-shadow: 0 -20px 120px rgba(239, 68, 68, 0.75), 0 0 90px rgba(220, 38, 38, 0.65) !important;
+      border-color: #ef4444;
+      background: rgba(38, 6, 10, 0.97);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6), 0 0 clamp(24px, 3.5vw, 70px) rgba(239, 68, 68, 0.75);
+      animation: listaRedPulse 1.1s infinite alternate;
     }
-    .overlay-full-list-sheet.not-in-list-red .full-list-title {
-      color: #fecaca !important;
-      text-shadow: 0 0 25px rgba(239, 68, 68, 0.95) !important;
+    @keyframes listaRedPulse {
+      from { box-shadow: 0 15px 45px rgba(0,0,0,0.6), 0 0 20px rgba(239, 68, 68, 0.5); }
+      to { box-shadow: 0 15px 45px rgba(0,0,0,0.6), 0 0 60px rgba(239, 68, 68, 0.95); }
     }
-    .overlay-full-list-sheet.not-in-list-red .full-list-badge {
-      background: rgba(239, 68, 68, 0.3) !important;
-      border-color: #ef4444 !important;
-      color: #ffffff !important;
+    .lista-card {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 60px);
+      width: 100%;
+    }
+    .lista-pos-circle {
+      width: clamp(75px, 11vw, 210px);
+      height: clamp(75px, 11vw, 210px);
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(30px, 4.6vw, 92px);
+      font-weight: 900;
+      color: #0b0f19;
+      background: linear-gradient(135deg, #00e5ff, #fde047);
+      box-shadow: 0 0 clamp(20px, 3vw, 60px) rgba(0, 229, 255, 0.6);
+    }
+    .lista-pos-circle.red {
+      background: linear-gradient(135deg, #ef4444, #991b1b);
+      color: #ffffff;
+      box-shadow: 0 0 clamp(20px, 3vw, 60px) rgba(239, 68, 68, 0.8);
+    }
+    .lista-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.8vw, 16px);
+    }
+    .lista-badge {
+      font-size: clamp(15px, 2.2vw, 42px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7dd3fc;
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+    }
+    .lista-badge.red {
+      color: #fca5a5;
+      text-shadow: 0 0 16px rgba(239, 68, 68, 0.8);
+    }
+    .lista-user {
+      font-size: clamp(30px, 4.6vw, 92px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.95);
+    }
+    .lista-song {
+      font-size: clamp(18px, 2.9vw, 58px);
+      font-weight: 800;
+      color: var(--cyan-neon);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lista-song.red {
+      color: #fecaca;
+      white-space: normal;
+      line-height: 1.25;
+    }
+
+    /* TARJETA SUPERIOR DESTACANDO UNA CANCIÓN BLOQUEADA / DESBLOQUEADA */
+    .overlay-top-card.spotlight-locked {
+      border-color: #f59e0b !important;
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 clamp(20px, 3vw, 55px) rgba(245, 158, 11, 0.65) !important;
+    }
+    .overlay-top-card.spotlight-unlocked {
+      border-color: #22c55e !important;
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 clamp(20px, 3vw, 55px) rgba(34, 197, 94, 0.75) !important;
+    }
+    .overlay-top-card.spotlight-locked .disc-icon-box,
+    .overlay-top-card.spotlight-unlocked .disc-icon-box {
+      animation: none;
+    }
+
+    /* TIRA DE CANCIONES EN ESPERA CON BARRITA DE PROGRESO EN VIVO */
+    .overlay-queue-ticker {
+      width: 94%;
+      max-width: 2000px;
+      margin: clamp(6px, 1vh, 18px) auto 0 auto;
+      background: rgba(12, 16, 28, 0.92);
+      border: clamp(2px, 0.3vw, 6px) solid rgba(56, 189, 248, 0.45);
+      border-radius: clamp(18px, 2.5vw, 48px);
+      padding: clamp(12px, 1.6vw, 32px) clamp(18px, 2.2vw, 48px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.25);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: all 0.35s ease;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.6vw, 10px);
+      z-index: 50;
+    }
+    .overlay-queue-ticker.spotlight {
+      border-color: #f59e0b !important;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 35px rgba(245, 158, 11, 0.7) !important;
+      transform: scale(1.02);
+    }
+    .ticker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .ticker-pos-badge {
+      font-size: clamp(13px, 1.6vw, 36px);
+      font-weight: 900;
+      color: #fde047;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .ticker-user-badge {
+      font-size: clamp(14px, 1.8vw, 40px);
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .ticker-title {
+      font-size: clamp(16px, 2.2vw, 48px);
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   </style>
 </head>
@@ -1556,13 +1708,9 @@
       </div>
     </div>
 
-    <!-- Modal Lista Completa que Sube desde Abajo (Regla 4) -->
+    <!-- Tarjeta compacta "Lista": solo el puesto de quien escribió Lista (o aviso en rojo) -->
     <div class="overlay-full-list-sheet" id="overlay-full-list-sheet">
-      <div class="full-list-header">
-        <div class="full-list-title">📋 COLA DE CANCIONES</div>
-        <div class="full-list-badge" id="full-list-badge-count">0 TEMAS</div>
-      </div>
-      <div class="full-list-items" id="full-list-items-container">
+      <div id="full-list-items-container">
         <!-- Renderizado dinámico -->
       </div>
     </div>
@@ -1584,6 +1732,24 @@
         </div>
       </div>
       <div class="queue-pill-count" id="overlay-queue-pill">0 EN COLA</div>
+    </div>
+
+    <!-- 1.1 Tira de Canciones en Espera con Barrita de Progreso en Vivo -->
+    <div class="overlay-queue-ticker" id="overlay-queue-ticker" style="display: none;">
+      <div class="ticker-header">
+        <span class="ticker-pos-badge" id="ticker-pos-badge">⏳ EN COLA #2</span>
+        <span class="ticker-user-badge" id="ticker-user-badge">@Usuario</span>
+      </div>
+      <div class="ticker-title" id="ticker-song-title">Nombre de la canción</div>
+      <div class="song-progress-wrap" style="margin-top: 4px;">
+        <div class="song-progress-track">
+          <div class="song-progress-fill" id="ticker-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="song-progress-meta" style="font-size: clamp(12px, 1.4vw, 32px);">
+          <span id="ticker-progress-pct" style="color: #fde047; font-weight: 900;">0%</span>
+          <span id="ticker-progress-desc">❤️ 0/5,000 • 🌹 0/10 Monedas</span>
+        </div>
+      </div>
     </div>
 
     <!-- 2. Alerta Gigante Pop-in (Nueva canción, desbloqueo, salto de puesto) -->
@@ -2233,6 +2399,7 @@
             // #5 Solo mostrar el aviso visual en pantalla para acciones (sin leer en voz alta salvo que sea comando de moderador)
             if (data.eventType === 'progress_update') {
               // Solo actualizar las barritas de progreso en tiempo real sin lanzar alerta gigante
+              if (data.songUser) destacarProgresoUsuarioEnOverlay(data.songUser);
             } else if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
               const pos = data.newPosition || 1;
               mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos, announcement: data.announcement });
@@ -2343,6 +2510,9 @@
       const shortStatus = isUnlocked
         ? `🔓 100% Desbloqueada (${giftReason})`
         : `🔒 ${pct}% • ❤️ ${likes.toLocaleString()}/${freeLikesReq.toLocaleString()} Likes | 🌹 ${coinsOrRoses}/10 Rosas o Monedas | 💖 1 Quiéreme`;
+      const compactStatus = isUnlocked
+        ? `🔓 100% Desbloqueada (${giftReason})`
+        : `🔒 ${pct}% • ❤️ ${likes.toLocaleString()}/${freeLikesReq.toLocaleString()} Likes • 🌹 ${coinsOrRoses}/10 Monedas • 💖 1 Quiéreme`;
 
       return {
         isUnlocked,
@@ -2352,7 +2522,8 @@
         roses,
         coins,
         coinsOrRoses,
-        shortStatus
+        shortStatus,
+        compactStatus
       };
     }
 
@@ -2438,7 +2609,118 @@
           }).join('');
         }
       }
+
+      // Actualizar tira de canciones bloqueadas y en cola
+      actualizarTickerCola();
     }
+
+    // GESTIÓN DEL TICKER DE CANCIONES EN COLA CON BARRITA EN VIVO
+    let tickerIndex = 1;
+    let tickerTimer = null;
+    let tickerSpotlightTimeout = null;
+    let isTickerSpotlight = false;
+
+    function actualizarTickerCola() {
+      const ticker = document.getElementById('overlay-blocked-queue-ticker');
+      if (!ticker) return;
+
+      if (!state.queue || state.queue.length <= 1) {
+        ticker.style.display = 'none';
+        return;
+      }
+
+      if (isTickerSpotlight) return;
+
+      if (tickerIndex < 1 || tickerIndex >= state.queue.length) {
+        tickerIndex = 1;
+      }
+
+      mostrarCancionEnTicker(tickerIndex, false);
+    }
+
+    function mostrarCancionEnTicker(idx, esSpotlight = false) {
+      const ticker = document.getElementById('overlay-blocked-queue-ticker');
+      const posBadge = document.getElementById('ticker-pos-badge');
+      const userBadge = document.getElementById('ticker-user-badge');
+      const titleEl = document.getElementById('ticker-song-title');
+      const fillEl = document.getElementById('ticker-progress-fill');
+      const pctEl = document.getElementById('ticker-progress-pct');
+      const descEl = document.getElementById('ticker-progress-desc');
+      if (!ticker || !state.queue || !state.queue[idx]) return;
+
+      const song = state.queue[idx];
+      const prog = calcularProgresoCancion(song);
+      const cleanTitle = formatearTituloVisible(song);
+
+      ticker.style.display = 'flex';
+      if (esSpotlight) {
+        ticker.classList.add('spotlight');
+      } else {
+        ticker.classList.remove('spotlight');
+      }
+
+      if (posBadge) {
+        posBadge.innerHTML = song.status === 'unlocked'
+          ? `🔓 PUESTO #${idx + 1} DE ${state.queue.length}`
+          : `⏳ EN COLA #${idx + 1} DE ${state.queue.length}`;
+        posBadge.style.color = song.status === 'unlocked' ? '#4ade80' : '#fde047';
+      }
+      if (userBadge) userBadge.textContent = `@${song.user}`;
+      if (titleEl) titleEl.textContent = `🎵 ${cleanTitle}`;
+      if (fillEl) {
+        fillEl.style.width = `${prog.pct}%`;
+        fillEl.className = `song-progress-fill ${prog.isUnlocked ? 'unlocked' : ''}`;
+      }
+      if (pctEl) {
+        pctEl.textContent = `${prog.pct}%`;
+        pctEl.style.color = prog.isUnlocked ? '#4ade80' : '#fde047';
+      }
+      if (descEl) {
+        descEl.textContent = prog.isUnlocked
+          ? `Desbloqueada (${song.gift || 'Lista'})`
+          : `❤️ ${prog.likes.toLocaleString()}/${prog.freeLikesReq.toLocaleString()} Likes • 🌹 ${prog.coinsOrRoses}/10 Monedas`;
+      }
+    }
+
+    function destacarProgresoUsuarioEnOverlay(userName) {
+      if (!userName || !state.queue || state.queue.length === 0) return;
+      const uClean = String(userName).toLowerCase().replace(/[@\s]/g, '');
+      const idx = state.queue.findIndex(s => {
+        const k = (s.user || '').toLowerCase().replace(/[@\s]/g, '');
+        const kh = (s.handle || '').toLowerCase().replace(/[@\s]/g, '');
+        return k === uClean || kh === uClean;
+      });
+
+      if (idx === -1) return;
+
+      if (idx === 0) {
+        const topCard = document.querySelector('.overlay-top-card');
+        if (topCard) {
+          topCard.classList.add(state.queue[0].status === 'unlocked' ? 'spotlight-unlocked' : 'spotlight-locked');
+          setTimeout(() => {
+            topCard.classList.remove('spotlight-unlocked', 'spotlight-locked');
+          }, 4500);
+        }
+        return;
+      }
+
+      isTickerSpotlight = true;
+      tickerIndex = idx;
+      mostrarCancionEnTicker(idx, true);
+
+      clearTimeout(tickerSpotlightTimeout);
+      tickerSpotlightTimeout = setTimeout(() => {
+        isTickerSpotlight = false;
+        actualizarTickerCola();
+      }, 5500);
+    }
+
+    setInterval(() => {
+      if (isOverlay && state.queue && state.queue.length > 2 && !isTickerSpotlight) {
+        tickerIndex = (tickerIndex % (state.queue.length - 1)) + 1;
+        mostrarCancionEnTicker(tickerIndex, false);
+      }
+    }, 5500);
 
     // GESTIÓN DE LA BARRA DE REPRODUCCIÓN / ACCIONES RÁPIDAS (ABRIR ENLACE + COPIAR)
     function actualizarBarraReproductor() {
@@ -2876,74 +3158,47 @@
 
       const sheet = document.getElementById('overlay-full-list-sheet');
       const container = document.getElementById('full-list-items-container');
-      const badgeCount = document.getElementById('full-list-badge-count');
-      const titleEl = document.querySelector('.full-list-title');
       if (!sheet || !container) return;
 
       const items = cola || state.queue || [];
       const userClean = requestedBy || 'Usuario';
 
       if (userPosition && userPosition >= 1) {
-        // CASO 1: SÍ ESTÁ EN LA LISTA -> Mostrar ÚNICAMENTE a esa persona + su número de posición + su barrita de progreso
+        // CASO 1: SÍ ESTÁ EN LA LISTA -> Tarjeta compacta con SOLO su puesto, su canción y su barrita de progreso
         sheet.classList.remove('not-in-list-red');
         const song = extraData.userSong || items[userPosition - 1] || { user: userClean, title: 'Canción en la lista', status: 'unlocked' };
         const cleanSongTitle = formatearTituloVisible(song);
         const prog = calcularProgresoCancion(song);
 
-        if (titleEl) {
-          titleEl.innerHTML = `📋 TU POSICIÓN EN LA LISTA`;
-        }
-        if (badgeCount) {
-          badgeCount.textContent = `PUESTO #${userPosition}`;
-        }
-
         container.innerHTML = `
-          <div class="full-list-item-row my-position-row" style="flex-direction: column; align-items: stretch; gap: clamp(18px, 2.2vw, 46px); padding: clamp(28px, 3.2vw, 70px) clamp(26px, 3vw, 65px);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: clamp(16px, 2vw, 40px);">
-              <div class="full-list-item-info">
-                <span class="full-list-pos" style="font-size: clamp(48px, 5.5vw, 130px); color: #fde047; text-shadow: 0 0 30px rgba(253, 224, 71, 0.75);">#${userPosition}</span>
-                <div class="full-list-meta">
-                  <div class="full-list-user" style="font-size: clamp(32px, 3.8vw, 90px); font-weight: 900; color: #ffffff;">@${escapeHtml(song.user || userClean)}</div>
-                  <div class="full-list-song" style="font-size: clamp(24px, 2.8vw, 66px); color: #7dd3fc;">🎵 ${escapeHtml(cleanSongTitle)}</div>
+          <div class="lista-card">
+            <div class="lista-pos-circle">#${userPosition}</div>
+            <div class="lista-info">
+              <div class="lista-badge">📋 TU PUESTO EN LA LISTA • ${prog.isUnlocked ? '🔓 DESBLOQUEADA' : '🔒 BLOQUEADA'}</div>
+              <div class="lista-user">@${escapeHtml(song.user || userClean)}</div>
+              <div class="lista-song">🎵 ${escapeHtml(cleanSongTitle)}</div>
+              <div class="overlay-top-progress-wrap">
+                <div class="overlay-top-progress-track">
+                  <div class="overlay-top-progress-fill ${prog.isUnlocked ? 'unlocked' : ''}" style="width: ${prog.pct}%;"></div>
                 </div>
-              </div>
-              <div class="full-list-tag my-pos" style="font-size: clamp(22px, 2.5vw, 58px); padding: clamp(12px, 1.4vw, 32px) clamp(20px, 2.2vw, 50px); background: ${prog.isUnlocked ? 'rgba(34, 197, 94, 0.25)' : 'rgba(245, 158, 11, 0.25)'}; border-color: ${prog.isUnlocked ? '#22c55e' : '#f59e0b'}; color: #ffffff;">
-                ${prog.isUnlocked ? '🔓 DESBLOQUEADA' : '🔒 BLOQUEADA'}
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: clamp(8px, 1vw, 22px); width: 100%;">
-              <div style="width: 100%; height: clamp(20px, 2.4vw, 54px); background: rgba(15, 23, 42, 0.92); border: clamp(2px, 0.25vw, 5px) solid rgba(255, 255, 255, 0.22); border-radius: 999px; overflow: hidden;">
-                <div style="height: 100%; width: ${prog.pct}%; border-radius: 999px; transition: width 0.4s ease; background: ${prog.isUnlocked ? 'linear-gradient(90deg, #10b981, #22c55e, #4ade80)' : 'linear-gradient(90deg, #f59e0b 0%, #38bdf8 60%, #22c55e 100%)'}; box-shadow: 0 0 24px ${prog.isUnlocked ? 'rgba(34, 197, 94, 0.9)' : 'rgba(56, 189, 248, 0.8)'};"></div>
-              </div>
-              <div style="font-size: clamp(20px, 2.3vw, 54px); font-weight: 800; color: ${prog.isUnlocked ? '#86efac' : '#fde047'};">
-                ${escapeHtml(prog.shortStatus)}
+                <div class="overlay-top-progress-label">${escapeHtml(prog.compactStatus)}</div>
               </div>
             </div>
           </div>
         `;
       } else {
-        // CASO 2: NO ESTÁ EN LA LISTA -> Aparece EN ROJO el mensaje de que no está en lista
+        // CASO 2: NO ESTÁ EN LA LISTA -> Tarjeta compacta EN ROJO
         sheet.classList.add('not-in-list-red');
         const freeLikesReq = Number(extraData.freeLikesReq || state.freeLikesReq || 5000);
 
-        if (titleEl) {
-          titleEl.innerHTML = `🚨 NO ESTÁS EN LA LISTA 🚨`;
-        }
-        if (badgeCount) {
-          badgeCount.textContent = `❌ SIN PUESTO`;
-        }
-
         container.innerHTML = `
-          <div class="full-list-item-row locked" style="flex-direction: column; align-items: flex-start; gap: clamp(16px, 2vw, 42px); padding: clamp(28px, 3vw, 68px); border: clamp(3px, 0.4vw, 8px) solid #ef4444; background: linear-gradient(135deg, rgba(220, 38, 38, 0.38), rgba(69, 10, 10, 0.96)); box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);">
-            <div style="font-size: clamp(32px, 3.8vw, 88px); font-weight: 900; color: #fecaca; line-height: 1.2; text-shadow: 0 0 25px rgba(239, 68, 68, 0.9);">
-              ❌ <span style="color: #ffffff;">@${escapeHtml(userClean)}</span> AÚN NO ESTÁ EN LA LISTA
-            </div>
-            <div style="font-size: clamp(24px, 2.8vw, 66px); font-weight: 900; color: #ffffff; background: rgba(239, 68, 68, 0.32); border: 2px solid #ef4444; border-radius: clamp(14px, 1.5vw, 32px); padding: clamp(12px, 1.4vw, 30px) clamp(20px, 2.2vw, 48px); width: 100%;">
-              🔗 1. Pega el link de tu canción de YouTube en el chat para entrar (bloqueado 🔒)
-            </div>
-            <div style="font-size: clamp(21px, 2.4vw, 56px); font-weight: 800; color: #fca5a5; line-height: 1.35;">
-              🔓 2. Desbloquéala con: <span style="color: #ffffff;">💖 1 Quiéreme • 🌹 10 Rosas rojas • 🪙 10 Monedas • ❤️ ${freeLikesReq.toLocaleString()} Likes</span><br>
-              💸 Reacción inmediata #1: <span style="color: #fde047;">1 Money Gun</span>
+          <div class="lista-card">
+            <div class="lista-pos-circle red">❌</div>
+            <div class="lista-info">
+              <div class="lista-badge red">🚨 NO ESTÁS EN LA LISTA</div>
+              <div class="lista-user">@${escapeHtml(userClean)}</div>
+              <div class="lista-song red">🔗 Pega el link de tu canción de YouTube para entrar</div>
+              <div class="overlay-top-progress-label" style="color: #fca5a5;">🔓 Desbloquea: 💖 1 Quiéreme • 🌹 10 Rosas • 🪙 10 Monedas • ❤️ ${freeLikesReq.toLocaleString()} Likes</div>
             </div>
           </div>
         `;
@@ -2953,7 +3208,7 @@
       clearTimeout(fullListTimer);
       fullListTimer = setTimeout(() => {
         sheet.classList.remove('show');
-      }, 8500);
+      }, 7000);
     }
 
     // CAJA DE COMENTARIOS TTS EN EL OVERLAY
