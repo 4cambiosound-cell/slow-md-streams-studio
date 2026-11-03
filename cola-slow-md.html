@@ -1435,6 +1435,97 @@
       border-color: #ef4444 !important;
       box-shadow: 0 30px 100px rgba(0, 0, 0, 0.95), 0 0 120px rgba(239, 68, 68, 0.8) !important;
     }
+
+    /* BARRITA DE PROGRESO DE CANCIÓN ASIGNADA (PANEL Y OVERLAY) */
+    .song-progress-wrap {
+      width: 100%;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .song-progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .song-progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(90deg, #f59e0b 0%, #38bdf8 60%, #22c55e 100%);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+    }
+    .song-progress-fill.unlocked {
+      background: linear-gradient(90deg, #10b981, #22c55e, #4ade80);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.75);
+    }
+    .song-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #cbd5e1;
+      gap: 8px;
+    }
+
+    /* BARRITA EN OVERLAY TOP CARD */
+    .overlay-top-progress-wrap {
+      width: 100%;
+      margin-top: clamp(6px, 0.8vw, 18px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.4vw, 10px);
+    }
+    .overlay-top-progress-track {
+      width: 100%;
+      height: clamp(12px, 1.4vw, 32px);
+      background: rgba(15, 23, 42, 0.9);
+      border: clamp(1.5px, 0.2vw, 4px) solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .overlay-top-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(90deg, #f59e0b 0%, #38bdf8 55%, #22c55e 100%);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+    }
+    .overlay-top-progress-fill.unlocked {
+      background: linear-gradient(90deg, #10b981, #22c55e, #4ade80);
+      box-shadow: 0 0 22px rgba(34, 197, 94, 0.9);
+    }
+    .overlay-top-progress-label {
+      font-size: clamp(13px, 1.5vw, 36px);
+      font-weight: 800;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ESTILO ROJO CUANDO EL USUARIO PONE "LISTA" Y NO ESTÁ EN LA LISTA */
+    .overlay-full-list-sheet.not-in-list-red {
+      border-color: #ef4444 !important;
+      background: linear-gradient(180deg, rgba(69, 10, 10, 0.98), rgba(28, 5, 5, 0.99)) !important;
+      box-shadow: 0 -20px 120px rgba(239, 68, 68, 0.75), 0 0 90px rgba(220, 38, 38, 0.65) !important;
+    }
+    .overlay-full-list-sheet.not-in-list-red .full-list-title {
+      color: #fecaca !important;
+      text-shadow: 0 0 25px rgba(239, 68, 68, 0.95) !important;
+    }
+    .overlay-full-list-sheet.not-in-list-red .full-list-badge {
+      background: rgba(239, 68, 68, 0.3) !important;
+      border-color: #ef4444 !important;
+      color: #ffffff !important;
+    }
   </style>
 </head>
 <body>
@@ -1484,7 +1575,13 @@
           <span id="overlay-status-badge">▶ EN TURNO AHORA</span>
         </div>
         <div class="song-title-text" id="overlay-song-title">ESPERANDO PETICIÓN...</div>
-        <div class="song-user-text" id="overlay-song-user">Pega el link de YouTube, Spotify o BandLab</div>
+        <div class="song-user-text" id="overlay-song-user">Pega el link de tu canción de YouTube</div>
+        <div class="overlay-top-progress-wrap" id="overlay-top-progress-wrap" style="display: none;">
+          <div class="overlay-top-progress-track">
+            <div class="overlay-top-progress-fill" id="overlay-top-progress-fill" style="width: 0%;"></div>
+          </div>
+          <div class="overlay-top-progress-label" id="overlay-top-progress-label">🔒 0% • Desbloquea con 1 Quiéreme, 10 Rosas, 10 Monedas o Likes</div>
+        </div>
       </div>
       <div class="queue-pill-count" id="overlay-queue-pill">0 EN COLA</div>
     </div>
@@ -1684,15 +1781,14 @@
         <!-- Tarjeta de Reglas Activas -->
         <div class="panel-card">
           <div class="card-title-bar">
-            <h2>⚙️ Reglas de Entrada y Subida de Puestos</h2>
+            <h2>⚙️ Reglas de Entrada y Desbloqueo</h2>
           </div>
-          <div style="font-size: 12.5px; line-height: 1.7; color: #cbd5e1;">
-            <div>🧢 <strong>x1 Gorra:</strong> Entrar a la lista de canciones <em>(o regalo de 99 monedas)</em></div>
-            <div>🎩 <strong>x1 Sombrero con bigote:</strong> Adelantar <strong>1 posición</strong> <em>(también te mete si no estabas)</em></div>
-            <div>🫶 <strong>x1 Corazón en las manos:</strong> Entrar o saltar directo al <strong>Puesto #2</strong> <em>(o 100-499 monedas)</em></div>
-            <div>💸 <strong>x1 Money Gun:</strong> Reacción inmediata en el <strong>Puesto #1 Blindado</strong> <em>(o 500+ monedas)</em></div>
-            <div>❤️ <strong>x<span id="rule-free-likes-val">5,000</span> Likes:</strong> Entrar a la lista <strong>sin prioridad</strong> <em>(editable con <code>D-X</code>)</em></div>
-            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha + Canción + Artista</code>, <code>(Canción + Artista)</code> o pegar <strong>Link de YouTube, Spotify o BandLab</strong></div>
+          <div style="font-size: 12.5px; line-height: 1.75; color: #cbd5e1;">
+            <div>🔗 <strong>Para entrar a la lista:</strong> Cuando el usuario pega el link de su canción de YouTube en el chat, se agrega a la lista <strong>bloqueado (🔒)</strong></div>
+            <div>🔓 <strong>Para desbloquearlo:</strong> <strong>1 Quiéreme 💖</strong>, <strong>10 Rosas rojas 🌹</strong>, <strong>cualquier regalo de 10 monedas 🪙</strong> o <strong><span id="rule-free-likes-val">5,000</span> Likes ❤️</strong> <em>(definidos en el panel)</em></div>
+            <div>💸 <strong>Para reacción inmediata:</strong> <strong>1 Money Gun</strong> <em>(Puesto #1 Inmediato Blindado)</em></div>
+            <div>📊 <strong>Barrita de Progreso:</strong> Cada canción asignada muestra su barra que se llena en vivo según los likes o regalos del usuario</div>
+            <div>📋 <strong>Comando "Lista":</strong> Muestra únicamente el puesto de quien escribió <code>Lista</code> (nunca la lista completa) y en <strong>rojo</strong> si aún no está en la lista</div>
             <div>🗣️ <strong>Lector de Comentarios:</strong> Lee todos los comentarios en voz alta con control de volumen en vivo y botón anti-spam</div>
           </div>
         </div>
@@ -1703,17 +1799,16 @@
             <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
           </div>
           <div class="sim-buttons-grid">
-            <button class="btn-sim" onclick="simular('gorra')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🧢 x1 Gorra (Entrar)</button>
-            <button class="btn-sim" onclick="simular('sombrero_bigote')" style="border-color: #a855f7; color: #d8b4fe; font-weight:800;">🎩 x1 Sombrero c/ Bigote (+1)</button>
-            <button class="btn-sim" onclick="simular('corazon_manos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫶 x1 Corazón Manos (Puesto #2)</button>
-            <button class="btn-sim" onclick="simular('money_gun')" style="border-color: #eab308; color: #fde047; font-weight:800;">💸 x1 Money Gun (#1 Inmediato)</button>
-            <button class="btn-sim" onclick="simular('likes_5000')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">❤️ x5,000 Likes (Sin Prioridad)</button>
-            <button class="btn-sim" onclick="simular('comando_escucha')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎤 Escucha + Canción</button>
-            <button class="btn-sim" onclick="simular('parentesis_cancion')" style="border-color: #4ade80; color: #86efac; font-weight:800;">🎵 (Canción + Artista)</button>
-            <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
-            <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
-            <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
-            <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Gratis)</button>
+            <button class="btn-sim" onclick="simular('pegar_link')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🔗 1. Pegar Link YouTube (Entra 🔒)</button>
+            <button class="btn-sim" onclick="simular('quiereme')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">💖 Desbloquear: 1 Quiéreme</button>
+            <button class="btn-sim" onclick="simular('rosas_parcial')" style="border-color: #fb7185; color: #fda4af; font-weight:800;">🌹 +5 Rosas (Llenar Barra 50%)</button>
+            <button class="btn-sim" onclick="simular('rosas_10')" style="border-color: #22c55e; color: #86efac; font-weight:800;">🌹 Desbloquear: 10 Rosas / 10 Monedas</button>
+            <button class="btn-sim" onclick="simular('likes_parcial')" style="border-color: #f59e0b; color: #fde047; font-weight:800;">❤️ +Likes (Llenar Barra)</button>
+            <button class="btn-sim" onclick="simular('likes_5000')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">❤️ Desbloquear con Likes del Panel</button>
+            <button class="btn-sim" onclick="simular('money_gun')" style="border-color: #eab308; color: #fde047; font-weight:800;">💸 1 Money Gun (#1 Inmediato)</button>
+            <button class="btn-sim" onclick="simular('verlista')" style="border-color: #4ade80; color: #86efac; font-weight:800;">📋 "Lista" (Ver Mi Puesto #)</button>
+            <button class="btn-sim" onclick="simular('verlista_no_esta')" style="border-color: #ef4444; color: #fca5a5; font-weight:800;">🚨 "Lista" (No está en Lista - Rojo)</button>
+            <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Meta Likes)</button>
             <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
             <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
             <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat (Voz)</button>
@@ -2136,7 +2231,9 @@
             renderizarCola();
 
             // #5 Solo mostrar el aviso visual en pantalla para acciones (sin leer en voz alta salvo que sea comando de moderador)
-            if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
+            if (data.eventType === 'progress_update') {
+              // Solo actualizar las barritas de progreso en tiempo real sin lanzar alerta gigante
+            } else if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
               const pos = data.newPosition || 1;
               mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos, announcement: data.announcement });
             } else if (data.eventType === 'unlock') {
@@ -2146,7 +2243,7 @@
               mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: msg });
             } else if (data.eventType === 'new_song' || data.newSong) {
               const s = data.newSong || { title: data.songTitle, user: data.songUser };
-              const desc = data.newSongDesc || `Turno asignado a @${s.user} • Pega tu link de YouTube, Spotify o BandLab`;
+              const desc = data.newSongDesc || `Turno asignado a @${s.user} • Pega tu link de YouTube`;
               mostrarAlertaOverlay('nueva', { ...s, announcement: desc });
             } else if (data.announcement) {
               mostrarAlertaOverlay('info', { title: data.songTitle || 'AVISO', user: data.songUser, announcement: data.announcement });
@@ -2229,6 +2326,36 @@
       return sinPrefijo;
     }
 
+    // CALCULAR PROGRESO DE BARRITA PARA CADA CANCIÓN ASIGNADA
+    function calcularProgresoCancion(song) {
+      const isUnlocked = Boolean(song && song.status === 'unlocked');
+      const freeLikesReq = Math.max(1, Number(state.freeLikesReq || 5000));
+      const likes = Math.max(0, Number(song?.likes || 0));
+      const roses = Math.max(0, Number(song?.roses || 0));
+      const coins = Math.max(0, Number(song?.coins || 0));
+      const coinsOrRoses = Math.max(roses, coins);
+
+      const pctLikes = Math.min(100, Math.round((likes / freeLikesReq) * 100));
+      const pctGifts = Math.min(100, Math.round((coinsOrRoses / 10) * 100));
+      const pct = isUnlocked ? 100 : Math.min(99, Math.max(pctLikes, pctGifts));
+
+      const giftReason = song?.gift && song.gift !== 'Bloqueada 🔒' ? song.gift : 'Lista para sonar';
+      const shortStatus = isUnlocked
+        ? `🔓 100% Desbloqueada (${giftReason})`
+        : `🔒 ${pct}% • ❤️ ${likes.toLocaleString()}/${freeLikesReq.toLocaleString()} Likes | 🌹 ${coinsOrRoses}/10 Rosas o Monedas | 💖 1 Quiéreme`;
+
+      return {
+        isUnlocked,
+        pct,
+        likes,
+        freeLikesReq,
+        roses,
+        coins,
+        coinsOrRoses,
+        shortStatus
+      };
+    }
+
     // RENDERIZADO DE LA COLA
     function renderizarCola() {
       // 1. Overlay
@@ -2236,24 +2363,35 @@
       const songUser = document.getElementById('overlay-song-user');
       const statusBadge = document.getElementById('overlay-status-badge');
       const queuePill = document.getElementById('overlay-queue-pill');
+      const topProgWrap = document.getElementById('overlay-top-progress-wrap');
+      const topProgFill = document.getElementById('overlay-top-progress-fill');
+      const topProgLabel = document.getElementById('overlay-top-progress-label');
 
       if (queuePill) queuePill.textContent = `${state.queue.length} EN COLA`;
 
       if (state.queue.length > 0) {
         const top = state.queue[0];
+        const progTop = calcularProgresoCancion(top);
         if (songTitle) songTitle.textContent = formatearTituloVisible(top).toUpperCase();
-        if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 BLINDADO' : ''}`;
+        if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 INMEDIATO' : ''}`;
         if (statusBadge) {
           if (state.queueLocked) {
             statusBadge.textContent = '🔒 EN ESPERA (LISTA BLOQUEADA)';
           } else {
-            statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '⏳ EN ESPERA (CUMPLE REQUISITOS)';
+            statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '🔒 CANCIÓN BLOQUEADA EN COLA';
           }
+        }
+        if (topProgWrap && topProgFill && topProgLabel) {
+          topProgWrap.style.display = 'flex';
+          topProgFill.style.width = `${progTop.pct}%`;
+          topProgFill.className = `overlay-top-progress-fill ${progTop.isUnlocked ? 'unlocked' : ''}`;
+          topProgLabel.textContent = progTop.shortStatus;
         }
       } else {
         if (songTitle) songTitle.textContent = 'ESPERANDO PETICIÓN...';
-        if (songUser) songUser.textContent = 'Pega el link de YouTube, Spotify o BandLab';
+        if (songUser) songUser.textContent = 'Pega el link de tu canción de YouTube en el chat';
         if (statusBadge) statusBadge.textContent = state.queueLocked ? '🔒 LISTA BLOQUEADA' : 'EN ESPERA DE PETICIONES';
+        if (topProgWrap) topProgWrap.style.display = 'none';
       }
 
       // 2. Panel del Streamer - Barra de Reproducción Superior y Lista
@@ -2265,20 +2403,30 @@
 
       if (list) {
         if (state.queue.length === 0) {
-          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Al entrar, el usuario pega su link de YouTube, Spotify o BandLab.</div>`;
+          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Cuando el usuario pega su link de YouTube entra bloqueado y su barrita se llena al dar likes o enviar regalos.</div>`;
         } else {
           list.innerHTML = state.queue.map((song, idx) => {
             const isSelected = (state.selectedSongIndex || 0) === idx;
             const isTop = idx === 0;
-            const isUnlocked = song.status === 'unlocked';
-            const vipBadge = song.vip150 ? ' <span style="color:#fde047;font-weight:900;">👑 BLINDADO</span>' : '';
+            const prog = calcularProgresoCancion(song);
+            const isUnlocked = prog.isUnlocked;
+            const vipBadge = song.vip150 ? ' <span style="color:#fde047;font-weight:900;">👑 #1 INMEDIATO</span>' : '';
             const linkBadge = song.songUrl ? ' <span style="color:#38bdf8;font-weight:800;">🔗 Link Listo</span>' : '';
             const cleanTitle = formatearTituloVisible(song);
             return `
               <div class="queue-row ${isSelected ? 'selected-song' : (isTop ? 'current-song' : '')}" onclick="seleccionarCancion(${idx})" style="cursor: pointer;" title="Haz clic para seleccionar este tema en la barra de reproducción">
-                <div class="row-info-col">
+                <div class="row-info-col" style="width: 100%;">
                   <div class="row-title">#${idx + 1} ${escapeHtml(cleanTitle)} ${isSelected ? '🎧' : ''}${vipBadge}${linkBadge}</div>
-                  <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
+                  <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '<span style="color:#4ade80;font-weight:800;">🔓 Desbloqueada</span>' : '<span style="color:#fbbf24;font-weight:800;">🔒 Bloqueada</span>'}</div>
+                  <div class="song-progress-wrap">
+                    <div class="song-progress-track">
+                      <div class="song-progress-fill ${isUnlocked ? 'unlocked' : ''}" style="width: ${prog.pct}%;"></div>
+                    </div>
+                    <div class="song-progress-meta">
+                      <span>${isUnlocked ? '✅ ' + escapeHtml(song.gift || 'Desbloqueada') : `📊 ${prog.pct}% completado`}</span>
+                      <span>${isUnlocked ? '100%' : `❤️ ${prog.likes.toLocaleString()}/${prog.freeLikesReq.toLocaleString()} • 🌹 ${prog.coinsOrRoses}/10 • 💖 1 Quiéreme`}</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="row-actions-col">
                   <button type="button" class="btn-row-action" onclick="event.stopPropagation(); moverCancion(${idx}, -1)" title="Subir">▲</button>
@@ -2717,7 +2865,7 @@
       }, 5500);
     }
 
-    // REGLA 4: CONSULTA DE "LISTA" EN EL OVERLAY (SI ESTÁ EN LISTA -> SOLO ESA PERSONA + # POSICIÓN; SI NO -> FALTAN X LIKES O ENVÍA REGALOS)
+    // REGLA 4: CONSULTA DE "LISTA" EN EL OVERLAY (SOLO EL PUESTO DE QUIEN ESCRIBIÓ "LISTA" + BARRITA; Y EN ROJO SI NO ESTÁ EN LISTA)
     let fullListTimer = null;
     let lastListTriggerTime = 0;
     function mostrarListaCompletaOverlay(cola, requestedBy, userPosition, extraData = {}) {
@@ -2736,9 +2884,11 @@
       const userClean = requestedBy || 'Usuario';
 
       if (userPosition && userPosition >= 1) {
-        // CASO 1: SÍ ESTÁ EN LA LISTA -> Mostrar ÚNICAMENTE a esa persona + su número de posición en la lista
+        // CASO 1: SÍ ESTÁ EN LA LISTA -> Mostrar ÚNICAMENTE a esa persona + su número de posición + su barrita de progreso
+        sheet.classList.remove('not-in-list-red');
         const song = extraData.userSong || items[userPosition - 1] || { user: userClean, title: 'Canción en la lista', status: 'unlocked' };
         const cleanSongTitle = formatearTituloVisible(song);
+        const prog = calcularProgresoCancion(song);
 
         if (titleEl) {
           titleEl.innerHTML = `📋 TU POSICIÓN EN LA LISTA`;
@@ -2748,49 +2898,52 @@
         }
 
         container.innerHTML = `
-          <div class="full-list-item-row my-position-row" style="padding: clamp(28px, 3.2vw, 70px) clamp(26px, 3vw, 65px);">
-            <div class="full-list-item-info">
-              <span class="full-list-pos" style="font-size: clamp(48px, 5.5vw, 130px); color: #fde047; text-shadow: 0 0 30px rgba(253, 224, 71, 0.75);">#${userPosition}</span>
-              <div class="full-list-meta">
-                <div class="full-list-user" style="font-size: clamp(32px, 3.8vw, 90px); font-weight: 900; color: #ffffff;">@${escapeHtml(song.user || userClean)}</div>
-                <div class="full-list-song" style="font-size: clamp(24px, 2.8vw, 66px); color: #7dd3fc;">🎵 ${escapeHtml(cleanSongTitle)}</div>
+          <div class="full-list-item-row my-position-row" style="flex-direction: column; align-items: stretch; gap: clamp(18px, 2.2vw, 46px); padding: clamp(28px, 3.2vw, 70px) clamp(26px, 3vw, 65px);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: clamp(16px, 2vw, 40px);">
+              <div class="full-list-item-info">
+                <span class="full-list-pos" style="font-size: clamp(48px, 5.5vw, 130px); color: #fde047; text-shadow: 0 0 30px rgba(253, 224, 71, 0.75);">#${userPosition}</span>
+                <div class="full-list-meta">
+                  <div class="full-list-user" style="font-size: clamp(32px, 3.8vw, 90px); font-weight: 900; color: #ffffff;">@${escapeHtml(song.user || userClean)}</div>
+                  <div class="full-list-song" style="font-size: clamp(24px, 2.8vw, 66px); color: #7dd3fc;">🎵 ${escapeHtml(cleanSongTitle)}</div>
+                </div>
+              </div>
+              <div class="full-list-tag my-pos" style="font-size: clamp(22px, 2.5vw, 58px); padding: clamp(12px, 1.4vw, 32px) clamp(20px, 2.2vw, 50px); background: ${prog.isUnlocked ? 'rgba(34, 197, 94, 0.25)' : 'rgba(245, 158, 11, 0.25)'}; border-color: ${prog.isUnlocked ? '#22c55e' : '#f59e0b'}; color: #ffffff;">
+                ${prog.isUnlocked ? '🔓 DESBLOQUEADA' : '🔒 BLOQUEADA'}
               </div>
             </div>
-            <div class="full-list-tag my-pos" style="font-size: clamp(24px, 2.8vw, 64px); padding: clamp(12px, 1.4vw, 32px) clamp(22px, 2.5vw, 55px);">
-              🎯 PUESTO #${userPosition}
+            <div style="display: flex; flex-direction: column; gap: clamp(8px, 1vw, 22px); width: 100%;">
+              <div style="width: 100%; height: clamp(20px, 2.4vw, 54px); background: rgba(15, 23, 42, 0.92); border: clamp(2px, 0.25vw, 5px) solid rgba(255, 255, 255, 0.22); border-radius: 999px; overflow: hidden;">
+                <div style="height: 100%; width: ${prog.pct}%; border-radius: 999px; transition: width 0.4s ease; background: ${prog.isUnlocked ? 'linear-gradient(90deg, #10b981, #22c55e, #4ade80)' : 'linear-gradient(90deg, #f59e0b 0%, #38bdf8 60%, #22c55e 100%)'}; box-shadow: 0 0 24px ${prog.isUnlocked ? 'rgba(34, 197, 94, 0.9)' : 'rgba(56, 189, 248, 0.8)'};"></div>
+              </div>
+              <div style="font-size: clamp(20px, 2.3vw, 54px); font-weight: 800; color: ${prog.isUnlocked ? '#86efac' : '#fde047'};">
+                ${escapeHtml(prog.shortStatus)}
+              </div>
             </div>
           </div>
         `;
       } else {
-        // CASO 2: NO ESTÁ EN LA LISTA -> Mostrar que aún no está en la lista, cuántos likes le faltan o que envíe regalos
+        // CASO 2: NO ESTÁ EN LA LISTA -> Aparece EN ROJO el mensaje de que no está en lista
+        sheet.classList.add('not-in-list-red');
         const freeLikesReq = Number(extraData.freeLikesReq || state.freeLikesReq || 5000);
-        const likesGiven = Number(extraData.likesGiven || 0);
-        const likesMissing = extraData.likesMissing !== undefined
-          ? Number(extraData.likesMissing)
-          : Math.max(1, freeLikesReq - likesGiven);
 
         if (titleEl) {
-          titleEl.innerHTML = `📋 AÚN NO ESTÁS EN LA LISTA`;
+          titleEl.innerHTML = `🚨 NO ESTÁS EN LA LISTA 🚨`;
         }
         if (badgeCount) {
-          badgeCount.textContent = `SIN TURNO`;
+          badgeCount.textContent = `❌ SIN PUESTO`;
         }
 
-        const progresoLikesTxt = likesGiven > 0
-          ? `(Llevas ${likesGiven.toLocaleString()} / ${freeLikesReq.toLocaleString()} Likes)`
-          : '';
-
         container.innerHTML = `
-          <div class="full-list-item-row locked" style="flex-direction: column; align-items: flex-start; gap: clamp(16px, 2vw, 42px); padding: clamp(28px, 3vw, 68px); border-color: rgba(244, 63, 94, 0.6); background: linear-gradient(135deg, rgba(244, 63, 94, 0.14), rgba(15, 23, 42, 0.92));">
-            <div style="font-size: clamp(30px, 3.5vw, 82px); font-weight: 900; color: #ffffff; line-height: 1.2;">
-              ⚠️ <span style="color: #fde047;">@${escapeHtml(userClean)}</span>, aún no estás en la lista
+          <div class="full-list-item-row locked" style="flex-direction: column; align-items: flex-start; gap: clamp(16px, 2vw, 42px); padding: clamp(28px, 3vw, 68px); border: clamp(3px, 0.4vw, 8px) solid #ef4444; background: linear-gradient(135deg, rgba(220, 38, 38, 0.38), rgba(69, 10, 10, 0.96)); box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);">
+            <div style="font-size: clamp(32px, 3.8vw, 88px); font-weight: 900; color: #fecaca; line-height: 1.2; text-shadow: 0 0 25px rgba(239, 68, 68, 0.9);">
+              ❌ <span style="color: #ffffff;">@${escapeHtml(userClean)}</span> AÚN NO ESTÁ EN LA LISTA
             </div>
-            <div style="font-size: clamp(26px, 3vw, 72px); font-weight: 900; color: #fda4af; background: rgba(244, 63, 94, 0.18); border: 2px solid rgba(244, 63, 94, 0.45); border-radius: clamp(14px, 1.5vw, 32px); padding: clamp(12px, 1.4vw, 30px) clamp(20px, 2.2vw, 48px); width: 100%;">
-              ❤️ Te faltan <span style="color: #ffffff; text-decoration: underline;">${likesMissing.toLocaleString()} Likes</span> ${escapeHtml(progresoLikesTxt)}
+            <div style="font-size: clamp(24px, 2.8vw, 66px); font-weight: 900; color: #ffffff; background: rgba(239, 68, 68, 0.32); border: 2px solid #ef4444; border-radius: clamp(14px, 1.5vw, 32px); padding: clamp(12px, 1.4vw, 30px) clamp(20px, 2.2vw, 48px); width: 100%;">
+              🔗 1. Pega el link de tu canción de YouTube en el chat para entrar (bloqueado 🔒)
             </div>
-            <div style="font-size: clamp(22px, 2.5vw, 58px); font-weight: 800; color: #7dd3fc; line-height: 1.35;">
-              🎁 O envía un regalo para entrar:<br>
-              <span style="color: #ffffff;">🧢 x1 Gorra (Entrar) • 🎩 Sombrero (+1) • 🫶 Corazón en las manos (#2) • 💸 Money Gun (#1)</span>
+            <div style="font-size: clamp(21px, 2.4vw, 56px); font-weight: 800; color: #fca5a5; line-height: 1.35;">
+              🔓 2. Desbloquéala con: <span style="color: #ffffff;">💖 1 Quiéreme • 🌹 10 Rosas rojas • 🪙 10 Monedas • ❤️ ${freeLikesReq.toLocaleString()} Likes</span><br>
+              💸 Reacción inmediata #1: <span style="color: #fde047;">1 Money Gun</span>
             </div>
           </div>
         `;
@@ -3016,64 +3169,75 @@
 
     // SIMULADOR DE PRUEBAS
     function simular(tipo) {
-      if (tipo === 'gorra' || tipo === 'corazon_dedos') {
+      const lockedSong = state.queue.find(s => s && s.status === 'locked');
+      const targetQueueUser = lockedSong ? lockedSong.user : (state.queue[state.queue.length - 1]?.user || 'Maria_Music');
+
+      if (tipo === 'pegar_link' || tipo === 'pedir_escucha') {
+        const newUser = 'Artista_' + Math.floor(Math.random() * 90 + 10);
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Gorra', user: 'Maria_Gamer', diamondCount: 99 }));
+          ws.send(JSON.stringify({ action: 'testChat', user: newUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
         } else {
-          mostrarAnimacionEpicaRegalo('gorra', 'Maria_Gamer');
+          mostrarAlertaOverlay('nueva', { title: `Canción de @${newUser} (YouTube)`, user: newUser, announcement: `🔒 @${newUser} pegó su link y entró BLOQUEADO` });
         }
-      } else if (tipo === 'sombrero_bigote') {
-        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Luis_Flow';
+      } else if (tipo === 'quiereme') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Sombrero con bigote', user: targetUser, diamondCount: 99 }));
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: targetQueueUser, diamondCount: 1, repeatCount: 1 }));
         } else {
-          mostrarAnimacionEpicaRegalo('sombrero_bigote', targetUser);
+          mostrarAnimacionEpicaRegalo('quiereme', targetQueueUser);
         }
-      } else if (tipo === 'corazon_manos') {
-        const targetUser = state.queue.length > 2 ? state.queue[state.queue.length - 1].user : 'Valeria_Music';
+      } else if (tipo === 'rosas_parcial') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón en las manos', user: targetUser, diamondCount: 100 }));
-        } else {
-          mostrarAnimacionEpicaRegalo('corazon_manos', targetUser);
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Rosa', user: targetQueueUser, diamondCount: 1, repeatCount: 5 }));
         }
-      } else if (tipo === 'money_gun' || tipo === 'regalo_150') {
-        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_MoneyGun';
+      } else if (tipo === 'rosas_10') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Money Gun', user: targetUser, diamondCount: 500 }));
-        } else {
-          mostrarAnimacionEpicaRegalo('money_gun', targetUser);
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Rosa', user: targetQueueUser, diamondCount: 1, repeatCount: 10 }));
+        }
+      } else if (tipo === 'likes_parcial') {
+        const stepLikes = Math.max(100, Math.round((state.freeLikesReq || 5000) * 0.35));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testLikes', user: targetQueueUser, count: stepLikes }));
         }
       } else if (tipo === 'likes_5000') {
         const freeLikes = state.freeLikesReq || 5000;
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testLikes', user: 'Fan_Likes_' + Math.floor(Math.random() * 90 + 10), count: freeLikes }));
+          ws.send(JSON.stringify({ action: 'testLikes', user: targetQueueUser, count: freeLikes }));
         }
-      } else if (tipo === 'quiereme') {
+      } else if (tipo === 'money_gun' || tipo === 'regalo_150') {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: 'Carlos_VIP', diamondCount: 1 }));
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Money Gun', user: targetQueueUser, diamondCount: 500, repeatCount: 1 }));
         } else {
-          mostrarAnimacionEpicaRegalo('quiereme', 'Carlos_VIP');
+          mostrarAnimacionEpicaRegalo('money_gun', targetQueueUser);
+        }
+      } else if (tipo === 'gorra' || tipo === 'corazon_dedos') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Gorra', user: targetQueueUser, diamondCount: 99 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('gorra', targetQueueUser);
+        }
+      } else if (tipo === 'sombrero_bigote') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Sombrero con bigote', user: targetQueueUser, diamondCount: 99 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('sombrero_bigote', targetQueueUser);
+        }
+      } else if (tipo === 'corazon_manos') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón en las manos', user: targetQueueUser, diamondCount: 100 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('corazon_manos', targetQueueUser);
         }
       } else if (tipo === 'comando_escucha') {
-        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'Escucha + Monaco + Bad Bunny' }));
+          ws.send(JSON.stringify({ action: 'testChat', user: targetQueueUser, comment: 'Escucha + Monaco + Bad Bunny' }));
         } else {
-          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetUser, announcement: `🎵 ¡@${targetUser} agregó "Monaco - Bad Bunny"!` });
+          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetQueueUser, announcement: `🎵 ¡@${targetQueueUser} agregó "Monaco - Bad Bunny"!` });
         }
       } else if (tipo === 'parentesis_cancion') {
-        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: '(Monaco + Bad Bunny)' }));
+          ws.send(JSON.stringify({ action: 'testChat', user: targetQueueUser, comment: '(Monaco + Bad Bunny)' }));
         } else {
-          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetUser, announcement: `🎵 ¡@${targetUser} agregó "Monaco - Bad Bunny"!` });
-        }
-      } else if (tipo === 'pegar_link' || tipo === 'pedir_escucha') {
-        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
-        } else {
-          mostrarAlertaOverlay('desbloqueada', { title: 'Rick Astley - Never Gonna Give You Up', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
+          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetQueueUser, announcement: `🎵 ¡@${targetQueueUser} agregó "Monaco - Bad Bunny"!` });
         }
       } else if (tipo === 'bloqueo_likes') {
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -3095,14 +3259,26 @@
       } else if (tipo === 'song') {
         const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
         const t = temas[Math.floor(Math.random() * temas.length)];
-        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked', overtakenCount: 0 };
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'locked', likes: 0, roses: 0, coins: 0, overtakenCount: 0 };
         state.queue.push(nuevo);
         sincronizarServidor();
         mostrarAlertaOverlay('nueva', nuevo);
       } else if (tipo === 'verlista') {
         lastListTriggerTime = 0; // Reset cooldown para probar
-        const myPos = state.queue.length > 0 ? 1 : 0;
-        mostrarListaCompletaOverlay(state.queue, 'Usuario_Live', myPos);
+        const userInList = state.queue[0]?.user || 'Usuario_En_Lista';
+        if (ws && ws.readyState === WebSocket.OPEN && state.queue.length > 0) {
+          ws.send(JSON.stringify({ action: 'testChat', user: userInList, comment: 'Lista' }));
+        } else {
+          mostrarListaCompletaOverlay(state.queue, userInList, 1, { userSong: state.queue[0] });
+        }
+      } else if (tipo === 'verlista_no_esta') {
+        lastListTriggerTime = 0;
+        const userNotInList = 'Visitante_Nuevo';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: userNotInList, comment: 'Lista' }));
+        } else {
+          mostrarListaCompletaOverlay(state.queue, userNotInList, null);
+        }
       } else if (tipo === 'share_crush') {
         mostrarTTSOverlay('Alejandro', 'Compartió el En Vivo 🔄', 'chat');
       } else if (tipo === 'follow_comunidad') {
@@ -3114,8 +3290,8 @@
         hablarTTS(msg);
       } else if (tipo === 'pregunta_ayuda') {
         const freeLikes = state.freeLikesReq || 5000;
-        const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
-        const voice = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
+        const banner = `🔗 Pega tu Link de YouTube (Entra 🔒) • Desbloquea con: 💖 1 Quiéreme, 🌹 10 Rosas, 🪙 10 Monedas o ❤️ ${freeLikes.toLocaleString()} Likes • 💸 1 Money Gun = #1 Inmediato`;
+        const voice = `Para entrar a la lista pega el link de tu canción de YouTube en el chat y se agregará bloqueada. Para desbloquearla envía 1 Quiéreme, 10 rosas rojas, cualquier regalo de 10 monedas o llega a ${freeLikes} likes. Para reacción inmediata en el puesto número 1 envía 1 Money Gun.`;
         mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
         hablarTTS(voice);
       } else if (tipo === 'spam') {
@@ -3312,8 +3488,8 @@
 
     function explicarComoPedir() {
       const freeLikes = state.freeLikesReq || 5000;
-      const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
-      const explicacion = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
+      const banner = `🔗 Pega tu Link de YouTube (Entra 🔒) • Desbloquea con: 💖 1 Quiéreme, 🌹 10 Rosas, 🪙 10 Monedas o ❤️ ${freeLikes.toLocaleString()} Likes • 💸 1 Money Gun = #1 Inmediato`;
+      const explicacion = `Para entrar a la lista pega el link de tu canción de YouTube en el chat y se agregará bloqueada. Para desbloquearla envía 1 Quiéreme, 10 rosas rojas, cualquier regalo de 10 monedas o llega a ${freeLikes} likes. Para reacción inmediata en el puesto número 1 envía 1 Money Gun.`;
       mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
       hablarTTS(explicacion);
     }
