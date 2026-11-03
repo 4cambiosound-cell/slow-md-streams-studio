@@ -1,0 +1,3771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slow MD Live Bot | TikTok Live Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07080c;
+      --bg-card: rgba(15, 17, 26, 0.92);
+      --blood-red: #ff0f3b;
+      --blood-red-glow: rgba(255, 15, 59, 0.5);
+      --gold-vip: #ffb800;
+      --gold-vip-glow: rgba(255, 184, 0, 0.5);
+      --cyan-neon: #00e5ff;
+      --cyan-glow: rgba(0, 229, 255, 0.4);
+      --green-ok: #22c55e;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --font-main: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      overflow-y: auto;
+      min-height: 100vh;
+    }
+
+    /* VISTAS */
+    .view-mode {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+    .view-mode.active {
+      display: flex;
+    }
+
+    /* ========================================================= */
+    /* VISTA 1: OVERLAY TRANSPARENTE 9:16 (TIKTOK LIVE STUDIO 2160x3840 / OBS) */
+    /* ========================================================= */
+    html.overlay-mode, body.overlay-mode {
+      background: transparent !important;
+      background-color: transparent !important;
+      overflow: hidden !important;
+    }
+
+    #overlay-view {
+      position: relative;
+      background: transparent !important;
+      background-color: transparent !important;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(30px, 4.5vh, 160px) clamp(20px, 3.5vw, 90px);
+    }
+
+    /* TARJETA SUPERIOR: MÚSICA EN TURNO (TRANSLÚCIDA TIPO CRISTAL AHUMADO) */
+    .overlay-top-card {
+      background: rgba(12, 16, 28, 0.68) !important;
+      border: clamp(3px, 0.45vw, 10px) solid var(--blood-red) !important;
+      border-radius: clamp(24px, 3.5vw, 64px);
+      padding: clamp(20px, 3.2vw, 68px) clamp(24px, 3.8vw, 80px);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 clamp(20px, 3vw, 55px) var(--blood-red-glow) !important;
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 60px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto;
+      transition: all 0.3s ease;
+    }
+
+    .disc-icon-box {
+      width: clamp(75px, 11vw, 210px);
+      height: clamp(75px, 11vw, 210px);
+      border-radius: 50%;
+      background: #111;
+      border: clamp(3px, 0.5vw, 10px) solid var(--blood-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(36px, 5.5vw, 110px);
+      box-shadow: 0 0 clamp(20px, 3vw, 60px) var(--blood-red-glow);
+      flex-shrink: 0;
+      animation: spinRecord 4s linear infinite;
+    }
+    @keyframes spinRecord {
+      100% { transform: rotate(360deg); }
+    }
+
+    .song-details-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.8vw, 16px);
+    }
+
+    .song-badge-tag {
+      font-size: clamp(15px, 2.2vw, 42px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #fde047;
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1vw, 18px);
+      text-shadow: 0 0 16px rgba(253, 224, 71, 0.5);
+    }
+
+    .song-title-text {
+      font-size: clamp(32px, 5vw, 98px);
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.95), 0 0 clamp(20px, 3vw, 60px) rgba(255,255,255,0.6);
+    }
+
+    .song-user-text {
+      font-size: clamp(20px, 3.2vw, 62px);
+      font-weight: 800;
+      color: var(--cyan-neon);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.9), 0 0 20px var(--cyan-glow);
+    }
+
+    .queue-pill-count {
+      background: rgba(255, 15, 59, 0.25);
+      border: clamp(2px, 0.35vw, 8px) solid var(--blood-red);
+      padding: clamp(6px, 1vw, 22px) clamp(14px, 2vw, 44px);
+      border-radius: clamp(14px, 2vw, 40px);
+      font-size: clamp(14px, 2.2vw, 42px);
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+      box-shadow: 0 0 20px rgba(255, 15, 59, 0.4);
+    }
+
+    /* POP-UP GIGANTE DE EVENTOS (NUEVA CANCIÓN, DESBLOQUEO, SUBIDA) */
+    .overlay-alert-banner {
+      position: absolute;
+      top: clamp(130px, 16vh, 580px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px) scale(0.92);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(18, 12, 24, 0.98), rgba(8, 8, 14, 0.98));
+      border: clamp(4px, 0.7vw, 14px) solid var(--gold-vip);
+      border-radius: clamp(24px, 3.8vw, 68px);
+      padding: clamp(24px, 3.8vw, 76px) clamp(28px, 4.2vw, 86px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.98), 0 0 clamp(40px, 6vw, 120px) var(--gold-vip-glow);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1.2vw, 24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+      backdrop-filter: blur(24px);
+    }
+    .overlay-alert-banner.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .alert-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .alert-badge-label {
+      font-size: clamp(18px, 3vw, 58px);
+      font-weight: 900;
+      color: var(--gold-vip);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 clamp(15px, 2.5vw, 45px) var(--gold-vip-glow);
+    }
+    .alert-song-title {
+      font-size: clamp(36px, 5.8vw, 115px);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+      text-transform: uppercase;
+      text-shadow: 0 0 clamp(25px, 4vw, 80px) rgba(255,255,255,0.85), 0 4px 16px #000;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .alert-user-desc {
+      font-size: clamp(22px, 3.4vw, 68px);
+      font-weight: 800;
+      color: #f1f5f9;
+      text-shadow: 0 3px 12px #000;
+    }
+
+    /* SUBTÍTULO INFERIOR DE COMENTARIOS TTS */
+    .overlay-tts-box {
+      background: rgba(12, 14, 22, 0.95);
+      border: clamp(3px, 0.55vw, 11px) solid var(--cyan-neon);
+      border-radius: clamp(24px, 3.8vw, 68px);
+      padding: clamp(20px, 3.2vw, 64px) clamp(24px, 3.8vw, 76px);
+      box-shadow: 0 25px 70px rgba(0,0,0,0.98), 0 0 clamp(30px, 4.5vw, 90px) var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 3vw, 60px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      width: 94%;
+      max-width: 2000px;
+      margin: 0 auto clamp(20px, 3vh, 120px) auto;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .overlay-tts-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tts-avatar-circle {
+      width: clamp(65px, 9.5vw, 190px);
+      height: clamp(65px, 9.5vw, 190px);
+      border-radius: 50%;
+      border: clamp(3px, 0.5vw, 10px) solid var(--cyan-neon);
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 0 clamp(16px, 2.5vw, 50px) var(--cyan-glow);
+    }
+
+    .tts-content-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.6vw, 14px);
+    }
+    .tts-name-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.2vw, 24px);
+    }
+    .tts-user-name {
+      font-size: clamp(20px, 3.2vw, 64px);
+      font-weight: 900;
+      color: var(--cyan-neon);
+      text-shadow: 0 0 15px var(--cyan-glow);
+    }
+    .tts-badge-type {
+      font-size: clamp(13px, 2vw, 40px);
+      font-weight: 800;
+      padding: clamp(2px, 0.4vw, 8px) clamp(8px, 1.4vw, 28px);
+      border-radius: clamp(8px, 1.2vw, 24px);
+      background: rgba(0, 229, 255, 0.25);
+      color: #fff;
+    }
+    .tts-comment-text {
+      font-size: clamp(26px, 4.2vw, 84px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      text-shadow: 0 4px 14px rgba(0,0,0,0.95);
+      word-break: break-word;
+    }
+
+    /* ========================================================= */
+    /* VISTA 2: PANEL DE CONTROL DEL STREAMER (COMPLETO Y LIMPIO) */
+    /* ========================================================= */
+    #panel-view {
+      flex-direction: column;
+      background: #0a0c13;
+      width: 100%;
+      min-height: 100vh;
+      overflow-y: visible;
+    }
+
+    .streamer-navbar {
+      height: 70px;
+      background: #11131c;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      flex-shrink: 0;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .navbar-brand h1 {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .navbar-brand span {
+      color: var(--blood-red);
+    }
+
+    .navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
+    .btn-action {
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--blood-red);
+      color: #fff;
+      box-shadow: 0 0 16px var(--blood-red-glow);
+    }
+    .btn-primary:hover {
+      background: #ff2a51;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* CONTENEDOR PRINCIPAL DEL PANEL */
+    .streamer-container {
+      width: 100%;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 28px 24px 80px 24px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+      overflow: visible;
+    }
+
+    @media (max-width: 900px) {
+      .streamer-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: #141724;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .card-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .card-title-bar h2 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* FILA DE CANCIONES EN LA COLA */
+    .queue-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 440px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 12px 16px;
+      transition: all 0.2s;
+    }
+    .queue-row.current-song {
+      background: rgba(255, 15, 59, 0.12);
+      border-color: var(--blood-red);
+      box-shadow: 0 0 15px rgba(255, 15, 59, 0.2);
+    }
+    .queue-row.selected-song {
+      border-color: #38bdf8 !important;
+      background: rgba(56, 189, 248, 0.12) !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25) !important;
+    }
+
+    /* BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS EN PANEL */
+    .panel-player-bar {
+      background: linear-gradient(180deg, rgba(26, 32, 53, 0.6) 0%, rgba(15, 18, 30, 0.8) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .player-bar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .player-current-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+      flex: 1;
+    }
+    .player-current-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+    }
+    .player-current-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-status-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .player-status-badge.unlocked {
+      background: rgba(34, 197, 94, 0.18);
+      border: 1px solid #22c55e;
+      color: #4ade80;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+    .player-status-badge.locked {
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+    .player-status-badge.empty {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+    }
+
+    .player-buttons-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 700px) {
+      .player-buttons-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .btn-player {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .btn-player-link {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.22), rgba(6, 182, 212, 0.22));
+      border-color: rgba(16, 185, 129, 0.55);
+      color: #34d399;
+    }
+    .btn-player-link:not(:disabled):hover {
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      color: #fff;
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.65);
+      transform: translateY(-2px);
+    }
+    .btn-player-cp {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+    }
+    .btn-player-cp:not(:disabled):hover {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-player:disabled {
+      opacity: 0.3 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      filter: grayscale(90%) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .player-lock-hint {
+      font-size: 11.5px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .row-info-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .row-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-user {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .row-actions-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-row-action {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-row-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .btn-row-action.delete:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    /* BOTONES DE SIMULADOR */
+    .sim-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .btn-sim {
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .btn-sim:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--cyan-neon);
+    }
+
+    /* REGLA 5: EFECTO DE FOTO Y POLAROID CRUSH */
+    .overlay-camera-flash {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1200;
+      transition: opacity 0.45s ease-out;
+    }
+    .overlay-camera-flash.flash {
+      opacity: 0.95;
+      transition: none;
+    }
+
+    .overlay-polaroid-card {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.6) rotate(-5deg);
+      width: clamp(520px, 80vw, 1550px);
+      background: #ffffff;
+      padding: clamp(24px, 2.5vw, 65px) clamp(24px, 2.5vw, 65px) clamp(45px, 4.5vw, 120px) clamp(24px, 2.5vw, 65px);
+      border-radius: clamp(16px, 1.8vw, 42px);
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.95), 0 0 80px rgba(255, 255, 255, 0.35);
+      color: #111827;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1250;
+    }
+    .overlay-polaroid-card.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+    }
+    .polaroid-photo-box {
+      width: 100%;
+      height: clamp(340px, 32vw, 750px);
+      background: linear-gradient(135deg, #18181b, #09090b);
+      border-radius: clamp(12px, 1.4vw, 32px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(12px, 1.5vw, 36px);
+      border: clamp(3px, 0.4vw, 8px) solid #e4e4e7;
+    }
+    .polaroid-camera-icon {
+      font-size: clamp(80px, 10vw, 220px);
+      filter: drop-shadow(0 10px 25px rgba(254, 44, 85, 0.6));
+      animation: cameraBounce 1.5s infinite ease-in-out;
+    }
+    .polaroid-caption {
+      margin-top: clamp(22px, 2.8vw, 70px);
+      font-size: clamp(32px, 3.8vw, 92px);
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+    .polaroid-subcaption {
+      font-size: clamp(24px, 2.6vw, 68px);
+      font-weight: 800;
+      color: var(--pink-tiktok);
+      margin-top: clamp(6px, 0.8vw, 18px);
+    }
+    @keyframes cameraBounce {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.08) rotate(3deg); }
+    }
+
+    /* REGLA 6: BANNER ELEGANTE DE APLAUSOS */
+    .overlay-applause-banner {
+      position: absolute;
+      top: 26%;
+      left: 5%;
+      right: 5%;
+      background: linear-gradient(135deg, rgba(20, 20, 28, 0.96), rgba(10, 10, 16, 0.98));
+      border: clamp(4px, 0.5vw, 10px) solid var(--gold-vip);
+      border-radius: clamp(24px, 2.5vw, 55px);
+      padding: clamp(35px, 4vw, 95px) clamp(30px, 3.5vw, 85px);
+      display: flex;
+      align-items: center;
+      gap: clamp(25px, 3vw, 75px);
+      box-shadow: 0 35px 100px rgba(0, 0, 0, 0.9), 0 0 80px rgba(253, 224, 71, 0.35);
+      opacity: 0;
+      transform: translateY(-50px) scale(0.92);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1150;
+    }
+    .overlay-applause-banner.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .applause-icon-col {
+      font-size: clamp(80px, 9vw, 220px);
+      animation: clapHands 0.6s infinite alternate ease-in-out;
+    }
+    @keyframes clapHands {
+      from { transform: scale(0.9) rotate(-10deg); }
+      to { transform: scale(1.15) rotate(10deg); }
+    }
+    .applause-text-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 1vw, 22px);
+    }
+    .applause-tag {
+      font-size: clamp(24px, 2.8vw, 68px);
+      font-weight: 900;
+      color: var(--gold-vip);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .applause-user-title {
+      font-size: clamp(38px, 4.5vw, 110px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO) */
+    .overlay-full-list-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 82%;
+      background: linear-gradient(180deg, rgba(17, 17, 24, 0.98), rgba(9, 9, 13, 0.99));
+      border-top: clamp(6px, 0.6vw, 12px) solid var(--cyan-neon);
+      border-radius: clamp(32px, 3.5vw, 75px) clamp(32px, 3.5vw, 75px) 0 0;
+      padding: clamp(40px, 4vw, 95px) clamp(35px, 3.5vw, 85px) clamp(60px, 6vw, 140px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(20px, 2vw, 45px);
+      box-shadow: 0 -40px 140px rgba(0, 0, 0, 0.95), 0 0 90px rgba(0, 242, 254, 0.3);
+      transform: translateY(105%);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1100;
+    }
+    .overlay-full-list-sheet.show {
+      transform: translateY(0%);
+      opacity: 1;
+    }
+    .full-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: clamp(2px, 0.3vw, 5px) solid rgba(255, 255, 255, 0.1);
+      padding-bottom: clamp(16px, 1.8vw, 40px);
+    }
+    .full-list-title {
+      font-size: clamp(34px, 4vw, 98px);
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+    }
+    .full-list-badge {
+      background: rgba(0, 242, 254, 0.15);
+      border: clamp(2px, 0.3vw, 5px) solid var(--cyan-neon);
+      color: var(--cyan-neon);
+      border-radius: 999px;
+      padding: clamp(8px, 1vw, 24px) clamp(20px, 2.2vw, 50px);
+      font-size: clamp(24px, 2.5vw, 60px);
+      font-weight: 900;
+    }
+    .full-list-items {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(14px, 1.5vw, 32px);
+      overflow-y: auto;
+      max-height: 100%;
+      padding-right: 10px;
+    }
+    .full-list-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border: clamp(2px, 0.25vw, 4px) solid rgba(255, 255, 255, 0.08);
+      border-radius: clamp(16px, 1.8vw, 36px);
+      padding: clamp(18px, 2vw, 44px) clamp(22px, 2.5vw, 55px);
+      gap: clamp(16px, 2vw, 40px);
+    }
+    .full-list-item-row.unlocked {
+      background: rgba(34, 197, 94, 0.08);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .full-list-item-row.locked {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .full-list-item-info {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 2vw, 45px);
+      flex: 1;
+      min-width: 0;
+    }
+    .full-list-pos {
+      font-size: clamp(32px, 3.6vw, 84px);
+      font-weight: 900;
+      color: var(--cyan-neon);
+      min-width: clamp(55px, 6vw, 130px);
+    }
+    .full-list-meta {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(4px, 0.5vw, 12px);
+      flex: 1;
+      min-width: 0;
+    }
+    .full-list-song {
+      font-size: clamp(28px, 3.2vw, 76px);
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .full-list-user {
+      font-size: clamp(20px, 2.3vw, 56px);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .full-list-tag {
+      padding: clamp(8px, 0.9vw, 22px) clamp(16px, 1.8vw, 40px);
+      border-radius: clamp(10px, 1.2vw, 26px);
+      font-size: clamp(18px, 2.1vw, 50px);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .full-list-item-row.my-position-row {
+      background: rgba(0, 229, 255, 0.2) !important;
+      border: clamp(3px, 0.4vw, 8px) solid var(--cyan-neon) !important;
+      box-shadow: 0 0 clamp(30px, 4vw, 80px) var(--cyan-glow), inset 0 0 25px rgba(0, 229, 255, 0.25) !important;
+      transform: scale(1.02);
+      animation: pulseMyPos 1.5s infinite alternate;
+    }
+    @keyframes pulseMyPos {
+      from { border-color: var(--cyan-neon); box-shadow: 0 0 30px var(--cyan-glow); }
+      to { border-color: #fde047; box-shadow: 0 0 60px rgba(253, 224, 71, 0.6); }
+    }
+    .full-list-tag.my-pos {
+      background: linear-gradient(90deg, #00e5ff, #fde047) !important;
+      color: #000 !important;
+      font-weight: 900 !important;
+      border: none !important;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
+    }
+    .user-position-header-badge {
+      background: linear-gradient(90deg, #00e5ff, #38bdf8);
+      color: #000;
+      border-radius: 999px;
+      padding: clamp(6px, 0.8vw, 20px) clamp(16px, 1.8vw, 40px);
+      font-size: clamp(20px, 2.2vw, 54px);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+      animation: bouncePos 1s infinite alternate;
+    }
+    @keyframes bouncePos {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
+    /* WIDGET ÉPICO DE VOTACIÓN / JURADO (OVERLAY 2160x3840) */
+    .overlay-voting-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      width: clamp(340px, 86vw, 1750px);
+      background: linear-gradient(180deg, rgba(18, 20, 36, 0.98), rgba(9, 10, 18, 0.99));
+      border: clamp(4px, 0.5vw, 10px) solid #f59e0b;
+      border-radius: clamp(28px, 3.5vw, 70px);
+      padding: clamp(30px, 3.5vw, 80px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 2vw, 40px);
+      box-shadow: 0 0 clamp(40px, 5vw, 120px) rgba(245, 158, 11, 0.4), 0 30px 100px rgba(0,0,0,0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1200;
+    }
+    .overlay-voting-modal.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+    .voting-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: clamp(2px, 0.3vw, 5px) solid rgba(255, 255, 255, 0.1);
+      padding-bottom: clamp(12px, 1.5vw, 30px);
+    }
+    .voting-badge {
+      font-size: clamp(20px, 2.2vw, 52px);
+      font-weight: 900;
+      color: #fbbf24;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .voting-timer-circle {
+      width: clamp(55px, 6vw, 140px);
+      height: clamp(55px, 6vw, 140px);
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.2);
+      border: clamp(3px, 0.4vw, 8px) solid #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(26px, 3vw, 68px);
+      font-weight: 900;
+      color: #fff;
+      animation: pulseTimer 1s infinite alternate;
+    }
+    @keyframes pulseTimer {
+      from { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+      to { transform: scale(1.08); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+    }
+    .voting-song-title {
+      font-size: clamp(30px, 3.8vw, 92px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.15;
+      text-align: center;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+    .voting-song-artist {
+      font-size: clamp(20px, 2.2vw, 56px);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .voting-bar-wrapper {
+      width: 100%;
+      height: clamp(22px, 2.5vw, 60px);
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: clamp(2px, 0.2vw, 4px) solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+    .voting-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+    }
+    .voting-score-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(10px, 1.5vw, 30px);
+      text-align: center;
+    }
+    .voting-stat {
+      background: rgba(255, 255, 255, 0.04);
+      border: clamp(2px, 0.2vw, 4px) solid rgba(255, 255, 255, 0.08);
+      border-radius: clamp(16px, 1.8vw, 36px);
+      padding: clamp(12px, 1.5vw, 30px) clamp(8px, 1vw, 20px);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .voting-stat .stat-num {
+      font-size: clamp(34px, 4vw, 96px);
+      font-weight: 900;
+      color: #38bdf8;
+    }
+    .voting-stat .stat-label {
+      font-size: clamp(14px, 1.4vw, 36px);
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .voting-recent-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(8px, 1vw, 20px);
+      justify-content: center;
+      max-height: clamp(80px, 10vw, 240px);
+      overflow-y: hidden;
+    }
+    .vote-chip {
+      background: rgba(245, 158, 11, 0.18);
+      border: clamp(2px, 0.2vw, 4px) solid #f59e0b;
+      color: #fff;
+      font-size: clamp(16px, 1.8vw, 46px);
+      font-weight: 800;
+      padding: clamp(6px, 0.8vw, 18px) clamp(14px, 1.6vw, 38px);
+      border-radius: 999px;
+      animation: chipPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes chipPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* BANNER DE CERTIFICACIÓN O NO CALIFICA */
+    .overlay-certificate-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      width: clamp(340px, 86vw, 1750px);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(9, 13, 25, 0.99));
+      border: clamp(5px, 0.6vw, 12px) solid #eab308;
+      border-radius: clamp(32px, 3.8vw, 80px);
+      padding: clamp(40px, 4.5vw, 100px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: clamp(18px, 2.2vw, 45px);
+      box-shadow: 0 0 140px rgba(234, 179, 8, 0.5), 0 30px 100px rgba(0,0,0,0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1300;
+      overflow: hidden;
+    }
+    .overlay-certificate-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .overlay-certificate-banner.failed {
+      border-color: #ef4444;
+      box-shadow: 0 0 140px rgba(239, 68, 68, 0.5), 0 30px 100px rgba(0,0,0,0.95);
+    }
+    .confetti-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .cert-trophy {
+      font-size: clamp(60px, 8vw, 180px);
+      line-height: 1;
+      animation: trophyBounce 1s infinite alternate;
+    }
+    @keyframes trophyBounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-12px); }
+    }
+    .cert-title {
+      font-size: clamp(34px, 4.5vw, 110px);
+      font-weight: 900;
+      color: #facc15;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .overlay-certificate-banner.failed .cert-title {
+      color: #f87171;
+    }
+    .cert-song-name {
+      font-size: clamp(28px, 3.5vw, 86px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .cert-score-badge {
+      background: rgba(234, 179, 8, 0.2);
+      border: clamp(3px, 0.35vw, 8px) solid #eab308;
+      color: #fde047;
+      font-size: clamp(24px, 2.8vw, 68px);
+      font-weight: 900;
+      padding: clamp(8px, 1.2vw, 24px) clamp(22px, 2.5vw, 60px);
+      border-radius: 999px;
+    }
+    .overlay-certificate-banner.failed .cert-score-badge {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .cert-footer-desc {
+      font-size: clamp(18px, 2.2vw, 54px);
+      font-weight: 700;
+      color: #cbd5e1;
+      max-width: 90%;
+    }
+
+    /* ALERTA DE SIRENA (SEGUIDOR OBLIGATORIO) */
+    .overlay-siren-alert {
+      position: absolute;
+      top: clamp(80px, 9vw, 220px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      width: clamp(320px, 88vw, 1750px);
+      background: linear-gradient(90deg, rgba(220, 38, 38, 0.98), rgba(153, 27, 27, 0.98));
+      border: clamp(4px, 0.5vw, 10px) solid #ffffff;
+      border-radius: clamp(22px, 2.6vw, 56px);
+      padding: clamp(20px, 2.5vw, 60px) clamp(24px, 3vw, 70px);
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 2vw, 50px);
+      box-shadow: 0 0 clamp(40px, 5vw, 120px) rgba(220, 38, 38, 0.8), 0 20px 60px rgba(0,0,0,0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1400;
+      animation: sirenFlash 0.5s infinite alternate;
+    }
+    @keyframes sirenFlash {
+      from { border-color: #ffffff; box-shadow: 0 0 40px rgba(255, 255, 255, 0.6); }
+      to { border-color: #ef4444; box-shadow: 0 0 100px rgba(239, 68, 68, 1); }
+    }
+    .overlay-siren-alert.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .siren-icon {
+      font-size: clamp(42px, 5.5vw, 130px);
+      line-height: 1;
+      animation: sirenShake 0.4s infinite;
+    }
+    @keyframes sirenShake {
+      0% { transform: rotate(-10deg); }
+      50% { transform: rotate(10deg); }
+      100% { transform: rotate(-10deg); }
+    }
+    .siren-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .siren-title {
+      font-size: clamp(22px, 2.6vw, 64px);
+      font-weight: 900;
+      color: #fee2e2;
+      letter-spacing: 0.05em;
+    }
+    .siren-msg {
+      font-size: clamp(24px, 3vw, 72px);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    /* 7. MODAL DE ANIMACIÓN ÉPICA DE REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME) */
+    .overlay-epic-gift-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1500;
+    }
+    .overlay-epic-gift-modal.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .epic-gift-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .epic-gift-card {
+      position: relative;
+      background: linear-gradient(180deg, rgba(20, 10, 28, 0.95), rgba(10, 6, 16, 0.98));
+      border: clamp(4px, 0.6vw, 12px) solid #ec4899;
+      border-radius: clamp(32px, 4vw, 85px);
+      padding: clamp(35px, 4.5vw, 100px) clamp(30px, 4vw, 90px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: clamp(16px, 2vw, 40px);
+      box-shadow: 0 0 120px rgba(236, 72, 153, 0.7), 0 30px 90px rgba(0,0,0,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      max-width: 90%;
+      z-index: 2;
+    }
+    .overlay-epic-gift-modal.quiereme .epic-gift-card {
+      border-color: #f43f5e;
+      box-shadow: 0 0 140px rgba(244, 63, 94, 0.8), 0 30px 90px rgba(0,0,0,0.9);
+    }
+    .epic-gift-icon {
+      font-size: clamp(65px, 9vw, 200px);
+      line-height: 1;
+      animation: epicHeartBeat 0.8s infinite alternate;
+    }
+    @keyframes epicHeartBeat {
+      0% { transform: scale(0.9); filter: drop-shadow(0 0 20px #ec4899); }
+      100% { transform: scale(1.2); filter: drop-shadow(0 0 60px #f43f5e); }
+    }
+    .epic-gift-title {
+      font-size: clamp(32px, 4.5vw, 105px);
+      font-weight: 900;
+      background: linear-gradient(90deg, #f472b6, #fb7185, #fde047);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .epic-gift-user {
+      font-size: clamp(26px, 3.5vw, 84px);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+    }
+    .epic-gift-subtext {
+      font-size: clamp(18px, 2.2vw, 52px);
+      font-weight: 800;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      border: clamp(2px, 0.25vw, 5px) solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: clamp(8px, 1.2vw, 22px) clamp(22px, 2.5vw, 60px);
+    }
+
+    /* FILA DE CONTROLES SLIDER EN PANEL */
+    .slider-control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slider-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .slider-val-badge {
+      font-size: 12px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .custom-range-slider {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .custom-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--blood-red);
+      box-shadow: 0 0 10px var(--blood-red-glow);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .custom-range-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* FILAS EN LA TARJETA DE LA PLAYLIST */
+    .playlist-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 340px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .playlist-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(234, 179, 8, 0.05);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+      border-radius: 12px;
+      padding: 10px 14px;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+    .playlist-row:hover {
+      background: rgba(234, 179, 8, 0.1);
+      border-color: rgba(234, 179, 8, 0.4);
+    }
+    .playlist-row-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .playlist-row-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .playlist-row-meta {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .playlist-score-pill {
+      font-weight: 800;
+      color: #eab308;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .playlist-actions-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .playlist-btn-mini {
+      padding: 6px 9px;
+      font-size: 11.5px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .playlist-btn-mini:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    /* ANIMACIÓN DRAMÁTICA DE TEMBLOR Y PALPITACIÓN EN LA ENCUESTA (#7) */
+    @keyframes votingDramaticShake {
+      0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      15% { transform: translate(calc(-50% - 10px), calc(-50% - 6px)) scale(1.02) rotate(-1.2deg); }
+      30% { transform: translate(calc(-50% + 10px), calc(-50% + 6px)) scale(1.02) rotate(1.2deg); }
+      45% { transform: translate(calc(-50% - 8px), calc(-50% + 4px)) scale(1.015) rotate(-0.8deg); }
+      60% { transform: translate(calc(-50% + 8px), calc(-50% - 4px)) scale(1.015) rotate(0.8deg); }
+      75% { transform: translate(calc(-50% - 5px), calc(-50% - 3px)) scale(1.01) rotate(-0.5deg); }
+    }
+    .overlay-voting-modal.show.dramatic-shake {
+      animation: votingDramaticShake 0.45s infinite ease-in-out;
+      border-color: #ef4444 !important;
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.95), 0 0 120px rgba(239, 68, 68, 0.8) !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 1: OVERLAY VERTICAL 9:16 PARA TIKTOK LIVE STUDIO    -->
+  <!-- ========================================================= -->
+  <div id="overlay-view" class="view-mode">
+    
+    <!-- Efecto Flash de Cámara (Regla 5) -->
+    <div class="overlay-camera-flash" id="overlay-camera-flash"></div>
+
+    <!-- Tarjeta Polaroid Foto Crush (Regla 5) -->
+    <div class="overlay-polaroid-card" id="overlay-polaroid-card">
+      <div class="polaroid-photo-box">
+        <div class="polaroid-camera-icon">📸</div>
+      </div>
+      <div class="polaroid-caption" id="polaroid-caption-text">¡Foto tomada al Live!</div>
+      <div class="polaroid-subcaption" id="polaroid-subcaption-text">Mandó este live a su crush</div>
+    </div>
+
+    <!-- Banner Elegante de Aplausos (Regla 6) -->
+    <div class="overlay-applause-banner" id="overlay-applause-banner">
+      <div class="applause-icon-col">👏</div>
+      <div class="applause-text-col">
+        <span class="applause-tag">🌟 ¡NUEVO SEGUIDOR! 🌟</span>
+        <div class="applause-user-title" id="applause-user-text">@Usuario se sumó a la comunidad</div>
+      </div>
+    </div>
+
+    <!-- Modal Lista Completa que Sube desde Abajo (Regla 4) -->
+    <div class="overlay-full-list-sheet" id="overlay-full-list-sheet">
+      <div class="full-list-header">
+        <div class="full-list-title">📋 COLA DE CANCIONES</div>
+        <div class="full-list-badge" id="full-list-badge-count">0 TEMAS</div>
+      </div>
+      <div class="full-list-items" id="full-list-items-container">
+        <!-- Renderizado dinámico -->
+      </div>
+    </div>
+
+    <!-- 1. Tarjeta Superior: Canción en Turno -->
+    <div class="overlay-top-card">
+      <div class="disc-icon-box" id="disc-record">💿</div>
+      <div class="song-details-col">
+        <div class="song-badge-tag">
+          <span id="overlay-status-badge">▶ EN TURNO AHORA</span>
+        </div>
+        <div class="song-title-text" id="overlay-song-title">ESPERANDO PETICIÓN...</div>
+        <div class="song-user-text" id="overlay-song-user">Pega el link de YouTube, Spotify o BandLab</div>
+      </div>
+      <div class="queue-pill-count" id="overlay-queue-pill">0 EN COLA</div>
+    </div>
+
+    <!-- 2. Alerta Gigante Pop-in (Nueva canción, desbloqueo, salto de puesto) -->
+    <div class="overlay-alert-banner" id="overlay-alert-box">
+      <div class="alert-header-row">
+        <span class="alert-badge-label" id="alert-label-text">🎵 ¡NUEVA CANCIÓN EN COLA!</span>
+      </div>
+      <div class="alert-song-title" id="alert-title-text">NOMBRE DE CANCIÓN</div>
+      <div class="alert-user-desc" id="alert-desc-text">Pedida por @Usuario</div>
+    </div>
+
+    <!-- 3. Subtítulo Inferior: Comentarios TTS -->
+    <div class="overlay-tts-box" id="overlay-tts-card">
+      <img src="https://api.dicebear.com/7.x/identicon/svg?seed=TikTok" class="tts-avatar-circle" id="overlay-tts-avatar" alt="Avatar">
+      <div class="tts-content-col">
+        <div class="tts-name-row">
+          <span class="tts-user-name" id="overlay-tts-user">@Usuario</span>
+          <span class="tts-badge-type" id="overlay-tts-badge">💬 Chat</span>
+        </div>
+        <div class="tts-text-message" id="overlay-tts-message">Mensaje del chat aquí...</div>
+      </div>
+    </div>
+
+    <!-- 4. WIDGET ÉPICO DE VOTACIÓN / JURADO (2160x3840) -->
+    <div class="overlay-voting-modal" id="overlay-voting-modal">
+      <div class="voting-modal-header">
+        <span class="voting-badge">⚖️ JURADO EN VIVO • CALIFICA DEL 1 AL 10 (MÍN. 10 VOTOS)</span>
+        <div class="voting-timer-circle" id="voting-timer-num">25</div>
+      </div>
+      <div class="voting-song-title" id="voting-song-title">ESPERANDO TEMA...</div>
+      <div class="voting-song-artist" id="voting-song-artist">Artista: @Usuario</div>
+      
+      <div class="voting-bar-wrapper">
+        <div class="voting-bar-fill" id="voting-bar-fill" style="width: 0%;"></div>
+      </div>
+      <div class="voting-score-row">
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-avg-score">0.0</span>
+          <span class="stat-label">PROMEDIO / 10</span>
+        </div>
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-pct-score">0%</span>
+          <span class="stat-label">APROBACIÓN</span>
+        </div>
+        <div class="voting-stat">
+          <span class="stat-num" id="voting-count">0</span>
+          <span class="stat-label">VOTOS</span>
+        </div>
+      </div>
+
+      <div class="voting-recent-chips" id="voting-recent-chips">
+        <!-- Votos recientes en vivo -->
+      </div>
+    </div>
+
+    <!-- 5. BANNER ÉPICO DE ARTISTA CERTIFICADO O NO CALIFICA -->
+    <div class="overlay-certificate-banner" id="overlay-certificate-banner">
+      <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+      <div class="cert-trophy" id="cert-trophy-icon">🏆</div>
+      <div class="cert-title" id="cert-title-text">¡ARTISTA CERTIFICADO!</div>
+      <div class="cert-song-name" id="cert-song-name">NOMBRE DEL TEMA</div>
+      <div class="cert-score-badge" id="cert-score-badge">95% DE APROBACIÓN</div>
+      <div class="cert-footer-desc" id="cert-footer-desc">¡Entra a nuestra lista de artistas certificados!</div>
+    </div>
+
+    <!-- 6. ALERTA DE SIRENA (SEGUIDOR OBLIGATORIO) -->
+    <div class="overlay-siren-alert" id="overlay-siren-alert">
+      <div class="siren-icon">🚨</div>
+      <div class="siren-col">
+        <div class="siren-title">¡ALERTA DE SEGUIDOR!</div>
+        <div class="siren-msg" id="siren-alert-msg">@Usuario está intentando entrar sin seguirte 🚨</div>
+      </div>
+    </div>
+
+    <!-- 7. MODAL DE ANIMACIÓN ÉPICA DE REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME) -->
+    <div class="overlay-epic-gift-modal" id="overlay-epic-gift-modal">
+      <canvas id="epic-gift-canvas" class="epic-gift-canvas"></canvas>
+      <div class="epic-gift-card" id="epic-gift-card">
+        <div class="epic-gift-icon" id="epic-gift-icon">🫰❤️</div>
+        <div class="epic-gift-title" id="epic-gift-title">¡CORAZÓN CON LOS DEDOS!</div>
+        <div class="epic-gift-user" id="epic-gift-user">@Usuario</div>
+        <div class="epic-gift-subtext" id="epic-gift-subtext">¡Paso completado para entrar a la lista!</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 2: PANEL DE CONTROL DEL STREAMER                    -->
+  <!-- ========================================================= -->
+  <div id="panel-view" class="view-mode active">
+    
+    <!-- Navbar Superior -->
+    <header class="streamer-navbar">
+      <div class="navbar-brand">
+        <h1>SLOW MD <span>STREAM BOT</span></h1>
+      </div>
+
+      <div class="navbar-actions">
+        <div class="live-status-pill">
+          <span class="status-dot" id="panel-status-dot"></span>
+          <span id="panel-status-text">Desconectado</span>
+        </div>
+        <input type="text" id="panel-username-input" placeholder="Usuario TikTok (slowmdoficial)" value="slowmdoficial" style="padding: 7px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 12px; width: 170px;">
+        <button class="btn-action btn-primary" id="btn-toggle-live">Conectar Live</button>
+        <button class="btn-action btn-secondary" onclick="copiarEnlaceOverlay()">📋 Copiar Link Overlay</button>
+        <button class="btn-action btn-secondary" onclick="window.open('/?view=overlay', 'OverlayWindow', 'width=460,height=820')">📺 Ver Overlay</button>
+        <button class="btn-action btn-secondary" onclick="window.open('/impresora-overlay.html', '_blank')" style="border-color: #f59e0b; color: #fde047;">🖨️ Impresora Live</button>
+        <button class="btn-action btn-secondary" onclick="window.open('/radio', '_blank')" style="border-color: #00f2fe; color: #7dd3fc;">📻 Radio Live (Overlay 2)</button>
+      </div>
+    </header>
+
+    <!-- Área de Contenido -->
+    <main class="streamer-container">
+      
+      <!-- Columna Izquierda: Cola de Canciones -->
+      <section class="panel-card">
+        <div class="card-title-bar">
+          <h2>🎵 Cola de Canciones (<span id="panel-count-queue">0</span>)</h2>
+          <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
+        </div>
+
+        <!-- LECTOR DE COMENTARIOS Y CONTROL DE VOLUMEN RÁPIDO ARRIBA A LA VISTA -->
+        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.85)); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">🗣️</span>
+              <span style="font-size: 12.5px; font-weight: 900; color: #f8fafc; letter-spacing: 0.4px; text-transform: uppercase;">Lector de Comentarios en Vivo</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" id="btn-reader-mode" class="btn-action btn-secondary" onclick="alternarModoLectorComentarios()" style="padding: 5px 10px; font-size: 11px; border-color: #22c55e; color: #86efac; font-weight: 800;" title="Cambiar filtro de comentarios por si hay mucho spam">
+                🔊 Modo: Leer TODOS
+              </button>
+              <button type="button" id="btn-top-mute-tts" class="btn-action btn-secondary" onclick="toggleMuteRapidoTTS()" style="padding: 5px 10px; font-size: 11px; border-color: rgba(56,189,248,0.4); color: #7dd3fc; font-weight: 800;" title="Silenciar o reactivar voz rápidamente">
+                🔊 Sonido Activo
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 11.5px; font-weight: 800; color: #94a3b8; white-space: nowrap;">🎚️ Volumen Lector:</span>
+            <input type="range" id="top-tts-volume-slider" class="custom-range-slider" min="0" max="100" value="100" oninput="cambiarVolumenTTS(this.value)" style="flex: 1;">
+            <span class="slider-val-badge" id="top-tts-volume-val" style="min-width: 48px; text-align: center;">100%</span>
+          </div>
+
+          <div id="top-comment-reader-preview" style="font-size: 11.5px; color: #cbd5e1; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 6px 10px; border-left: 3px solid #38bdf8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            💬 <em>Esperando comentarios del chat en vivo...</em>
+          </div>
+        </div>
+
+        <!-- BARRA SUPERIOR DE ESCUCHA Y ACCIONES RÁPIDAS -->
+        <div class="panel-player-bar" id="panel-player-bar">
+          <div class="player-bar-header">
+            <div class="player-current-info">
+              <span class="player-current-label">🎧 TEMA EN TURNO / SELECCIONADO:</span>
+              <span class="player-current-title" id="player-song-title">Sin canciones en la lista</span>
+            </div>
+            <span class="player-status-badge empty" id="player-song-status">SIN TEMAS</span>
+          </div>
+
+          <div class="player-buttons-grid">
+            <button type="button" id="btn-player-open-link" class="btn-player btn-player-link" disabled onclick="abrirEnlaceActual()" title="Abrir el enlace de la canción enviada por el usuario">
+              🔗 Abrir Enlace
+            </button>
+            <button type="button" id="btn-player-cp" class="btn-player btn-player-cp" disabled onclick="copiarTemaActual()" title="Copiar enlace o nombre de la canción">
+              📋 Copiar
+            </button>
+          </div>
+
+          <div class="player-lock-hint" id="player-lock-hint">
+            <span>ℹ️</span> <span id="player-lock-msg">Agrega una canción o espera peticiones en el Live.</span>
+          </div>
+        </div>
+
+        <div class="queue-items-list" id="panel-queue-list">
+          <!-- Canciones renderizadas dinámicamente -->
+        </div>
+
+        <!-- Formulario para agregar canción manual -->
+        <form id="form-manual-song" style="display: flex; gap: 8px; margin-top: 6px;">
+          <input type="text" id="manual-title" placeholder="Pega el link o escribe el título de la canción..." required style="flex: 2; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+          <input type="text" id="manual-user" placeholder="Usuario..." style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+          <button type="submit" class="btn-action btn-primary">Agregar</button>
+        </form>
+      </section>
+
+      <!-- Columna Derecha: Reglas, Simulador y Voz -->
+      <section style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <!-- Tarjeta de Reglas Activas -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>⚙️ Reglas de Entrada y Subida de Puestos</h2>
+          </div>
+          <div style="font-size: 12.5px; line-height: 1.7; color: #cbd5e1;">
+            <div>🧢 <strong>x1 Gorra:</strong> Entrar a la lista de canciones <em>(o regalo de 99 monedas)</em></div>
+            <div>🎩 <strong>x1 Sombrero con bigote:</strong> Adelantar <strong>1 posición</strong> <em>(también te mete si no estabas)</em></div>
+            <div>🫶 <strong>x1 Corazón en las manos:</strong> Entrar o saltar directo al <strong>Puesto #2</strong> <em>(o 100-499 monedas)</em></div>
+            <div>💸 <strong>x1 Money Gun:</strong> Reacción inmediata en el <strong>Puesto #1 Blindado</strong> <em>(o 500+ monedas)</em></div>
+            <div>❤️ <strong>x<span id="rule-free-likes-val">5,000</span> Likes:</strong> Entrar a la lista <strong>sin prioridad</strong> <em>(editable con <code>D-X</code>)</em></div>
+            <div>🎵 <strong>Pedir Canción:</strong> Comentar <code>Escucha + Canción + Artista</code>, <code>(Canción + Artista)</code> o pegar <strong>Link de YouTube, Spotify o BandLab</strong></div>
+            <div>🗣️ <strong>Lector de Comentarios:</strong> Lee todos los comentarios en voz alta con control de volumen en vivo y botón anti-spam</div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Simulador de Pruebas -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>🎮 Simulador de Eventos (Probar en Vivo)</h2>
+          </div>
+          <div class="sim-buttons-grid">
+            <button class="btn-sim" onclick="simular('gorra')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🧢 x1 Gorra (Entrar)</button>
+            <button class="btn-sim" onclick="simular('sombrero_bigote')" style="border-color: #a855f7; color: #d8b4fe; font-weight:800;">🎩 x1 Sombrero c/ Bigote (+1)</button>
+            <button class="btn-sim" onclick="simular('corazon_manos')" style="border-color: #ec4899; color: #f472b6; font-weight:800;">🫶 x1 Corazón Manos (Puesto #2)</button>
+            <button class="btn-sim" onclick="simular('money_gun')" style="border-color: #eab308; color: #fde047; font-weight:800;">💸 x1 Money Gun (#1 Inmediato)</button>
+            <button class="btn-sim" onclick="simular('likes_5000')" style="border-color: #f43f5e; color: #fda4af; font-weight:800;">❤️ x5,000 Likes (Sin Prioridad)</button>
+            <button class="btn-sim" onclick="simular('comando_escucha')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎤 Escucha + Canción</button>
+            <button class="btn-sim" onclick="simular('parentesis_cancion')" style="border-color: #4ade80; color: #86efac; font-weight:800;">🎵 (Canción + Artista)</button>
+            <button class="btn-sim" onclick="simular('pegar_link')">🔗 Pegar Link YouTube</button>
+            <button class="btn-sim" onclick="simular('verlista')">📋 Comentar "Lista" (# Pos)</button>
+            <button class="btn-sim" onclick="simular('bloqueo_likes')">🔒 Comando "0-50000"</button>
+            <button class="btn-sim" onclick="simular('comando_d_likes')" style="border-color: #38bdf8; color: #7dd3fc; font-weight:800;">🎁 Comando "D-1000" (Gratis)</button>
+            <button class="btn-sim" onclick="simular('pregunta_ayuda')">💡 Pregunta "¿Cómo agrego?"</button>
+            <button class="btn-sim" onclick="simular('voto_jurado')">⚖️ Simular Voto ("Le doy 10")</button>
+            <button class="btn-sim" onclick="simular('chat')">💬 Comentario Chat (Voz)</button>
+          </div>
+        </div>
+
+        <!-- Ajustes de Voz TTS y Controles de Streamer -->
+        <div class="panel-card">
+          <div class="card-title-bar">
+            <h2>🎙️ Voz Natural Neural HD, Volumen y Reglas</h2>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+
+            <!-- Selector de Pack de Voces Neuronales Realistas (Cero Voz Robótica de TikTok) -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 12px; font-weight: 800; color: #38bdf8;">🎭 Selector de Voz Humana Realista (Pack Neural HD):</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="tts-voice-selector" onchange="cambiarVozNatural(this.value)" style="flex: 1; padding: 9px 12px; background: rgba(15,23,42,0.9); border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600;">
+                  <optgroup label="🔥 Caribe y Urbano (Muy Naturales)">
+                    <option value="es-CO-GonzaloNeural" selected>🇨🇴 Gonzalo — Colombia (Masculina Natural)</option>
+                    <option value="es-CO-SalomeNeural">🇨🇴 Salomé — Colombia (Femenina Natural)</option>
+                    <option value="es-DO-EmilioNeural">🇩🇴 Emilio — Rep. Dominicana (Masculina Urbana)</option>
+                    <option value="es-DO-RamonaNeural">🇩🇴 Ramona — Rep. Dominicana (Femenina Caribeña)</option>
+                    <option value="es-PR-VictorNeural">🇵🇷 Víctor — Puerto Rico (Masculina Natural)</option>
+                    <option value="es-PR-KarinaNeural">🇵🇷 Karina — Puerto Rico (Femenina Natural)</option>
+                    <option value="es-VE-SebastianNeural">🇻🇪 Sebastián — Venezuela (Masculina Natural)</option>
+                    <option value="es-VE-PaolaNeural">🇻🇪 Paola — Venezuela (Femenina Natural)</option>
+                  </optgroup>
+                  <optgroup label="🎙️ Locución Estudio (Latinoamérica y España)">
+                    <option value="es-MX-JorgeNeural">🇲🇽 Jorge — México (Masculina Locutor)</option>
+                    <option value="es-MX-DaliaNeural">🇲🇽 Dalia — México (Femenina Cálida)</option>
+                    <option value="es-US-AlonsoNeural">🇺🇸 Alonso — Latino USA (Masculina Estudio)</option>
+                    <option value="es-US-PalomaNeural">🇺🇸 Paloma — Latino USA (Femenina Estudio)</option>
+                    <option value="es-AR-TomasNeural">🇦🇷 Tomás — Argentina (Masculina Natural)</option>
+                    <option value="es-AR-ElenaNeural">🇦🇷 Elena — Argentina (Femenina Natural)</option>
+                    <option value="es-ES-AlvaroNeural">🇪🇸 Álvaro — España (Masculina Narrador)</option>
+                    <option value="es-ES-ElviraNeural">🇪🇸 Elvira — España (Femenina Natural)</option>
+                  </optgroup>
+                </select>
+                <button type="button" class="btn-action btn-secondary" onclick="probarVozNatural()" style="padding: 8px 12px; font-size: 12px; border-color: rgba(56,189,248,0.5); color: #7dd3fc; white-space: nowrap;" title="Escuchar prueba de la voz seleccionada aquí mismo">
+                  🔊 Probar Voz
+                </button>
+              </div>
+            </div>
+            
+            <!-- Salida de Audio -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Salida de Audio:</label>
+              <select id="tts-audio-output" onchange="cambiarSalidaAudioTTS(this.value)" style="padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px;">
+                <option value="both" selected>En Ambos (Overlay y Panel simultáneamente)</option>
+                <option value="overlay">Solo en Overlay (TikTok Live Studio)</option>
+                <option value="none">Silenciar Voz</option>
+              </select>
+            </div>
+
+            <!-- Control de Volumen -->
+            <div class="slider-control-group">
+              <div class="slider-header-row">
+                <span>🔊 Volumen de Voz y Efectos:</span>
+                <span class="slider-val-badge" id="tts-volume-val">100%</span>
+              </div>
+              <input type="range" id="tts-volume-slider" class="custom-range-slider" min="0" max="100" value="100" oninput="cambiarVolumenTTS(this.value)">
+            </div>
+
+            <!-- Control de Velocidad -->
+            <div class="slider-control-group">
+              <div class="slider-header-row">
+                <span>⚡ Velocidad de Lectura:</span>
+                <span class="slider-val-badge" id="tts-speed-val">1.0x</span>
+              </div>
+              <input type="range" id="tts-speed-slider" class="custom-range-slider" min="0.75" max="1.5" step="0.05" value="1.0" oninput="cambiarVelocidadTTS(this.value)">
+            </div>
+
+            <!-- Editor de Likes para Canción Gratis (D-X) -->
+            <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">🎁 Likes para Canción Gratis (D-X):</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Edítalo aquí o comenta desde tu perfil ej: <code>D-1000</code></div>
+                </div>
+                <span class="slider-val-badge" id="badge-free-likes-current" style="background: rgba(56,189,248,0.18); color: #7dd3fc;">D-5000</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" id="input-free-likes" min="1" step="100" value="5000" placeholder="Ej: 1000" style="flex: 1; padding: 8px 12px; background: rgba(15,23,42,0.9); border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700;">
+                <button type="button" class="btn-action btn-primary" onclick="guardarLikesGratisDesdePanel()" style="padding: 8px 14px; font-size: 12px; white-space: nowrap;">
+                  💾 Aplicar Likes
+                </button>
+              </div>
+            </div>
+
+            <!-- Controles Rápidos del Streamer -->
+            <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 11.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Acciones del Streamer:</span>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button type="button" class="btn-action btn-secondary" id="btn-toggle-queue-lock" onclick="toggleBloqueoCola()" style="font-size: 11px; padding: 8px;">
+                  🔓 Lista: Abierta
+                </button>
+                <button type="button" class="btn-action btn-secondary" onclick="explicarComoPedir()" style="font-size: 11px; padding: 8px;">
+                  💡 Explicar Reglas (...)
+                </button>
+              </div>
+              <button type="button" class="btn-action btn-primary" id="btn-start-voting" onclick="iniciarEncuestaDesdePanel()" style="width: 100%; font-size: 12.5px; padding: 10px; background: linear-gradient(90deg, #f59e0b, #d97706); box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);">
+                ⚖️ Iniciar Votación Jurado (2 min)
+              </button>
+              <button type="button" class="btn-action btn-secondary" id="btn-stop-voting" onclick="terminarVotacionDesdePanel()" style="display:none; width: 100%; font-size: 12.5px; padding: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5;">
+                ⏹️ Finalizar Votación Temprano
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tarjeta de La Playlist (Artistas Certificados >= 95%) -->
+        <div class="panel-card" style="border-color: rgba(234, 179, 8, 0.3);">
+          <div class="card-title-bar">
+            <h2>⭐ La Playlist (<span id="panel-count-certified">0</span> Certificados)</h2>
+            <button class="btn-action btn-secondary" onclick="exportarPlaylist()" style="padding: 5px 10px; font-size: 11px;">📋 Copiar Todo</button>
+          </div>
+          <div class="playlist-items-list" id="panel-certified-list">
+            <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 95% o más (mínimo 10 votos). Realiza una votación al terminar un tema.</div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT ULTRA-ROBUSTO Y LIMPIO                         -->
+  <!-- ========================================================= -->
+  <script>
+    // BLOQUEAR LA VOZ NATIVA ROBÓTICA DE TIKTOK / WINDOWS
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak = function() { window.speechSynthesis.cancel(); };
+      } catch(e) {}
+    }
+
+    // ESTADO LOCAL
+    let state = {
+      queue: [],
+      status: 'disconnected',
+      username: 'slowmdoficial',
+      selectedSongIndex: 0,
+      queueLocked: false,
+      lockTargetLikes: null,
+      currentLikes: 0,
+      freeLikesReq: 5000,
+      requireFollowerToRequest: false,
+      certifiedPlaylist: [],
+      ttsVoice: localStorage.getItem('tts_voice') || 'es-CO-GonzaloNeural',
+      ttsAudioOutput: 'both',
+      ttsVolume: parseFloat(localStorage.getItem('tts_volume') || '1.0'),
+      ttsPrevVolume: 1.0,
+      ttsSpeed: parseFloat(localStorage.getItem('tts_speed') || '1.0'),
+      commentReaderMode: 'all',
+      voting: {
+        active: false,
+        song: null,
+        duration: 120,
+        remaining: 120,
+        avg: 0,
+        pct: 0,
+        votes: 0,
+        chips: []
+      }
+    };
+
+    let isOverlay = false;
+
+    // DETECCIÓN DE MODO POR URL (?view=overlay)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('view') === 'overlay') {
+      isOverlay = true;
+      document.documentElement.classList.add('overlay-mode');
+      document.body.classList.add('overlay-mode');
+      document.getElementById('overlay-view').classList.add('active');
+      document.getElementById('panel-view').classList.remove('active');
+    } else {
+      document.documentElement.classList.remove('overlay-mode');
+      document.body.classList.remove('overlay-mode');
+      document.getElementById('panel-view').classList.add('active');
+      document.getElementById('overlay-view').classList.remove('active');
+    }
+
+    // #6 Limpiar nombres de signos, guiones bajos, números y emojis para la voz
+    function limpiarNombreCliente(nombre) {
+      if (!nombre) return 'Usuario';
+      const limpio = String(nombre)
+        .replace(/^@+/, '')
+        .replace(/[_.\-~*+|/\\]+/g, ' ')
+        .replace(/[^\p{L}\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return limpio || 'Usuario';
+    }
+
+    // #4 Detectar si un texto contiene enlaces/URLs
+    function contieneLinkCliente(texto) {
+      if (!texto) return false;
+      return /(?:https?:\/\/|www\.|youtube\.com\/|youtu\.be\/|spotify\.com\/|spotify\.link\/|bandlab\.com\/)/i.test(String(texto));
+    }
+
+    // AUDIO QUEUE PARA TTS LIMPIO SIN SOLAPAMIENTOS Y CON CONTROL DE VOLUMEN EN TIEMPO REAL
+    const ttsAudioQueue = [];
+    let isPlayingAudio = false;
+    let currentTtsAudio = null;
+
+    function hablarTTS(texto, forcePlayInPanel = false) {
+      if (!texto) return;
+      const outputSetting = state.ttsAudioOutput || document.getElementById('tts-audio-output')?.value || 'both';
+      if (!forcePlayInPanel) {
+        if (outputSetting === 'none') return;
+        if (!isOverlay && outputSetting === 'overlay') return;
+      }
+
+      // #4 El bot NUNCA lee links en voz alta
+      if (contieneLinkCliente(texto)) return;
+
+      // #6 Limpiar estrictamente emojis, guiones bajos y símbolos raros
+      const limpio = String(texto)
+        .replace(/https?:\/\/\S+/gi, '')
+        .replace(/www\.\S+/gi, '')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        .replace(/[_@#*$%^&~`|\\<>]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!limpio) return;
+
+      const selectedVoice = state.ttsVoice || document.getElementById('tts-voice-selector')?.value || 'es-CO-GonzaloNeural';
+      const audioUrl = `/api/tts?q=${encodeURIComponent(limpio)}&voice=${encodeURIComponent(selectedVoice)}`;
+      ttsAudioQueue.push(audioUrl);
+      procesarColaAudio();
+    }
+
+    function procesarColaAudio() {
+      if (isPlayingAudio || ttsAudioQueue.length === 0) return;
+      isPlayingAudio = true;
+      const nextUrl = ttsAudioQueue.shift();
+      const audio = new Audio(nextUrl);
+      currentTtsAudio = audio;
+      
+      const vol = state.ttsVolume !== undefined ? state.ttsVolume : 1.0;
+      const spd = state.ttsSpeed !== undefined ? state.ttsSpeed : 1.0;
+      audio.volume = Math.max(0, Math.min(1, vol));
+      audio.playbackRate = Math.max(0.5, Math.min(2, spd));
+
+      audio.onended = () => {
+        currentTtsAudio = null;
+        isPlayingAudio = false;
+        procesarColaAudio();
+      };
+      audio.onerror = () => {
+        currentTtsAudio = null;
+        isPlayingAudio = false;
+        procesarColaAudio();
+      };
+      audio.play().catch(() => {
+        currentTtsAudio = null;
+        isPlayingAudio = false;
+        procesarColaAudio();
+      });
+    }
+
+    // CONEXIÓN WEBSOCKET
+    let ws = null;
+    let wsTimer = null;
+
+    function conectarWS() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}`);
+
+      ws.onopen = () => {
+        actualizarUIConexion('connected');
+        ws.send(JSON.stringify({ action: 'getStatus' }));
+        ws.send(JSON.stringify({ action: 'getQueue' }));
+        ws.send(JSON.stringify({ action: 'getPlaylist' }));
+        ws.send(JSON.stringify({ action: 'getTTSConfig' }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'STATUS') {
+            state.status = data.status;
+            state.username = data.username || state.username;
+            actualizarUIConexion(data.status, data.username);
+          } else if (data.type === 'TTS_CONFIG_UPDATE') {
+            const cfg = data.config || {};
+            if (cfg.voiceURI && cfg.voiceURI.endsWith('Neural')) {
+              state.ttsVoice = cfg.voiceURI;
+              localStorage.setItem('tts_voice', cfg.voiceURI);
+              const sel = document.getElementById('tts-voice-selector');
+              if (sel) sel.value = cfg.voiceURI;
+            }
+            if (cfg.audioOutput) {
+              state.ttsAudioOutput = cfg.audioOutput;
+              localStorage.setItem('tts_audio_output', cfg.audioOutput);
+              const outSel = document.getElementById('tts-audio-output');
+              if (outSel) outSel.value = cfg.audioOutput;
+            }
+            if (cfg.commentReaderMode) {
+              state.commentReaderMode = cfg.commentReaderMode;
+            }
+            if (cfg.volume !== undefined) {
+              state.ttsVolume = Number(cfg.volume);
+              if (state.ttsVolume > 0) state.ttsPrevVolume = state.ttsVolume;
+              if (currentTtsAudio) {
+                currentTtsAudio.volume = Math.max(0, Math.min(1, state.ttsVolume));
+              }
+              const pctVal = Math.round(state.ttsVolume * 100);
+              const volSlider = document.getElementById('tts-volume-slider');
+              const volBadge = document.getElementById('tts-volume-val');
+              const topSlider = document.getElementById('top-tts-volume-slider');
+              const topBadge = document.getElementById('top-tts-volume-val');
+              if (volSlider) volSlider.value = pctVal;
+              if (volBadge) volBadge.textContent = pctVal + '%';
+              if (topSlider) topSlider.value = pctVal;
+              if (topBadge) topBadge.textContent = pctVal + '%';
+            }
+            if (cfg.rate !== undefined) {
+              state.ttsSpeed = Number(cfg.rate);
+              const spdSlider = document.getElementById('tts-speed-slider');
+              const spdBadge = document.getElementById('tts-speed-val');
+              if (spdSlider) spdSlider.value = state.ttsSpeed;
+              if (spdBadge) spdBadge.textContent = state.ttsSpeed.toFixed(2) + 'x';
+            }
+            actualizarUILectorComentarios();
+          } else if (data.type === 'EXTRA_CONFIG') {
+            if (data.queueLocked !== undefined) state.queueLocked = data.queueLocked;
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
+            if (data.freeLikesReq !== undefined) state.freeLikesReq = Number(data.freeLikesReq) || 5000;
+            if (data.requireFollowerToRequest !== undefined) state.requireFollowerToRequest = false;
+            if (Array.isArray(data.certifiedPlaylist)) state.certifiedPlaylist = data.certifiedPlaylist;
+            if (data.votingState && data.votingState.active) {
+              const remaining = Math.max(0, (data.votingState.duration || 120) - Math.floor((Date.now() - (data.votingState.startedAt || Date.now())) / 1000));
+              iniciarUIEncuesta(data.votingState.song, data.votingState.duration, remaining);
+              if (data.votingState.totalVotes > 0) {
+                actualizarUIVoto({
+                  totalVotes: data.votingState.totalVotes,
+                  average: data.votingState.average !== undefined ? data.votingState.average : data.votingState.avg,
+                  percentage: data.votingState.percentage !== undefined ? data.votingState.percentage : data.votingState.pct
+                });
+              }
+            }
+            actualizarUIControlesStreamer();
+            renderizarPlaylist();
+          } else if (data.type === 'FREE_LIKES_UPDATE') {
+            if (data.freeLikesReq !== undefined) {
+              state.freeLikesReq = Number(data.freeLikesReq) || 5000;
+            }
+            actualizarUIControlesStreamer();
+            if (data.announcement) {
+              mostrarAlertaOverlay('help', { title: `🎁 D-${state.freeLikesReq}: CANCIÓN GRATIS`, user: 'Streamer', announcement: data.announcement });
+              if (!data.skipVoice) hablarTTS(data.announcement);
+            }
+          } else if (data.type === 'QUEUE_LOCK_UPDATE') {
+            state.queueLocked = Boolean(data.locked);
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (data.currentLikes !== undefined) state.currentLikes = data.currentLikes;
+            if (Array.isArray(data.queue)) {
+              state.queue = data.queue;
+            }
+            if (Array.isArray(data.history)) {
+              state.history = data.history;
+            }
+            actualizarUIControlesStreamer();
+            renderizarCola();
+            if (data.announcement) {
+              mostrarAlertaOverlay('warning', { title: data.locked ? '🔒 COLA BLOQUEADA' : '🔓 COLA ABIERTA', user: 'Streamer', announcement: data.announcement });
+              if (!data.skipVoice) hablarTTS(data.announcement);
+            }
+          } else if (data.type === 'LIKE') {
+            if (data.total !== undefined) state.currentLikes = data.total;
+            if (data.lockTargetLikes !== undefined) state.lockTargetLikes = data.lockTargetLikes;
+            if (state.queueLocked && state.lockTargetLikes) {
+              actualizarUIControlesStreamer();
+            }
+          } else if (data.type === 'NOT_FOLLOWER_WARNING') {
+            reproducirSonidoSirena();
+            mostrarSirenaOverlay(data.user, data.message);
+            hablarTTS(data.message);
+          } else if (data.type === 'VOTING_STARTED') {
+            iniciarUIEncuesta(data.song, data.duration || 120);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+          } else if (data.type === 'VOTE_CAST') {
+            actualizarUIVoto(data);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+          } else if (data.type === 'VOTING_FINISHED') {
+            finalizarUIEncuesta(data);
+            if (data.voiceAnnouncement) hablarTTS(data.voiceAnnouncement);
+            if (Array.isArray(data.certifiedPlaylist)) {
+              state.certifiedPlaylist = data.certifiedPlaylist;
+              renderizarPlaylist();
+            }
+          } else if (data.type === 'VOTING_CANCELLED') {
+            cerrarUIEncuesta();
+          } else if (data.type === 'PLAYLIST_UPDATE') {
+            state.certifiedPlaylist = data.playlist || [];
+            renderizarPlaylist();
+          } else if (data.type === 'QUEUE_UPDATE') {
+            const prevLen = state.queue.length;
+            state.queue = data.queue || [];
+            renderizarCola();
+
+            // #5 Solo mostrar el aviso visual en pantalla para acciones (sin leer en voz alta salvo que sea comando de moderador)
+            if (data.eventType === 'hands_top1' || data.eventType === 'move_up') {
+              const pos = data.newPosition || 1;
+              mostrarAlertaOverlay('subio', { title: data.songTitle, user: data.songUser, position: pos, announcement: data.announcement });
+            } else if (data.eventType === 'unlock') {
+              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: data.announcement });
+            } else if (data.eventType === 'update_song') {
+              const msg = data.announcement || `¡${data.songUser} asignó su tema "${data.songTitle}"!`;
+              mostrarAlertaOverlay('desbloqueada', { title: data.songTitle, user: data.songUser, announcement: msg });
+            } else if (data.eventType === 'new_song' || data.newSong) {
+              const s = data.newSong || { title: data.songTitle, user: data.songUser };
+              const desc = data.newSongDesc || `Turno asignado a @${s.user} • Pega tu link de YouTube, Spotify o BandLab`;
+              mostrarAlertaOverlay('nueva', { ...s, announcement: desc });
+            } else if (data.announcement) {
+              mostrarAlertaOverlay('info', { title: data.songTitle || 'AVISO', user: data.songUser, announcement: data.announcement });
+              if (!data.skipVoice) hablarTTS(data.announcement);
+            } else if (state.queue.length > prevLen) {
+              const s = state.queue[state.queue.length - 1];
+              mostrarAlertaOverlay('nueva', s);
+            }
+          } else if (data.type === 'EPIC_GIFT_ANIMATION') {
+            mostrarAnimacionEpicaRegalo(data.giftType, data.user);
+          } else if (data.type === 'SHOW_LIST') {
+            mostrarListaCompletaOverlay(data.queue || state.queue, data.requestedBy, data.userPosition);
+          } else if (data.type === 'HOW_TO_ADD_HELP') {
+            mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: data.user, announcement: data.bannerText });
+            hablarTTS(data.voiceText);
+          } else if (data.type === 'CHAT_WARNING') {
+            mostrarAlertaOverlay('warning', { title: 'REGLA DE COLA', user: data.user, announcement: data.message });
+            hablarTTS(data.message);
+          } else if (data.type === 'CHAT') {
+            mostrarTTSOverlay(data.user, data.comment, 'chat', data.avatarUrl);
+            const previewEl = document.getElementById('top-comment-reader-preview');
+            if (previewEl) {
+              const iconTxt = data.readTTS ? '🔊' : '💬';
+              previewEl.innerHTML = `${iconTxt} <strong>@${escapeHtml(data.user || 'Usuario')}:</strong> ${escapeHtml(data.comment || '')}`;
+            }
+            if (data.readTTS && !contieneLinkCliente(data.comment)) {
+              const nombreLimpio = data.cleanUser || limpiarNombreCliente(data.user);
+              hablarTTS(`${nombreLimpio} dice: ${data.comment}`);
+            }
+          } else if (data.type === 'GIFT') {
+            // #5 Solo mostrar aviso visual en pantalla, sin leer acciones en TTS
+            mostrarTTSOverlay(data.user, `Envió ${data.giftName} (x${data.repeatCount || 1})`, 'gift', data.avatarUrl);
+          } else if (data.type === 'FOLLOW') {
+            // #5 Solo mostrar banner visual, sin leer acción en TTS
+            mostrarAplausosSeguidorOverlay(data.user);
+          } else if (data.type === 'SHARE') {
+            // #5 Quitar animación de captura/foto y quitar lectura de voz al compartir; solo mostrar aviso visual discreto
+            mostrarTTSOverlay(data.user, `Compartió el En Vivo 🔄`, 'chat', data.avatarUrl);
+          }
+        } catch(e) {}
+      };
+
+      ws.onclose = () => {
+        actualizarUIConexion('disconnected');
+        clearTimeout(wsTimer);
+        wsTimer = setTimeout(conectarWS, 2500);
+      };
+    }
+
+    function actualizarUIConexion(status, username) {
+      const dot = document.getElementById('panel-status-dot');
+      const text = document.getElementById('panel-status-text');
+      const btn = document.getElementById('btn-toggle-live');
+      if (!dot || !text) return;
+
+      if (status === 'connected') {
+        dot.className = 'status-dot connected';
+        text.textContent = `En Vivo: @${username || state.username}`;
+        if (btn) btn.textContent = 'Desconectar';
+      } else {
+        dot.className = 'status-dot';
+        text.textContent = 'Desconectado';
+        if (btn) btn.textContent = 'Conectar Live';
+      }
+    }
+
+    // Formatear el título para que en el Overlay NUNCA se muestre una URL cruda ni emojis de enlace
+    function formatearTituloVisible(songOrTitle, userFallback = 'Artista') {
+      const raw = typeof songOrTitle === 'object' && songOrTitle !== null
+        ? (songOrTitle.title || '')
+        : String(songOrTitle || '');
+      const user = typeof songOrTitle === 'object' && songOrTitle !== null
+        ? (songOrTitle.user || userFallback)
+        : userFallback;
+
+      const sinPrefijo = raw.replace(/^🔗\s*/, '').trim();
+      if (!sinPrefijo || contieneLinkCliente(sinPrefijo)) {
+        return `Canción de @${user}`;
+      }
+      return sinPrefijo;
+    }
+
+    // RENDERIZADO DE LA COLA
+    function renderizarCola() {
+      // 1. Overlay
+      const songTitle = document.getElementById('overlay-song-title');
+      const songUser = document.getElementById('overlay-song-user');
+      const statusBadge = document.getElementById('overlay-status-badge');
+      const queuePill = document.getElementById('overlay-queue-pill');
+
+      if (queuePill) queuePill.textContent = `${state.queue.length} EN COLA`;
+
+      if (state.queue.length > 0) {
+        const top = state.queue[0];
+        if (songTitle) songTitle.textContent = formatearTituloVisible(top).toUpperCase();
+        if (songUser) songUser.textContent = `Petición de: @${top.user}${top.vip150 ? ' 👑 #1 BLINDADO' : ''}`;
+        if (statusBadge) {
+          if (state.queueLocked) {
+            statusBadge.textContent = '🔒 EN ESPERA (LISTA BLOQUEADA)';
+          } else {
+            statusBadge.textContent = top.status === 'unlocked' ? '▶ EN REPRODUCCIÓN AHORA' : '⏳ EN ESPERA (CUMPLE REQUISITOS)';
+          }
+        }
+      } else {
+        if (songTitle) songTitle.textContent = 'ESPERANDO PETICIÓN...';
+        if (songUser) songUser.textContent = 'Pega el link de YouTube, Spotify o BandLab';
+        if (statusBadge) statusBadge.textContent = state.queueLocked ? '🔒 LISTA BLOQUEADA' : 'EN ESPERA DE PETICIONES';
+      }
+
+      // 2. Panel del Streamer - Barra de Reproducción Superior y Lista
+      actualizarBarraReproductor();
+
+      const list = document.getElementById('panel-queue-list');
+      const count = document.getElementById('panel-count-queue');
+      if (count) count.textContent = state.queue.length;
+
+      if (list) {
+        if (state.queue.length === 0) {
+          list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 13px;">No hay canciones en la cola. Al entrar, el usuario pega su link de YouTube, Spotify o BandLab.</div>`;
+        } else {
+          list.innerHTML = state.queue.map((song, idx) => {
+            const isSelected = (state.selectedSongIndex || 0) === idx;
+            const isTop = idx === 0;
+            const isUnlocked = song.status === 'unlocked';
+            const vipBadge = song.vip150 ? ' <span style="color:#fde047;font-weight:900;">👑 BLINDADO</span>' : '';
+            const linkBadge = song.songUrl ? ' <span style="color:#38bdf8;font-weight:800;">🔗 Link Listo</span>' : '';
+            const cleanTitle = formatearTituloVisible(song);
+            return `
+              <div class="queue-row ${isSelected ? 'selected-song' : (isTop ? 'current-song' : '')}" onclick="seleccionarCancion(${idx})" style="cursor: pointer;" title="Haz clic para seleccionar este tema en la barra de reproducción">
+                <div class="row-info-col">
+                  <div class="row-title">#${idx + 1} ${escapeHtml(cleanTitle)} ${isSelected ? '🎧' : ''}${vipBadge}${linkBadge}</div>
+                  <div class="row-user">@${escapeHtml(song.user)} • ${isUnlocked ? '🔓 Desbloqueada' : '🔒 Bloqueada'}</div>
+                </div>
+                <div class="row-actions-col">
+                  <button type="button" class="btn-row-action" onclick="event.stopPropagation(); moverCancion(${idx}, -1)" title="Subir">▲</button>
+                  <button type="button" class="btn-row-action" onclick="event.stopPropagation(); moverCancion(${idx}, 1)" title="Bajar">▼</button>
+                  <button type="button" class="btn-row-action delete" onclick="event.stopPropagation(); eliminarCancion(${idx})" title="Eliminar">✕</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    // GESTIÓN DE LA BARRA DE REPRODUCCIÓN / ACCIONES RÁPIDAS (ABRIR ENLACE + COPIAR)
+    function actualizarBarraReproductor() {
+      const titleEl = document.getElementById('player-song-title');
+      const statusEl = document.getElementById('player-song-status');
+      const hintEl = document.getElementById('player-lock-hint');
+      const btnOpen = document.getElementById('btn-player-open-link');
+      const btnCp = document.getElementById('btn-player-cp');
+
+      if (!titleEl || !btnOpen) return;
+
+      if (typeof state.selectedSongIndex !== 'number' || state.selectedSongIndex < 0 || state.selectedSongIndex >= state.queue.length) {
+        state.selectedSongIndex = 0;
+      }
+
+      if (state.queue.length === 0) {
+        titleEl.textContent = 'Sin canciones en la lista';
+        if (statusEl) {
+          statusEl.textContent = 'SIN TEMAS';
+          statusEl.className = 'player-status-badge empty';
+        }
+        if (hintEl) {
+          hintEl.innerHTML = '<span>ℹ️</span> <span>Agrega una canción con el formulario abajo o espera peticiones en el Live.</span>';
+        }
+        btnOpen.innerHTML = '🔗 Abrir Enlace';
+        btnOpen.disabled = true;
+        if (btnCp) btnCp.disabled = true;
+        return;
+      }
+
+      const song = state.queue[state.selectedSongIndex];
+      const isUnlocked = song && song.status === 'unlocked';
+      const cleanTitle = formatearTituloVisible(song);
+
+      titleEl.textContent = `${cleanTitle} (pedida por @${song.user})`;
+
+      if (statusEl) {
+        if (isUnlocked) {
+          statusEl.textContent = song.vip150 ? '👑 #1 BLINDADO' : '🔓 DESBLOQUEADA';
+          statusEl.className = 'player-status-badge unlocked';
+        } else {
+          statusEl.textContent = '🔒 BLOQUEADA';
+          statusEl.className = 'player-status-badge locked';
+        }
+      }
+
+      const platName = song.songPlatform === 'youtube' ? 'YouTube' :
+                       (song.songPlatform === 'spotify' ? 'Spotify' :
+                       (song.songPlatform === 'bandlab' ? 'BandLab' : ''));
+      btnOpen.innerHTML = song.songUrl
+        ? `🔗 Abrir Enlace${platName ? ` (${platName})` : ''}`
+        : '🔗 Abrir Enlace';
+
+      // NINGÚN BOTÓN HABILITADO SI EL TEMA ESTÁ BLOQUEADO
+      btnOpen.disabled = !isUnlocked;
+      if (btnCp) btnCp.disabled = !isUnlocked;
+
+      if (hintEl) {
+        if (isUnlocked) {
+          if (song.songUrl) {
+            hintEl.innerHTML = `<span style="color:#38bdf8;">🔗</span> <span style="color:#7dd3fc; font-weight:700;">Enlace listo: en el Overlay se muestra "${escapeHtml(cleanTitle)}" y aquí puedes abrir el link directo.</span>`;
+          } else {
+            hintEl.innerHTML = '<span style="color:#4ade80;">✅</span> <span style="color:#86efac; font-weight:700;">¡Turno en cola! Esperando que el usuario pegue el link de su canción en el chat.</span>';
+          }
+        } else {
+          hintEl.innerHTML = '<span style="color:#f87171;">🔒</span> <span style="color:#fca5a5;">Tema bloqueado: Requiere apoyo para habilitar los botones de escucha.</span>';
+        }
+      }
+    }
+
+    function seleccionarCancion(idx) {
+      if (idx >= 0 && idx < state.queue.length) {
+        state.selectedSongIndex = idx;
+        renderizarCola();
+      }
+    }
+
+    function abrirEnlaceActual() {
+      const idx = typeof state.selectedSongIndex === 'number' ? state.selectedSongIndex : 0;
+      const song = state.queue[idx];
+      if (!song || song.status !== 'unlocked') {
+        alert('⚠️ Este tema se encuentra bloqueado. El botón solo se habilita cuando la canción esté desbloqueada.');
+        return;
+      }
+
+      if (song.songUrl) {
+        window.open(song.songUrl, '_blank');
+        return;
+      }
+
+      if (song.title && contieneLinkCliente(song.title)) {
+        const match = String(song.title).match(/https?:\/\/\S+/i);
+        const url = match ? match[0] : ('https://' + String(song.title).trim());
+        window.open(url, '_blank');
+        return;
+      }
+
+      // Si se agregó un nombre manualmente sin link, buscarlo en YouTube
+      const query = encodeURIComponent(formatearTituloVisible(song));
+      window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+    }
+
+    function abrirPlataforma() {
+      abrirEnlaceActual();
+    }
+
+    function copiarTemaActual() {
+      const idx = typeof state.selectedSongIndex === 'number' ? state.selectedSongIndex : 0;
+      const song = state.queue[idx];
+      if (!song || song.status !== 'unlocked') {
+        alert('⚠️ Este tema se encuentra bloqueado. Debe estar desbloqueado para copiar.');
+        return;
+      }
+
+      const texto = song.songUrl || formatearTituloVisible(song);
+      const btn = document.getElementById('btn-player-cp');
+      const originalText = btn ? btn.innerHTML : '📋 Copiar';
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          if (btn) {
+            btn.innerHTML = '✅ ¡Copiado!';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+          }
+        }).catch(() => {
+          prompt('Copia el enlace o nombre de la canción:', texto);
+        });
+      } else {
+        prompt('Copia el enlace o nombre de la canción:', texto);
+      }
+    }
+
+    function moverCancion(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= state.queue.length) return;
+      const [item] = state.queue.splice(idx, 1);
+      state.queue.splice(target, 0, item);
+      sincronizarServidor();
+    }
+
+    function eliminarCancion(idx) {
+      const removed = state.queue.splice(idx, 1)[0];
+      renderizarCola();
+      if (ws && ws.readyState === WebSocket.OPEN && removed && removed.id) {
+        ws.send(JSON.stringify({ action: 'deleteSong', songId: removed.id }));
+      } else {
+        sincronizarServidor();
+      }
+    }
+
+    function vaciarCola() {
+      if (confirm('¿Vaciar toda la cola de canciones?')) {
+        state.queue = [];
+        renderizarCola();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'clearQueue' }));
+        } else {
+          sincronizarServidor();
+        }
+      }
+    }
+
+    function sincronizarServidor() {
+      renderizarCola();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'syncQueue', queue: state.queue }));
+      }
+    }
+
+    // ANIMACIÓN DE ALERTAS GIGANTES EN EL OVERLAY
+    let alertTimer = null;
+    function mostrarAlertaOverlay(tipo, info) {
+      const box = document.getElementById('overlay-alert-box');
+      const label = document.getElementById('alert-label-text');
+      const title = document.getElementById('alert-title-text');
+      const desc = document.getElementById('alert-desc-text');
+      if (!box || !info) return;
+
+      const cleanTitle = (tipo === 'help' || tipo === 'warning')
+        ? (info.title || 'AVISO')
+        : formatearTituloVisible(info, info.user || 'Artista');
+      if (title) title.textContent = cleanTitle.toUpperCase();
+
+      if (tipo === 'help') {
+        if (label) label.textContent = '💡 ¿CÓMO PEDIR CANCIÓN? 💡';
+        if (desc) desc.textContent = info.announcement || 'Comenta: Escucha [Canción] - [Artista]';
+      } else if (tipo === 'warning') {
+        if (label) label.textContent = '⚠️ ¡AVISO DE LA COLA! ⚠️';
+        if (desc) desc.textContent = info.announcement || `Aviso para @${info.user}`;
+      } else if (info.announcement) {
+        if (desc) desc.textContent = info.announcement;
+        if (tipo === 'subio') {
+          const pos = info.position || 1;
+          if (label) label.textContent = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
+        } else if (tipo === 'desbloqueada') {
+          if (label) label.textContent = '🔓 ¡CANCIÓN DESBLOQUEADA! 🔓';
+        } else {
+          if (label) label.textContent = '🎵 ¡NUEVA CANCIÓN EN COLA! 🎵';
+        }
+      } else if (tipo === 'subio') {
+        const pos = info.position || 1;
+        if (label) label.textContent = `🚀 ¡SUBIÓ AL PUESTO #${pos}! 🚀`;
+        if (desc) desc.textContent = `¡La canción de @${info.user} avanzó al puesto #${pos}!`;
+      } else if (tipo === 'desbloqueada') {
+        if (label) label.textContent = '🔓 ¡CANCIÓN DESBLOQUEADA! 🔓';
+        if (desc) desc.textContent = `¡@${info.user} cumplió los requisitos de apoyo!`;
+      } else {
+        if (label) label.textContent = '🎵 ¡NUEVA CANCIÓN EN COLA! 🎵';
+        if (desc) desc.textContent = `Pedida por: @${info.user}`;
+      }
+
+      box.classList.add('show');
+      clearTimeout(alertTimer);
+      alertTimer = setTimeout(() => {
+        box.classList.remove('show');
+      }, 7000);
+    }
+
+    // REGLA 5: EFECTO DE CÁMARA (OBTURADOR Y FOTO CRUSH)
+    let photoTimer = null;
+    function reproducirSonidoObturador() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        // Clic 1 (Obturador espejo)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(850, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.85, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+
+        // Clic 2 (Cortinilla obturador)
+        setTimeout(() => {
+          try {
+            const bufSize = Math.floor(ctx.sampleRate * 0.07);
+            const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 1600;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.7, ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+            src.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            src.start(ctx.currentTime);
+          } catch(e) {}
+        }, 55);
+      } catch(e) {}
+    }
+
+    function mostrarFotoCrushOverlay(primerNombre) {
+      const flash = document.getElementById('overlay-camera-flash');
+      const polaroid = document.getElementById('overlay-polaroid-card');
+      const cap = document.getElementById('polaroid-caption-text');
+      const sub = document.getElementById('polaroid-subcaption-text');
+      if (!polaroid) return;
+
+      if (cap) cap.textContent = `¡${primerNombre} tomó una foto al Live!`;
+      if (sub) sub.textContent = `Mandó este live a su crush ❤️`;
+
+      // Flashazo blanco
+      if (flash) {
+        flash.classList.add('flash');
+        setTimeout(() => {
+          flash.classList.remove('flash');
+        }, 400);
+      }
+
+      // Mostrar polaroid
+      polaroid.classList.add('show');
+      clearTimeout(photoTimer);
+      photoTimer = setTimeout(() => {
+        polaroid.classList.remove('show');
+      }, 4800);
+    }
+
+    // REGLA 6: BANNER ELEGANTE DE APLAUSOS + SONIDO
+    let applauseTimer = null;
+    function reproducirSonidoAplausos() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const duration = 2.6;
+        const bufSize = Math.floor(ctx.sampleRate * duration);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+          const envelope = Math.sin((i / bufSize) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * envelope;
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1300;
+        filter.Q.value = 1.0;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.65, ctx.currentTime + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(ctx.currentTime);
+      } catch(e) {}
+    }
+
+    function mostrarAplausosSeguidorOverlay(nombre) {
+      const banner = document.getElementById('overlay-applause-banner');
+      const userText = document.getElementById('applause-user-text');
+      if (!banner) return;
+
+      if (userText) userText.textContent = `¡@${nombre} se sumó a la comunidad!`;
+      banner.classList.add('show');
+      clearTimeout(applauseTimer);
+      applauseTimer = setTimeout(() => {
+        banner.classList.remove('show');
+      }, 5500);
+    }
+
+    // REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO)
+    let fullListTimer = null;
+    let lastListTriggerTime = 0;
+    function mostrarListaCompletaOverlay(cola, requestedBy, userPosition) {
+      const now = Date.now();
+      // Enfriamiento de 4 segundos para prevenir spam
+      if (now - lastListTriggerTime < 4000) return;
+      lastListTriggerTime = now;
+
+      const sheet = document.getElementById('overlay-full-list-sheet');
+      const container = document.getElementById('full-list-items-container');
+      const badgeCount = document.getElementById('full-list-badge-count');
+      const titleEl = document.querySelector('.full-list-title');
+      if (!sheet || !container) return;
+
+      const items = cola || state.queue || [];
+      if (badgeCount) badgeCount.textContent = `${items.length} TEMAS`;
+
+      if (titleEl) {
+        if (userPosition && requestedBy) {
+          titleEl.innerHTML = `📋 COLA <span class="user-position-header-badge">🎯 @${escapeHtml(requestedBy)}: PUESTO #${userPosition}</span>`;
+        } else {
+          titleEl.innerHTML = `📋 COLA DE CANCIONES`;
+        }
+      }
+
+      if (items.length === 0) {
+        const freeLikes = state.freeLikesReq || 5000;
+        container.innerHTML = `
+          <div style="text-align:center; padding: clamp(40px, 4vw, 80px); color: var(--text-muted); font-size: clamp(24px, 2.5vw, 60px); font-weight: 700;">
+            No hay canciones en la cola.<br>Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️
+          </div>
+        `;
+      } else {
+        container.innerHTML = items.map((song, idx) => {
+          const isUnlocked = song.status === 'unlocked';
+          const isMyPosition = Boolean(userPosition && (idx + 1 === userPosition));
+          const rowClass = isMyPosition ? 'my-position-row' : (isUnlocked ? 'unlocked' : 'locked');
+          const tagHtml = isMyPosition 
+            ? `<div class="full-list-tag my-pos">🎯 TU POSICIÓN #${userPosition}</div>`
+            : `<div class="full-list-tag ${isUnlocked ? 'unlocked' : 'locked'}">${isUnlocked ? '🔓 Desbloqueada' : '🔒 En Espera'}</div>`;
+
+          return `
+            <div class="full-list-item-row ${rowClass}">
+              <div class="full-list-item-info">
+                <span class="full-list-pos">#${idx + 1}</span>
+                <div class="full-list-meta">
+                  <div class="full-list-song">${escapeHtml(formatearTituloVisible(song))}</div>
+                  <div class="full-list-user">@${escapeHtml(song.user)}</div>
+                </div>
+              </div>
+              ${tagHtml}
+            </div>
+          `;
+        }).join('');
+      }
+
+      sheet.classList.add('show');
+      clearTimeout(fullListTimer);
+      fullListTimer = setTimeout(() => {
+        sheet.classList.remove('show');
+      }, 8500);
+    }
+
+    // CAJA DE COMENTARIOS TTS EN EL OVERLAY
+    let ttsTimer = null;
+    function mostrarTTSOverlay(user, msg, type = 'chat', avatarUrl = '') {
+      const box = document.getElementById('overlay-tts-card');
+      const userEl = document.getElementById('overlay-tts-user');
+      const badgeEl = document.getElementById('overlay-tts-badge');
+      const msgEl = document.getElementById('overlay-tts-message');
+      const avatarEl = document.getElementById('overlay-tts-avatar');
+      if (!box) return;
+
+      if (userEl) userEl.textContent = user || '@Usuario';
+      if (msgEl) msgEl.textContent = msg || '';
+      if (avatarEl && avatarUrl) avatarEl.src = avatarUrl;
+      if (badgeEl) badgeEl.textContent = type === 'gift' ? '🎁 Regalo' : (type === 'follow' ? '🌟 Seguidor' : '💬 Chat');
+
+      box.classList.add('show');
+      clearTimeout(ttsTimer);
+      ttsTimer = setTimeout(() => {
+        box.classList.remove('show');
+      }, 7000);
+    }
+
+    // ANIMACIÓN ÉPICA Y SONIDOS PARA REGALOS (CORAZÓN CON LOS DEDOS / QUIÉREME)
+    let epicGiftModalTimer = null;
+    let epicGiftCanvasAnim = null;
+
+    function reproducirSonidoCorazonDedos() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.45 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+        let t = ctx.currentTime;
+        freqs.forEach((f, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(vol * (0.8 + (i * 0.1)), t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.4);
+          t += 0.08;
+        });
+      } catch(e) {}
+    }
+
+    function reproducirSonidoQuiereme() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.5 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const chords = [
+          { notes: [349.23, 440.00, 523.25], start: 0, dur: 0.6 },
+          { notes: [392.00, 493.88, 587.33], start: 0.28, dur: 0.7 },
+          { notes: [440.00, 554.37, 659.25, 880.00], start: 0.62, dur: 1.5 }
+        ];
+        const baseTime = ctx.currentTime;
+        chords.forEach(c => {
+          c.notes.forEach(f => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            const noteStart = baseTime + c.start;
+            osc.frequency.setValueAtTime(f, noteStart);
+            gain.gain.setValueAtTime(0.01, noteStart);
+            gain.gain.linearRampToValueAtTime(vol / c.notes.length, noteStart + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteStart + c.dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(noteStart);
+            osc.stop(noteStart + c.dur + 0.1);
+          });
+        });
+      } catch(e) {}
+    }
+
+    function lanzarCorazonesCanvas(canvas, giftType) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const emojiMap = {
+        money_gun: ['💸', '💵', '👑', '🔥', '✨'],
+        corazon_manos: ['🫶', '💖', '🚀', '✨', '❤️'],
+        sombrero_bigote: ['🎩', '🥸', '⬆️', '✨', '🔥'],
+        gorra: ['🧢', '🎵', '✨', '🎧', '🔥'],
+        quiereme: ['💖', '💕', '👑', '💗', '✨']
+      };
+      const emojis = emojiMap[giftType] || ['🧢', '❤️', '✨', '💖', '🔥'];
+      const particles = [];
+      const count = 55;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: canvas.width * 0.5 + (Math.random() - 0.5) * canvas.width * 0.75,
+          y: canvas.height * 0.85 + (Math.random() * 150),
+          vx: (Math.random() - 0.5) * 6,
+          vy: -(Math.random() * 8 + 6),
+          size: Math.random() * 45 + 30,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          rot: (Math.random() - 0.5) * 30,
+          vrot: (Math.random() - 0.5) * 4,
+          wobbleOffset: Math.random() * Math.PI * 2,
+          alpha: 1,
+          scale: 0.2 + Math.random() * 0.5
+        });
+      }
+
+      const startTime = Date.now();
+      if (epicGiftCanvasAnim) cancelAnimationFrame(epicGiftCanvasAnim);
+
+      function anim() {
+        const elapsed = (Date.now() - startTime) / 1000;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx + Math.sin(elapsed * 4 + p.wobbleOffset) * 2;
+          p.y += p.vy;
+          p.vy *= 0.99;
+          p.scale = Math.min(1.2, p.scale + 0.02);
+          p.alpha = Math.max(0, 1 - (elapsed / 4.8));
+
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.scale(p.scale, p.scale);
+            ctx.globalAlpha = p.alpha;
+            ctx.font = `${p.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = giftType === 'money_gun' ? '#eab308' : (giftType === 'quiereme' ? '#f43f5e' : '#38bdf8');
+            ctx.shadowBlur = 30;
+            ctx.fillText(p.emoji, 0, 0);
+            ctx.restore();
+          }
+        });
+
+        if (alive && elapsed < 5.0) {
+          epicGiftCanvasAnim = requestAnimationFrame(anim);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      epicGiftCanvasAnim = requestAnimationFrame(anim);
+    }
+
+    function mostrarAnimacionEpicaRegalo(giftType, user) {
+      const modal = document.getElementById('overlay-epic-gift-modal');
+      const icon = document.getElementById('epic-gift-icon');
+      const title = document.getElementById('epic-gift-title');
+      const userEl = document.getElementById('epic-gift-user');
+      const subtext = document.getElementById('epic-gift-subtext');
+      const canvas = document.getElementById('epic-gift-canvas');
+      if (!modal) return;
+
+      const userName = user || 'Usuario';
+      if (userEl) userEl.textContent = `@${userName}`;
+
+      if (giftType === 'money_gun') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '💸👑';
+        if (title) title.textContent = '¡MONEY GUN — #1 INMEDIATO!';
+        if (subtext) subtext.textContent = '¡Reacción inmediata en el Puesto #1 Blindado!';
+        reproducirSonidoFanfarria();
+      } else if (giftType === 'corazon_manos') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '🫶🚀';
+        if (title) title.textContent = '¡CORAZÓN EN LAS MANOS!';
+        if (subtext) subtext.textContent = '¡Salto directo al Puesto #2 de la lista!';
+        reproducirSonidoQuiereme();
+      } else if (giftType === 'sombrero_bigote') {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🎩🥸';
+        if (title) title.textContent = '¡SOMBRERO CON BIGOTE!';
+        if (subtext) subtext.textContent = '¡Adelantó 1 posición en la lista de canciones!';
+        reproducirSonidoCorazonDedos();
+      } else if (giftType === 'gorra') {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🧢✨';
+        if (title) title.textContent = '¡GORRA RECIBIDA!';
+        if (subtext) subtext.textContent = '¡Disco agregado directamente a la lista!';
+        reproducirSonidoCorazonDedos();
+      } else if (giftType === 'quiereme') {
+        modal.classList.add('quiereme');
+        if (icon) icon.textContent = '💖👑';
+        if (title) title.textContent = '¡REGALO QUIÉREME!';
+        if (subtext) subtext.textContent = '¡Destacado VIP en el chat del Live!';
+        reproducirSonidoQuiereme();
+      } else {
+        modal.classList.remove('quiereme');
+        if (icon) icon.textContent = '🧢✨';
+        if (title) title.textContent = '¡REGALO RECIBIDO!';
+        if (subtext) subtext.textContent = '¡Disco agregado directamente a la lista!';
+        reproducirSonidoCorazonDedos();
+      }
+
+      modal.classList.add('show');
+      if (canvas) lanzarCorazonesCanvas(canvas, giftType);
+
+      clearTimeout(epicGiftModalTimer);
+      epicGiftModalTimer = setTimeout(() => {
+        modal.classList.remove('show');
+      }, 5500);
+    }
+
+    // SIMULADOR DE PRUEBAS
+    function simular(tipo) {
+      if (tipo === 'gorra' || tipo === 'corazon_dedos') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Gorra', user: 'Maria_Gamer', diamondCount: 99 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('gorra', 'Maria_Gamer');
+        }
+      } else if (tipo === 'sombrero_bigote') {
+        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Luis_Flow';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Sombrero con bigote', user: targetUser, diamondCount: 99 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('sombrero_bigote', targetUser);
+        }
+      } else if (tipo === 'corazon_manos') {
+        const targetUser = state.queue.length > 2 ? state.queue[state.queue.length - 1].user : 'Valeria_Music';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Corazón en las manos', user: targetUser, diamondCount: 100 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('corazon_manos', targetUser);
+        }
+      } else if (tipo === 'money_gun' || tipo === 'regalo_150') {
+        const targetUser = state.queue.length > 1 ? state.queue[state.queue.length - 1].user : 'Rey_MoneyGun';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Money Gun', user: targetUser, diamondCount: 500 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('money_gun', targetUser);
+        }
+      } else if (tipo === 'likes_5000') {
+        const freeLikes = state.freeLikesReq || 5000;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testLikes', user: 'Fan_Likes_' + Math.floor(Math.random() * 90 + 10), count: freeLikes }));
+        }
+      } else if (tipo === 'quiereme') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testGift', giftName: 'Quiéreme', user: 'Carlos_VIP', diamondCount: 1 }));
+        } else {
+          mostrarAnimacionEpicaRegalo('quiereme', 'Carlos_VIP');
+        }
+      } else if (tipo === 'comando_escucha') {
+        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'Escucha + Monaco + Bad Bunny' }));
+        } else {
+          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetUser, announcement: `🎵 ¡@${targetUser} agregó "Monaco - Bad Bunny"!` });
+        }
+      } else if (tipo === 'parentesis_cancion') {
+        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: '(Monaco + Bad Bunny)' }));
+        } else {
+          mostrarAlertaOverlay('desbloqueada', { title: 'Monaco - Bad Bunny', user: targetUser, announcement: `🎵 ¡@${targetUser} agregó "Monaco - Bad Bunny"!` });
+        }
+      } else if (tipo === 'pegar_link' || tipo === 'pedir_escucha') {
+        const targetUser = state.queue[0]?.user || 'Maria_Gamer';
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: targetUser, comment: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }));
+        } else {
+          mostrarAlertaOverlay('desbloqueada', { title: 'Rick Astley - Never Gonna Give You Up', user: targetUser, announcement: `¡${targetUser} asignó su tema con link!` });
+        }
+      } else if (tipo === 'bloqueo_likes') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: state.username || 'slowmdoficial', comment: '0-50000' }));
+        }
+      } else if (tipo === 'comando_d_likes') {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: state.username || 'slowmdoficial', comment: 'D-1000' }));
+        }
+      } else if (tipo === 'chat') {
+        const msgs = ['¡Saludos mi pana activo aquí!', 'Tremenda música suelta más!', 'Rómpela en ese Live bro'];
+        const m = msgs[Math.floor(Math.random() * msgs.length)];
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'testChat', user: 'Carlos_VIP', comment: m }));
+        } else {
+          mostrarTTSOverlay('Carlos_VIP', m, 'chat');
+          hablarTTS(`Carlos VIP dice: ${m}`);
+        }
+      } else if (tipo === 'song') {
+        const temas = ['Bad Bunny - Monaco', 'Feid - Luna', 'Anuel AA - Más Rica Que Ayer', 'El Alfa - Gogo Dance'];
+        const t = temas[Math.floor(Math.random() * temas.length)];
+        const nuevo = { id: 'sim_' + Date.now(), title: t, user: 'Usuario_Live', status: 'unlocked', overtakenCount: 0 };
+        state.queue.push(nuevo);
+        sincronizarServidor();
+        mostrarAlertaOverlay('nueva', nuevo);
+      } else if (tipo === 'verlista') {
+        lastListTriggerTime = 0; // Reset cooldown para probar
+        const myPos = state.queue.length > 0 ? 1 : 0;
+        mostrarListaCompletaOverlay(state.queue, 'Usuario_Live', myPos);
+      } else if (tipo === 'share_crush') {
+        mostrarTTSOverlay('Alejandro', 'Compartió el En Vivo 🔄', 'chat');
+      } else if (tipo === 'follow_comunidad') {
+        mostrarAplausosSeguidorOverlay('Carlos');
+      } else if (tipo === 'segunda_cancion') {
+        const user = state.queue[0]?.user || 'Slow MD';
+        const msg = `${limpiarNombreCliente(user)}, ya tienes una canción en la lista`;
+        mostrarAlertaOverlay('warning', { title: 'REGLA DE LA COLA', user: user, announcement: msg });
+        hablarTTS(msg);
+      } else if (tipo === 'pregunta_ayuda') {
+        const freeLikes = state.freeLikesReq || 5000;
+        const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
+        const voice = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
+        mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Usuario_Curioso', announcement: banner });
+        hablarTTS(voice);
+      } else if (tipo === 'spam') {
+        alert('Simulación de Filtro Spam Activo:\n\nSi un usuario repite el mismo comentario más de 2 veces en menos de 10 segundos, el servidor lo detecta automáticamente, lo silencia y no lo lee en voz alta.');
+      } else if (tipo === 'voto_jurado') {
+        if (!state.voting || !state.voting.active) {
+          iniciarEncuestaDesdePanel();
+        }
+        setTimeout(() => {
+          const notas = [10, 9.5, 9.8, 10, 9.6, 10, 9.5];
+          const nota = notas[Math.floor(Math.random() * notas.length)];
+          const votantes = ['___oso___verde', 'Maria_VIP', 'Roberto', 'Andrés', 'Laura', 'Sofía', 'Alejandro', 'Valentina', 'Camila', 'Diego'];
+          const usuario = votantes[Math.floor(Math.random() * votantes.length)];
+          const primerNombre = limpiarNombreCliente(usuario).split(/\s+/)[0] || 'Usuario';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              action: 'testChat',
+              user: usuario,
+              comment: `Le doy ${nota}`
+            }));
+          } else {
+            const currentVotes = (state.voting.votes || 0) + 1;
+            const newAvg = nota;
+            const newPct = Math.round((nota / 10) * 100);
+            actualizarUIVoto({
+              user: usuario,
+              primerNombre: primerNombre,
+              score: nota,
+              average: newAvg,
+              percentage: newPct,
+              totalVotes: currentVotes
+            });
+            hablarTTS(`${primerNombre} le da un ${nota}`);
+          }
+        }, 500);
+      }
+    }
+
+    // AJUSTES TTS Y CONTROLES DEL STREAMER (PACK DE VOCES NEURONALES REALISTAS)
+    function cambiarVozNatural(voiceId) {
+      if (!voiceId) return;
+      state.ttsVoice = voiceId;
+      localStorage.setItem('tts_voice', voiceId);
+      const sel = document.getElementById('tts-voice-selector');
+      const voiceName = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : voiceId;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: {
+            voiceURI: voiceId,
+            voiceName: voiceName,
+            tiktokVoice: false
+          }
+        }));
+      }
+    }
+
+    function probarVozNatural() {
+      const sel = document.getElementById('tts-voice-selector');
+      const voiceId = sel ? sel.value : (state.ttsVoice || 'es-CO-GonzaloNeural');
+      state.ttsVoice = voiceId;
+      hablarTTS('Hola, soy tu nueva voz natural en alta definición para el Live de Slow MD.', true);
+    }
+
+    function cambiarSalidaAudioTTS(val) {
+      state.ttsAudioOutput = val || 'both';
+      localStorage.setItem('tts_audio_output', state.ttsAudioOutput);
+      actualizarUILectorComentarios();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { audioOutput: state.ttsAudioOutput }
+        }));
+      }
+    }
+
+    function cambiarVolumenTTS(val) {
+      const v = Math.max(0, Math.min(100, parseFloat(val) || 0));
+      state.ttsVolume = v / 100;
+      if (state.ttsVolume > 0) state.ttsPrevVolume = state.ttsVolume;
+      localStorage.setItem('tts_volume', state.ttsVolume);
+      if (currentTtsAudio) {
+        currentTtsAudio.volume = Math.max(0, Math.min(1, state.ttsVolume));
+      }
+      const rounded = Math.round(v);
+      const badge = document.getElementById('tts-volume-val');
+      const slider = document.getElementById('tts-volume-slider');
+      const topBadge = document.getElementById('top-tts-volume-val');
+      const topSlider = document.getElementById('top-tts-volume-slider');
+      if (badge) badge.textContent = rounded + '%';
+      if (slider && Number(slider.value) !== rounded) slider.value = rounded;
+      if (topBadge) topBadge.textContent = rounded + '%';
+      if (topSlider && Number(topSlider.value) !== rounded) topSlider.value = rounded;
+      actualizarUILectorComentarios();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { volume: state.ttsVolume }
+        }));
+      }
+    }
+
+    function toggleMuteRapidoTTS() {
+      if (state.ttsVolume > 0) {
+        state.ttsPrevVolume = state.ttsVolume;
+        cambiarVolumenTTS(0);
+      } else {
+        const restore = Math.round((state.ttsPrevVolume || 1.0) * 100);
+        cambiarVolumenTTS(restore > 0 ? restore : 100);
+      }
+    }
+
+    function alternarModoLectorComentarios() {
+      const current = state.commentReaderMode || 'all';
+      const next = current === 'all' ? 'quiereme' : (current === 'quiereme' ? 'off' : 'all');
+      state.commentReaderMode = next;
+      actualizarUILectorComentarios();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { commentReaderMode: next }
+        }));
+      }
+    }
+
+    function actualizarUILectorComentarios() {
+      const btnMode = document.getElementById('btn-reader-mode');
+      if (btnMode) {
+        const mode = state.commentReaderMode || 'all';
+        if (mode === 'all') {
+          btnMode.innerHTML = '🔊 Modo: Leer TODOS';
+          btnMode.style.borderColor = '#22c55e';
+          btnMode.style.color = '#86efac';
+        } else if (mode === 'quiereme') {
+          btnMode.innerHTML = '💖 Filtro: Solo con Regalo / En Lista';
+          btnMode.style.borderColor = '#f59e0b';
+          btnMode.style.color = '#fde047';
+        } else {
+          btnMode.innerHTML = '🔇 Lector de Chat: Pausado';
+          btnMode.style.borderColor = '#ef4444';
+          btnMode.style.color = '#fca5a5';
+        }
+      }
+
+      const btnMute = document.getElementById('btn-top-mute-tts');
+      if (btnMute) {
+        const isMuted = state.ttsVolume <= 0 || state.ttsAudioOutput === 'none';
+        if (isMuted) {
+          btnMute.innerHTML = '🔇 Silenciado';
+          btnMute.style.borderColor = '#ef4444';
+          btnMute.style.color = '#fca5a5';
+        } else {
+          btnMute.innerHTML = `🔊 ${Math.round((state.ttsVolume ?? 1) * 100)}%`;
+          btnMute.style.borderColor = 'rgba(56,189,248,0.4)';
+          btnMute.style.color = '#7dd3fc';
+        }
+      }
+    }
+
+    function cambiarVelocidadTTS(val) {
+      const s = Math.max(0.75, Math.min(1.5, parseFloat(val) || 1.0));
+      state.ttsSpeed = s;
+      localStorage.setItem('tts_speed', state.ttsSpeed);
+      const badge = document.getElementById('tts-speed-val');
+      if (badge) badge.textContent = s.toFixed(2) + 'x';
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'updateTTSConfig',
+          config: { rate: state.ttsSpeed }
+        }));
+      }
+    }
+
+    function guardarLikesGratisDesdePanel() {
+      const inp = document.getElementById('input-free-likes');
+      const val = Math.max(1, parseInt(inp ? inp.value : state.freeLikesReq, 10) || 5000);
+      state.freeLikesReq = val;
+      if (inp) inp.value = val;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'updateFreeLikesReq', freeLikesReq: val }));
+      }
+      actualizarUIControlesStreamer();
+    }
+
+    function toggleBloqueoCola() {
+      const nuevo = !state.queueLocked;
+      state.queueLocked = nuevo;
+      if (!nuevo) state.lockTargetLikes = null;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'toggleQueueLock', locked: nuevo }));
+      }
+      actualizarUIControlesStreamer();
+    }
+
+    function explicarComoPedir() {
+      const freeLikes = state.freeLikesReq || 5000;
+      const banner = `🧢 x1 Gorra o ❤️ ${freeLikes.toLocaleString()} Likes = Entrar • 🎩 Sombrero = +1 Puesto • 🫶 Corazón Manos = #2 • 💸 Money Gun = #1`;
+      const explicacion = `Para entrar a la lista envía una Gorra o llega a ${freeLikes} likes sin prioridad. Con Sombrero con bigote adelantas un puesto, con Corazón en las manos vas al puesto número 2, y con Money Gun entras en el puesto número 1 con reacción inmediata.`;
+      mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: 'Streamer', announcement: banner });
+      hablarTTS(explicacion);
+    }
+
+    function actualizarUIControlesStreamer() {
+      const btnLock = document.getElementById('btn-toggle-queue-lock');
+      if (btnLock) {
+        if (state.queueLocked) {
+          if (state.lockTargetLikes) {
+            btnLock.innerHTML = `🔒 Bloqueada (${(state.currentLikes || 0).toLocaleString()} / ${Number(state.lockTargetLikes).toLocaleString()} ❤️)`;
+          } else {
+            btnLock.innerHTML = '🔒 Lista: Bloqueada (0)';
+          }
+          btnLock.style.borderColor = '#ef4444';
+          btnLock.style.color = '#f87171';
+        } else {
+          btnLock.innerHTML = '🔓 Lista: Abierta (G)';
+          btnLock.style.borderColor = '#22c55e';
+          btnLock.style.color = '#86efac';
+        }
+      }
+      const freeLikes = state.freeLikesReq || 5000;
+      const inpFreeLikes = document.getElementById('input-free-likes');
+      if (inpFreeLikes && document.activeElement !== inpFreeLikes) {
+        inpFreeLikes.value = freeLikes;
+      }
+      const badgeFreeLikes = document.getElementById('badge-free-likes-current');
+      if (badgeFreeLikes) {
+        badgeFreeLikes.textContent = `D-${freeLikes}`;
+      }
+      const ruleVal = document.getElementById('rule-free-likes-val');
+      if (ruleVal) {
+        ruleVal.textContent = freeLikes.toLocaleString();
+      }
+    }
+
+    // #7 Sonido dramático de palpitación (latido de corazón) cuando quedan pocos segundos en la encuesta
+    function reproducirLatidoCorazon() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.65 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const now = ctx.currentTime;
+
+        // Primer golpe del latido (Lub)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(75, now);
+        osc1.frequency.exponentialRampToValueAtTime(38, now + 0.14);
+        gain1.gain.setValueAtTime(0.01, now);
+        gain1.gain.linearRampToValueAtTime(vol, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.17);
+
+        // Segundo golpe del latido (Dub)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(65, now + 0.20);
+        osc2.frequency.exponentialRampToValueAtTime(32, now + 0.36);
+        gain2.gain.setValueAtTime(0.01, now + 0.20);
+        gain2.gain.linearRampToValueAtTime(vol * 0.85, now + 0.22);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.20);
+        osc2.stop(now + 0.40);
+      } catch(e) {}
+    }
+
+    // GESTIÓN DE VOTACIÓN DEL JURADO (2 MINUTOS / 120s)
+    let votingInterval = null;
+
+    function formatTimerMMSS(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}:${rem < 10 ? '0' : ''}${rem}`;
+    }
+
+    function iniciarEncuestaDesdePanel() {
+      let song = null;
+      if (state.queue.length > 0) {
+        const idx = (typeof state.selectedSongIndex === 'number' && state.selectedSongIndex < state.queue.length) ? state.selectedSongIndex : 0;
+        song = state.queue[idx];
+      }
+      if (!song) {
+        song = { title: 'Tema en Vivo', user: 'Streamer' };
+      }
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'startVoting', song: song, duration: 120 }));
+      } else {
+        iniciarUIEncuesta(song, 120);
+      }
+    }
+
+    function terminarVotacionDesdePanel() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'stopVoting' }));
+      } else {
+        cerrarUIEncuesta();
+      }
+    }
+
+    function iniciarUIEncuesta(song, duration, remainingSec) {
+      const modal = document.getElementById('overlay-voting-modal');
+      const titleEl = document.getElementById('voting-song-title');
+      const artistEl = document.getElementById('voting-song-artist');
+      const timerEl = document.getElementById('voting-timer-num');
+      const barEl = document.getElementById('voting-bar-fill');
+      const avgEl = document.getElementById('voting-avg-score');
+      const pctEl = document.getElementById('voting-pct-score');
+      const countEl = document.getElementById('voting-count');
+      const chipsEl = document.getElementById('voting-recent-chips');
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
+
+      if (btnStart) btnStart.style.display = 'none';
+      if (btnStop) btnStop.style.display = 'block';
+
+      const dur = duration || 120;
+      const rem = remainingSec !== undefined ? remainingSec : dur;
+      state.voting = {
+        active: true,
+        song: song,
+        duration: dur,
+        remaining: rem,
+        avg: 0,
+        pct: 0,
+        votes: 0,
+        chips: []
+      };
+
+      if (titleEl) titleEl.textContent = song ? formatearTituloVisible(song).toUpperCase() : 'CANCIÓN EN EVALUACIÓN';
+      if (artistEl) artistEl.textContent = `Artista / Solicitado por: @${(song && song.user) ? song.user : 'Comunidad'}`;
+      if (barEl) barEl.style.width = '0%';
+      if (avgEl) avgEl.textContent = '0.0';
+      if (pctEl) pctEl.textContent = '0%';
+      if (countEl) countEl.textContent = '0';
+      if (chipsEl) chipsEl.innerHTML = '';
+      if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
+
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.add('show');
+      }
+
+      clearInterval(votingInterval);
+      votingInterval = setInterval(() => {
+        state.voting.remaining--;
+        if (timerEl) timerEl.textContent = formatTimerMMSS(state.voting.remaining);
+
+        // #7 Cuando el tiempo se está acabando (últimos 15 segundos), la encuesta tiembla y suena palpitación
+        if (state.voting.remaining <= 15 && state.voting.remaining > 0) {
+          if (modal) modal.classList.add('dramatic-shake');
+          reproducirLatidoCorazon();
+        }
+
+        if (state.voting.remaining <= 0) {
+          if (modal) modal.classList.remove('dramatic-shake');
+          clearInterval(votingInterval);
+        }
+      }, 1000);
+    }
+
+    function actualizarUIVoto(data) {
+      const barEl = document.getElementById('voting-bar-fill');
+      const avgEl = document.getElementById('voting-avg-score');
+      const pctEl = document.getElementById('voting-pct-score');
+      const countEl = document.getElementById('voting-count');
+      const chipsEl = document.getElementById('voting-recent-chips');
+
+      const avg = Number(data.average !== undefined ? data.average : (data.currentAvg !== undefined ? data.currentAvg : (data.avg !== undefined ? data.avg : 0)));
+      const pct = Number(data.percentage !== undefined ? data.percentage : (data.currentPct !== undefined ? data.currentPct : (data.pct !== undefined ? data.pct : 0)));
+      const total = Number(data.totalVotes !== undefined ? data.totalVotes : (data.votes !== undefined ? data.votes : 0));
+
+      if (state.voting) {
+        state.voting.avg = avg;
+        state.voting.pct = pct;
+        state.voting.votes = total;
+      }
+
+      if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+      if (avgEl) avgEl.textContent = avg.toFixed(1);
+      if (pctEl) pctEl.textContent = `${pct}%`;
+      if (countEl) countEl.textContent = total;
+
+      if (chipsEl && data.user) {
+        const chip = document.createElement('div');
+        chip.className = 'vote-chip';
+        chip.innerHTML = `<strong>@${escapeHtml(data.primerNombre || data.user)}:</strong> ${data.score}/10`;
+        chipsEl.prepend(chip);
+        while (chipsEl.children.length > 5) {
+          chipsEl.removeChild(chipsEl.lastChild);
+        }
+      }
+    }
+
+    let certBannerTimer = null;
+    function finalizarUIEncuesta(data) {
+      clearInterval(votingInterval);
+      const modal = document.getElementById('overlay-voting-modal');
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.remove('show');
+      }
+
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
+      if (btnStart) btnStart.style.display = 'block';
+      if (btnStop) btnStop.style.display = 'none';
+
+      const banner = document.getElementById('overlay-certificate-banner');
+      const trophy = document.getElementById('cert-trophy-icon');
+      const title = document.getElementById('cert-title-text');
+      const songName = document.getElementById('cert-song-name');
+      const scoreBadge = document.getElementById('cert-score-badge');
+      const footerDesc = document.getElementById('cert-footer-desc');
+
+      if (!banner) return;
+
+      const cancelledByMinVotes = Boolean(data.cancelledByMinVotes);
+      const passed = Boolean(data.certified !== undefined ? data.certified : data.approved);
+      const pct = Number(data.percentage !== undefined ? data.percentage : (data.currentPct !== undefined ? data.currentPct : (data.pct !== undefined ? data.pct : 0)));
+      const totalVotes = Number(data.totalVotes !== undefined ? data.totalVotes : (data.votes !== undefined ? data.votes : 0));
+      const song = data.song || {};
+
+      if (cancelledByMinVotes) {
+        // #7 Si no llega a 10 votaciones se cancela la encuesta
+        reproducirSonidoBuzzer();
+        banner.className = 'overlay-certificate-banner rejected show';
+        if (trophy) trophy.textContent = '🚫';
+        if (title) title.textContent = 'ENCUESTA CANCELADA';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `${totalVotes} DE 10 VOTOS MÍNIMOS`;
+        if (footerDesc) footerDesc.textContent = 'La encuesta se canceló porque no llegó al mínimo de 10 votaciones.';
+      } else if (passed) {
+        reproducirSonidoFanfarria();
+        reproducirSonidoAplausos();
+        lanzarConfetiCelebracion();
+
+        banner.className = 'overlay-certificate-banner certified show';
+        if (trophy) trophy.textContent = '🏆';
+        if (title) title.textContent = '¡ARTISTA CERTIFICADO!';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `⭐ ${pct}% DE APROBACIÓN ⭐`;
+        if (footerDesc) footerDesc.textContent = '¡Felicidades! Ingresa oficialmente a La Playlist de Artistas Certificados.';
+      } else {
+        reproducirSonidoBuzzer();
+
+        banner.className = 'overlay-certificate-banner rejected show';
+        if (trophy) trophy.textContent = '⚠️';
+        if (title) title.textContent = 'NO CALIFICA';
+        if (songName) songName.textContent = `"${(song.title || 'Tema').toUpperCase()}"`;
+        if (scoreBadge) scoreBadge.textContent = `${pct}% DE APROBACIÓN (Min. 95%)`;
+        if (footerDesc) footerDesc.textContent = '¡Siga trabajando en pulir su talento para la próxima!';
+      }
+
+      clearTimeout(certBannerTimer);
+      certBannerTimer = setTimeout(() => {
+        banner.classList.remove('show');
+      }, 9000);
+    }
+
+    function cerrarUIEncuesta() {
+      clearInterval(votingInterval);
+      const modal = document.getElementById('overlay-voting-modal');
+      if (modal) {
+        modal.classList.remove('dramatic-shake');
+        modal.classList.remove('show');
+      }
+      const btnStart = document.getElementById('btn-start-voting');
+      const btnStop = document.getElementById('btn-stop-voting');
+      if (btnStart) btnStart.style.display = 'block';
+      if (btnStop) btnStop.style.display = 'none';
+    }
+
+    // CONFETI CANVAS PARA CERTIFICADOS
+    function lanzarConfetiCelebracion() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.offsetWidth || 1800;
+      canvas.height = canvas.parentElement.offsetHeight || 1200;
+
+      const colors = ['#f59e0b', '#10b981', '#06b6d4', '#ec4899', '#8b5cf6', '#ffffff'];
+      const particles = [];
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() * 200 - 100),
+          y: canvas.height * 0.4 + (Math.random() * 100 - 50),
+          vx: (Math.random() - 0.5) * 22,
+          vy: (Math.random() - 0.8) * 26,
+          size: Math.random() * 12 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * 360,
+          vrot: (Math.random() - 0.5) * 14,
+          gravity: 0.45,
+          alpha: 1
+        });
+      }
+
+      let startTime = Date.now();
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rot += p.vrot;
+          p.alpha = Math.max(0, 1 - (Date.now() - startTime) / 4500);
+
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        });
+
+        if (alive && Date.now() - startTime < 4500) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // SÍNTESIS DE AUDIO PARA ALERTAS Y NOTIFICACIONES
+    function reproducirSonidoSirena() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        
+        const now = ctx.currentTime;
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.linearRampToValueAtTime(1150, now + 0.35);
+        osc.frequency.linearRampToValueAtTime(650, now + 0.7);
+        osc.frequency.linearRampToValueAtTime(1150, now + 1.05);
+        osc.frequency.linearRampToValueAtTime(650, now + 1.4);
+
+        const v = 0.35 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        gain.gain.setValueAtTime(v, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 1.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.6);
+      } catch(e) {}
+    }
+
+    let sirenTimer = null;
+    function mostrarSirenaOverlay(user, msg) {
+      const alertEl = document.getElementById('overlay-siren-alert');
+      const msgEl = document.getElementById('siren-alert-msg');
+      if (!alertEl) return;
+      if (msgEl) msgEl.textContent = msg || `@${user} está intentando entrar a la lista sin seguirte 🚨`;
+      alertEl.classList.add('show');
+      clearTimeout(sirenTimer);
+      sirenTimer = setTimeout(() => {
+        alertEl.classList.remove('show');
+      }, 6000);
+    }
+
+    function reproducirSonidoFanfarria() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.4 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const notes = [
+          { f: 523.25, d: 0.15 },
+          { f: 659.25, d: 0.15 },
+          { f: 783.99, d: 0.15 },
+          { f: 1046.50, d: 0.6 }
+        ];
+        let time = ctx.currentTime;
+        notes.forEach((n) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, time);
+          gain.gain.setValueAtTime(vol, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + n.d);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(time);
+          osc.stop(time + n.d);
+          time += n.d * 0.9;
+        });
+      } catch(e) {}
+    }
+
+    function reproducirSonidoBuzzer() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const vol = 0.35 * (state.ttsVolume !== undefined ? state.ttsVolume : 1);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        const now = ctx.currentTime;
+        osc.frequency.setValueAtTime(130, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.6);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.65);
+      } catch(e) {}
+    }
+
+    // GESTIÓN DE LA PLAYLIST (ARTISTAS CERTIFICADOS >= 95%)
+    function renderizarPlaylist() {
+      const listEl = document.getElementById('panel-certified-list');
+      const countEl = document.getElementById('panel-count-certified');
+      const playlist = state.certifiedPlaylist || [];
+      if (countEl) countEl.textContent = playlist.length;
+      if (!listEl) return;
+
+      if (playlist.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">Aún no hay canciones certificadas con 95% o más (mínimo 10 votos). Realiza una votación al terminar un tema.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = playlist.map((item, idx) => {
+        return `
+          <div class="playlist-row">
+            <div class="playlist-info-col">
+              <div class="playlist-item-title">#${idx + 1} ⭐ ${escapeHtml(item.title)}</div>
+              <div class="playlist-item-meta">Artista: @${escapeHtml(item.user)} • Calificación: ${item.percentage || 100}% (${item.average || '10'}/10 con ${item.votes || 0} votos)</div>
+            </div>
+            <div class="playlist-actions-col">
+              <button type="button" class="btn-player btn-player-cp" onclick="copiarTexto('${escapeHtml(item.title)} de @${escapeHtml(item.user)}')" title="Copiar tema" style="padding: 6px 10px; font-size: 11px;">📋</button>
+              <button type="button" class="btn-row-action delete" onclick="eliminarDePlaylist('${item.id}')" title="Eliminar de La Playlist">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copiarTexto(texto) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          alert(`✅ Copiado al portapapeles: "${texto}"`);
+        }).catch(() => {
+          prompt('Copia este texto:', texto);
+        });
+      } else {
+        prompt('Copia este texto:', texto);
+      }
+    }
+
+    function eliminarDePlaylist(id) {
+      if (confirm('¿Deseas eliminar este artista certificado de La Playlist?')) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'deleteFromPlaylist', id: id }));
+        } else {
+          state.certifiedPlaylist = state.certifiedPlaylist.filter(p => p.id !== id);
+          renderizarPlaylist();
+        }
+      }
+    }
+
+    function exportarPlaylist() {
+      if (!state.certifiedPlaylist || state.certifiedPlaylist.length === 0) {
+        alert('La Playlist está vacía en este momento.');
+        return;
+      }
+      const texto = state.certifiedPlaylist.map((p, i) => `${i + 1}. ${p.title} - @${p.user} (${p.percentage}%)`).join('\n');
+      copiarTexto(`🏆 LA PLAYLIST (Artistas Certificados Slow MD Live) 🏆\n\n${texto}`);
+    }
+
+    function copiarEnlaceOverlay() {
+      const url = `${window.location.origin}/?view=overlay`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('✅ Enlace copiado al portapapeles:\n\n' + url + '\n\nPégalo como Fuente de Navegador en TikTok Live Studio.');
+        }).catch(() => {
+          prompt('Copia el siguiente enlace:', url);
+        });
+      } else {
+        prompt('Copia el siguiente enlace:', url);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
+    }
+
+    // INICIALIZAR
+    window.addEventListener('DOMContentLoaded', () => {
+      conectarWS();
+
+      // Selector de Voz Natural y Salida de Audio
+      const voiceSel = document.getElementById('tts-voice-selector');
+      if (voiceSel && state.ttsVoice) {
+        voiceSel.value = state.ttsVoice;
+      }
+      const outSel = document.getElementById('tts-audio-output');
+      if (outSel && state.ttsAudioOutput) {
+        outSel.value = state.ttsAudioOutput;
+      }
+
+      // Sliders TTS
+      const sliderVol = document.getElementById('tts-volume-slider');
+      const valVol = document.getElementById('tts-volume-val');
+      if (sliderVol) {
+        const v = Math.round(state.ttsVolume * 100);
+        sliderVol.value = v;
+        if (valVol) valVol.textContent = v + '%';
+      }
+
+      const sliderSpd = document.getElementById('tts-speed-slider');
+      const valSpd = document.getElementById('tts-speed-val');
+      if (sliderSpd) {
+        sliderSpd.value = state.ttsSpeed;
+        if (valSpd) valSpd.textContent = state.ttsSpeed.toFixed(2) + 'x';
+      }
+
+      actualizarUIControlesStreamer();
+      renderizarPlaylist();
+
+      // Botón conectar / desconectar Live
+      const btnLive = document.getElementById('btn-toggle-live');
+      const userInput = document.getElementById('panel-username-input');
+      if (btnLive && userInput) {
+        btnLive.addEventListener('click', () => {
+          const user = userInput.value.trim() || state.username || 'slowmdoficial';
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            if (state.status === 'connected') {
+              ws.send(JSON.stringify({ action: 'disconnect' }));
+            } else {
+              ws.send(JSON.stringify({ action: 'connect', username: user }));
+            }
+          }
+        });
+      }
+
+      // Formulario agregar canción manual (admite tanto título como link directo)
+      const formManual = document.getElementById('form-manual-song');
+      if (formManual) {
+        formManual.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const rawInput = document.getElementById('manual-title').value.trim();
+          const user = (document.getElementById('manual-user').value.trim() || 'Admin').replace(/^@/, '');
+          if (rawInput) {
+            const isLink = contieneLinkCliente(rawInput);
+            const nueva = {
+              id: 'man_' + Date.now(),
+              title: rawInput,
+              songUrl: isLink ? (rawInput.startsWith('http') ? rawInput : 'https://' + rawInput) : '',
+              user,
+              status: 'unlocked'
+            };
+            state.queue.push(nueva);
+            sincronizarServidor();
+            mostrarAlertaOverlay('nueva', nueva);
+            document.getElementById('manual-title').value = '';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

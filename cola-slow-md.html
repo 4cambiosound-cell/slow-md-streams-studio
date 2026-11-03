@@ -1606,7 +1606,12 @@
       <section class="panel-card">
         <div class="card-title-bar">
           <h2>🎵 Cola de Canciones (<span id="panel-count-queue">0</span>)</h2>
-          <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" class="btn-action btn-secondary" id="btn-backup-queue" onclick="restaurarRespaldoManual()" style="padding: 6px 10px; font-size: 11px; border-color: rgba(34,197,94,0.45); color: #86efac;" title="Copia de seguridad automática activa para que nunca se borren los que ya están en la lista">
+              💾 Respaldo Activo
+            </button>
+            <button class="btn-action btn-secondary" onclick="vaciarCola()" style="padding: 6px 12px; font-size: 11px;">Vaciar Cola</button>
+          </div>
         </div>
 
         <!-- LECTOR DE COMENTARIOS Y CONTROL DE VOLUMEN RÁPIDO ARRIBA A LA VISTA -->
@@ -2117,7 +2122,17 @@
             renderizarPlaylist();
           } else if (data.type === 'QUEUE_UPDATE') {
             const prevLen = state.queue.length;
-            state.queue = data.queue || [];
+            const incomingQueue = Array.isArray(data.queue) ? data.queue : [];
+
+            // Si el servidor reinició vacío pero tenemos copia de seguridad reciente en el panel, restaurarla automáticamente sin perder a nadie
+            if (!isOverlay && incomingQueue.length === 0 && verificarRestauracionAutomaticaCola()) {
+              return;
+            }
+
+            state.queue = incomingQueue;
+            if (state.queue.length > 0) {
+              guardarRespaldoColaLocal(state.queue);
+            }
             renderizarCola();
 
             // #5 Solo mostrar el aviso visual en pantalla para acciones (sin leer en voz alta salvo que sea comando de moderador)
@@ -2143,7 +2158,7 @@
           } else if (data.type === 'EPIC_GIFT_ANIMATION') {
             mostrarAnimacionEpicaRegalo(data.giftType, data.user);
           } else if (data.type === 'SHOW_LIST') {
-            mostrarListaCompletaOverlay(data.queue || state.queue, data.requestedBy, data.userPosition);
+            mostrarListaCompletaOverlay(data.queue || state.queue, data.requestedBy, data.userPosition, data);
           } else if (data.type === 'HOW_TO_ADD_HELP') {
             mostrarAlertaOverlay('help', { title: '¿CÓMO AGREGAR CANCIÓN?', user: data.user, announcement: data.bannerText });
             hablarTTS(data.voiceText);
@@ -2408,16 +2423,101 @@
       }
     }
 
+    // SISTEMA DE COPIA DE SEGURIDAD AUTOMÁTICA DE LA COLA (LOCALSTORAGE + SERVIDOR)
+    function obtenerIdsEliminadosLocal() {
+      try {
+        const raw = localStorage.getItem('slowmd_deleted_ids');
+        const arr = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(arr) ? arr : []);
+      } catch (e) {
+        return new Set();
+      }
+    }
+
+    function registrarIdEliminadoLocal(id) {
+      if (!id) return;
+      try {
+        const set = obtenerIdsEliminadosLocal();
+        set.add(id);
+        const list = Array.from(set).slice(-300);
+        localStorage.setItem('slowmd_deleted_ids', JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    function guardarRespaldoColaLocal(cola) {
+      try {
+        if (!Array.isArray(cola)) return;
+        const deletedSet = obtenerIdsEliminadosLocal();
+        const cleanQueue = cola.filter(s => s && s.id && !deletedSet.has(s.id));
+        localStorage.setItem('slowmd_queue_backup', JSON.stringify({
+          queue: cleanQueue,
+          savedAt: Date.now()
+        }));
+        const btn = document.getElementById('btn-backup-queue');
+        if (btn) {
+          btn.innerHTML = `💾 Respaldo (${cleanQueue.length})`;
+        }
+      } catch (e) {}
+    }
+
+    function verificarRestauracionAutomaticaCola() {
+      try {
+        const raw = localStorage.getItem('slowmd_queue_backup');
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.queue) || parsed.queue.length === 0) return false;
+        // Solo auto-restaurar respaldos de las últimas 18 horas
+        if (parsed.savedAt && (Date.now() - parsed.savedAt > 18 * 3600 * 1000)) return false;
+
+        const deletedSet = obtenerIdsEliminadosLocal();
+        const validToRestore = parsed.queue.filter(s => s && s.id && !deletedSet.has(s.id));
+        if (validToRestore.length === 0) return false;
+
+        state.queue = validToRestore;
+        renderizarCola();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'restoreQueueBackup', queue: validToRestore }));
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function restaurarRespaldoManual() {
+      try {
+        const raw = localStorage.getItem('slowmd_queue_backup');
+        const parsed = raw ? JSON.parse(raw) : null;
+        const deletedSet = obtenerIdsEliminadosLocal();
+        const backedUp = (parsed && Array.isArray(parsed.queue))
+          ? parsed.queue.filter(s => s && s.id && !deletedSet.has(s.id))
+          : [];
+        if (backedUp.length === 0) {
+          alert('💾 La copia de seguridad automática está activa.\nActualmente no hay canciones pendientes por restaurar.');
+          return;
+        }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'restoreQueueBackup', queue: backedUp }));
+        }
+        alert(`✅ Copia de seguridad sincronizada (${backedUp.length} canción/es protegida/s en la lista).`);
+      } catch (e) {}
+    }
+
     function moverCancion(idx, dir) {
       const target = idx + dir;
       if (target < 0 || target >= state.queue.length) return;
       const [item] = state.queue.splice(idx, 1);
       state.queue.splice(target, 0, item);
+      guardarRespaldoColaLocal(state.queue);
       sincronizarServidor();
     }
 
     function eliminarCancion(idx) {
       const removed = state.queue.splice(idx, 1)[0];
+      if (removed && removed.id) {
+        registrarIdEliminadoLocal(removed.id);
+      }
+      guardarRespaldoColaLocal(state.queue);
       renderizarCola();
       if (ws && ws.readyState === WebSocket.OPEN && removed && removed.id) {
         ws.send(JSON.stringify({ action: 'deleteSong', songId: removed.id }));
@@ -2428,7 +2528,11 @@
 
     function vaciarCola() {
       if (confirm('¿Vaciar toda la cola de canciones?')) {
+        for (const s of state.queue) {
+          if (s && s.id) registrarIdEliminadoLocal(s.id);
+        }
         state.queue = [];
+        guardarRespaldoColaLocal([]);
         renderizarCola();
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ action: 'clearQueue' }));
@@ -2439,6 +2543,7 @@
     }
 
     function sincronizarServidor() {
+      guardarRespaldoColaLocal(state.queue);
       renderizarCola();
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ action: 'syncQueue', queue: state.queue }));
@@ -2612,13 +2717,13 @@
       }, 5500);
     }
 
-    // REGLA 4: LISTA COMPLETA VERTICAL (SUBE DESDE ABAJO)
+    // REGLA 4: CONSULTA DE "LISTA" EN EL OVERLAY (SI ESTÁ EN LISTA -> SOLO ESA PERSONA + # POSICIÓN; SI NO -> FALTAN X LIKES O ENVÍA REGALOS)
     let fullListTimer = null;
     let lastListTriggerTime = 0;
-    function mostrarListaCompletaOverlay(cola, requestedBy, userPosition) {
+    function mostrarListaCompletaOverlay(cola, requestedBy, userPosition, extraData = {}) {
       const now = Date.now();
-      // Enfriamiento de 4 segundos para prevenir spam
-      if (now - lastListTriggerTime < 4000) return;
+      // Enfriamiento de 2.5 segundos para prevenir spam excesivo
+      if (now - lastListTriggerTime < 2500) return;
       lastListTriggerTime = now;
 
       const sheet = document.getElementById('overlay-full-list-sheet');
@@ -2628,45 +2733,67 @@
       if (!sheet || !container) return;
 
       const items = cola || state.queue || [];
-      if (badgeCount) badgeCount.textContent = `${items.length} TEMAS`;
+      const userClean = requestedBy || 'Usuario';
 
-      if (titleEl) {
-        if (userPosition && requestedBy) {
-          titleEl.innerHTML = `📋 COLA <span class="user-position-header-badge">🎯 @${escapeHtml(requestedBy)}: PUESTO #${userPosition}</span>`;
-        } else {
-          titleEl.innerHTML = `📋 COLA DE CANCIONES`;
+      if (userPosition && userPosition >= 1) {
+        // CASO 1: SÍ ESTÁ EN LA LISTA -> Mostrar ÚNICAMENTE a esa persona + su número de posición en la lista
+        const song = extraData.userSong || items[userPosition - 1] || { user: userClean, title: 'Canción en la lista', status: 'unlocked' };
+        const cleanSongTitle = formatearTituloVisible(song);
+
+        if (titleEl) {
+          titleEl.innerHTML = `📋 TU POSICIÓN EN LA LISTA`;
         }
-      }
+        if (badgeCount) {
+          badgeCount.textContent = `PUESTO #${userPosition}`;
+        }
 
-      if (items.length === 0) {
-        const freeLikes = state.freeLikesReq || 5000;
         container.innerHTML = `
-          <div style="text-align:center; padding: clamp(40px, 4vw, 80px); color: var(--text-muted); font-size: clamp(24px, 2.5vw, 60px); font-weight: 700;">
-            No hay canciones en la cola.<br>Envía Corazón con los dedos 🫰 o da ${freeLikes.toLocaleString()} Likes Gratis ❤️
+          <div class="full-list-item-row my-position-row" style="padding: clamp(28px, 3.2vw, 70px) clamp(26px, 3vw, 65px);">
+            <div class="full-list-item-info">
+              <span class="full-list-pos" style="font-size: clamp(48px, 5.5vw, 130px); color: #fde047; text-shadow: 0 0 30px rgba(253, 224, 71, 0.75);">#${userPosition}</span>
+              <div class="full-list-meta">
+                <div class="full-list-user" style="font-size: clamp(32px, 3.8vw, 90px); font-weight: 900; color: #ffffff;">@${escapeHtml(song.user || userClean)}</div>
+                <div class="full-list-song" style="font-size: clamp(24px, 2.8vw, 66px); color: #7dd3fc;">🎵 ${escapeHtml(cleanSongTitle)}</div>
+              </div>
+            </div>
+            <div class="full-list-tag my-pos" style="font-size: clamp(24px, 2.8vw, 64px); padding: clamp(12px, 1.4vw, 32px) clamp(22px, 2.5vw, 55px);">
+              🎯 PUESTO #${userPosition}
+            </div>
           </div>
         `;
       } else {
-        container.innerHTML = items.map((song, idx) => {
-          const isUnlocked = song.status === 'unlocked';
-          const isMyPosition = Boolean(userPosition && (idx + 1 === userPosition));
-          const rowClass = isMyPosition ? 'my-position-row' : (isUnlocked ? 'unlocked' : 'locked');
-          const tagHtml = isMyPosition 
-            ? `<div class="full-list-tag my-pos">🎯 TU POSICIÓN #${userPosition}</div>`
-            : `<div class="full-list-tag ${isUnlocked ? 'unlocked' : 'locked'}">${isUnlocked ? '🔓 Desbloqueada' : '🔒 En Espera'}</div>`;
+        // CASO 2: NO ESTÁ EN LA LISTA -> Mostrar que aún no está en la lista, cuántos likes le faltan o que envíe regalos
+        const freeLikesReq = Number(extraData.freeLikesReq || state.freeLikesReq || 5000);
+        const likesGiven = Number(extraData.likesGiven || 0);
+        const likesMissing = extraData.likesMissing !== undefined
+          ? Number(extraData.likesMissing)
+          : Math.max(1, freeLikesReq - likesGiven);
 
-          return `
-            <div class="full-list-item-row ${rowClass}">
-              <div class="full-list-item-info">
-                <span class="full-list-pos">#${idx + 1}</span>
-                <div class="full-list-meta">
-                  <div class="full-list-song">${escapeHtml(formatearTituloVisible(song))}</div>
-                  <div class="full-list-user">@${escapeHtml(song.user)}</div>
-                </div>
-              </div>
-              ${tagHtml}
+        if (titleEl) {
+          titleEl.innerHTML = `📋 AÚN NO ESTÁS EN LA LISTA`;
+        }
+        if (badgeCount) {
+          badgeCount.textContent = `SIN TURNO`;
+        }
+
+        const progresoLikesTxt = likesGiven > 0
+          ? `(Llevas ${likesGiven.toLocaleString()} / ${freeLikesReq.toLocaleString()} Likes)`
+          : '';
+
+        container.innerHTML = `
+          <div class="full-list-item-row locked" style="flex-direction: column; align-items: flex-start; gap: clamp(16px, 2vw, 42px); padding: clamp(28px, 3vw, 68px); border-color: rgba(244, 63, 94, 0.6); background: linear-gradient(135deg, rgba(244, 63, 94, 0.14), rgba(15, 23, 42, 0.92));">
+            <div style="font-size: clamp(30px, 3.5vw, 82px); font-weight: 900; color: #ffffff; line-height: 1.2;">
+              ⚠️ <span style="color: #fde047;">@${escapeHtml(userClean)}</span>, aún no estás en la lista
             </div>
-          `;
-        }).join('');
+            <div style="font-size: clamp(26px, 3vw, 72px); font-weight: 900; color: #fda4af; background: rgba(244, 63, 94, 0.18); border: 2px solid rgba(244, 63, 94, 0.45); border-radius: clamp(14px, 1.5vw, 32px); padding: clamp(12px, 1.4vw, 30px) clamp(20px, 2.2vw, 48px); width: 100%;">
+              ❤️ Te faltan <span style="color: #ffffff; text-decoration: underline;">${likesMissing.toLocaleString()} Likes</span> ${escapeHtml(progresoLikesTxt)}
+            </div>
+            <div style="font-size: clamp(22px, 2.5vw, 58px); font-weight: 800; color: #7dd3fc; line-height: 1.35;">
+              🎁 O envía un regalo para entrar:<br>
+              <span style="color: #ffffff;">🧢 x1 Gorra (Entrar) • 🎩 Sombrero (+1) • 🫶 Corazón en las manos (#2) • 💸 Money Gun (#1)</span>
+            </div>
+          </div>
+        `;
       }
 
       sheet.classList.add('show');

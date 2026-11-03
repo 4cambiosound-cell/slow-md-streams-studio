@@ -597,16 +597,45 @@ function updateStatus(newStatus, extras = {}) {
   broadcast({ type: 'STATUS', ...currentStatus });
 }
 
-// Estado maestro de la cola sincronizada en tiempo real
+// Estado maestro de la cola sincronizada en tiempo real + Copia de seguridad automática
 const QUEUE_FILE = path.join(__dirname, 'queue-data.json');
+const QUEUE_BACKUP_FILE = path.join(__dirname, 'queue-backup.json');
 let queueState = { queue: [], history: [] };
 // IDs de canciones ya escuchadas o eliminadas para evitar que clientes antiguos las reinyecten por syncQueue
 const deletedSongIds = new Set();
-try {
-  if (fs.existsSync(QUEUE_FILE)) {
-    queueState = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
+
+function loadQueueStateFromDisk() {
+  let loaded = null;
+  try {
+    if (fs.existsSync(QUEUE_FILE)) {
+      loaded = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[Queue] Error leyendo queue-data.json:', e.message);
+  }
+
+  // Si queue-data.json está vacío o falló, intentar restaurar desde queue-backup.json
+  if ((!loaded || !Array.isArray(loaded.queue) || loaded.queue.length === 0) && fs.existsSync(QUEUE_BACKUP_FILE)) {
+    try {
+      const backupLoaded = JSON.parse(fs.readFileSync(QUEUE_BACKUP_FILE, 'utf8'));
+      if (backupLoaded && Array.isArray(backupLoaded.queue) && backupLoaded.queue.length > 0) {
+        loaded = backupLoaded;
+        console.log(`[Queue] Restauradas ${loaded.queue.length} canciones desde queue-backup.json`);
+      }
+    } catch (e) {
+      console.error('[Queue] Error leyendo queue-backup.json:', e.message);
+    }
+  }
+
+  if (loaded) {
+    queueState = loaded;
     if (!Array.isArray(queueState.queue)) queueState.queue = [];
     if (!Array.isArray(queueState.history)) queueState.history = [];
+    if (Array.isArray(queueState.deletedIds)) {
+      for (const id of queueState.deletedIds) {
+        if (id) deletedSongIds.add(id);
+      }
+    }
     // Bloquear todas las canciones del historial para que nunca reingresen a la cola
     for (const h of queueState.history) {
       if (h && h.id) deletedSongIds.add(h.id);
@@ -614,13 +643,23 @@ try {
     // Conservar las canciones activas no eliminadas
     queueState.queue = queueState.queue.filter(s => s && s.id && !deletedSongIds.has(s.id));
   }
-} catch (e) {
-  console.error('[Queue] Error leyendo queue-data.json:', e.message);
 }
+loadQueueStateFromDisk();
 
 function saveQueueData() {
   try {
-    fs.writeFileSync(QUEUE_FILE, JSON.stringify(queueState, null, 2), 'utf8');
+    const payloadToSave = {
+      queue: queueState.queue,
+      history: queueState.history,
+      deletedIds: Array.from(deletedSongIds).slice(-200),
+      updatedAt: new Date().toISOString()
+    };
+    const jsonStr = JSON.stringify(payloadToSave, null, 2);
+    fs.writeFileSync(QUEUE_FILE, jsonStr, 'utf8');
+    // Guardar copia de seguridad espejo siempre que haya canciones activas en la lista
+    if (Array.isArray(queueState.queue) && queueState.queue.length > 0) {
+      fs.writeFileSync(QUEUE_BACKUP_FILE, jsonStr, 'utf8');
+    }
   } catch (e) {
     console.error('[Queue] Error guardando queue-data.json:', e.message);
   }
@@ -796,6 +835,8 @@ function crearDiscoDesdeUsuario(userKey, userIdentifier, metodoEntrada, extraInf
 
   if (linkMeta && !songTitleUsed) {
     resolverTituloDeLink(nuevoDisco, linkMeta.url, linkMeta.label, false);
+  } else if (songTitleUsed && (!initialUrl || initialUrl.includes('youtube.com/results?search_query='))) {
+    resolverLinkDirectoYouTube(nuevoDisco, songTitleUsed, false);
   }
 
   return { nuevoDisco, songTitleUsed };
@@ -885,11 +926,28 @@ function procesarPasosPendientesAlDesbloquear() {
   }
 }
 
-// #4 Detector de links de YouTube, Spotify, BandLab, SoundCloud, Apple Music o enlaces generales
+// #4 Detector de links de YouTube, Spotify, BandLab, SoundCloud, Apple Music o links camuflados (cuando TikTok borra links normales)
+function normalizarTextoCamufladoDeLink(text) {
+  if (!text) return '';
+  let s = String(text).trim();
+  // Reemplazar variantes que usan los usuarios para saltar el filtro de links de TikTok:
+  // " punto ", "(.)", "[.]", " dot ", espacios alrededor de "/" o "." en dominios conocidos
+  s = s
+    .replace(/\s*(?:\(\.\)|\[\.\]|\{.\}|\bpunto\b|\bdot\b)\s*/gi, '.')
+    .replace(/\b(https?)\s*:\s*\/\s*\/\s*/gi, '$1://')
+    .replace(/\b(youtu)\s*[.,\s]\s*(be)\s*(?:\/\s*|\s+)([A-Za-z0-9_-]{11})\b/gi, 'https://youtu.be/$3')
+    .replace(/\b(youtube)\s*[.,\s]\s*(com)\s*\/\s*(?:watch\s*\?\s*v\s*=\s*|shorts\s*\/\s*)([A-Za-z0-9_-]{11})\b/gi, 'https://www.youtube.com/watch?v=$3')
+    .replace(/\b(?:watch\s*\?\s*v\s*=\s*|youtu\.be\s*\/\s*)([A-Za-z0-9_-]{11})\b/gi, 'https://www.youtube.com/watch?v=$1')
+    .replace(/\b(open\s*[.,]\s*spotify\s*[.,]\s*com|spotify\s*[.,]\s*com|spotify\s*[.,]\s*link)\s*\/\s*(\S+)/gi, (_, dom, rest) => `https://${dom.replace(/\s*[.,]\s*/g, '.')}/${rest}`)
+    .replace(/\b(bandlab\s*[.,]\s*com|soundcloud\s*[.,]\s*com|on\s*[.,]\s*soundcloud\s*[.,]\s*com)\s*\/\s*(\S+)/gi, (_, dom, rest) => `https://${dom.replace(/\s*[.,]\s*/g, '.')}/${rest}`);
+  return s;
+}
+
 function detectarLinkCancion(text) {
   if (!text) return null;
-  const match = String(text).match(/(?:https?:\/\/)?(?:www\.|m\.|music\.|open\.|on\.)?(youtube\.com\/\S+|youtu\.be\/\S+|spotify\.com\/\S+|spotify\.link\/\S+|bandlab\.com\/\S+|soundcloud\.com\/\S+|music\.apple\.com\/\S+)/i) ||
-                String(text).match(/https?:\/\/\S+/i);
+  const normalized = normalizarTextoCamufladoDeLink(text);
+  const match = normalized.match(/(?:https?:\/\/)?(?:www\.|m\.|music\.|open\.|on\.)?(youtube\.com\/\S+|youtu\.be\/\S+|spotify\.com\/\S+|spotify\.link\/\S+|bandlab\.com\/\S+|soundcloud\.com\/\S+|music\.apple\.com\/\S+)/i) ||
+                normalized.match(/https?:\/\/\S+/i);
   if (!match) return null;
 
   let rawUrl = match[0].replace(/[.,;!?)"'\]]+$/, '');
@@ -922,6 +980,87 @@ function detectarLinkCancion(text) {
     platform,
     label,
     isLink: true
+  };
+}
+
+// Alternativa 3: Cuando TikTok elimina el link del comentario y el usuario escribe el nombre de su canción,
+// menciona la plataforma (YouTube/Spotify/BandLab) o ya está en la lista esperando que se asigne su canción
+function detectarCancionSinLink(text, isWaitingInQueue = false) {
+  if (!text) return null;
+  const str = String(text).trim();
+  if (contieneLink(str)) return null;
+
+  // Ignorar comandos reservados, votos o saludos cortos
+  if (/^(?:\.{2,}|0|g|calificar|encuesta|lista|!lista|mi\s+posicion|en\s+que\s+puesto\s+voy)$/i.test(str)) return null;
+  if (/^(?:0|d)\s*-\s*\d+$/i.test(str)) return null;
+  if (/^borra\s+a\s+/i.test(str)) return null;
+  if (/^\d+(?:[.,]\d+)?(?:\s*\/\s*10)?$/.test(str)) return null;
+
+  // 1. Formato con signo "+" (ej: "Monaco + Bad Bunny" sin necesidad de poner "Escucha" o paréntesis)
+  if (str.includes('+') && str.length >= 4 && str.length <= 100 && !/[?¿]/.test(str)) {
+    const parts = str.split('+').map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2 && parts.every(p => /\p{L}{2,}/u.test(p))) {
+      const cleanTitle = parts.join(' - ').replace(/\s+/g, ' ').trim();
+      return {
+        title: cleanTitle,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanTitle)}`,
+        platform: 'youtube',
+        label: 'YouTube',
+        isFallbackSong: true
+      };
+    }
+  }
+
+  // 2. Comentarios indicando cómo buscarla porque TikTok borró el link:
+  // Ej: "En YouTube: Ely cruz Se te ve", "Búscame en YouTube como X", "Mi canción es X", "Pon X en Spotify"
+  const platformPrefixMatch = str.match(/^(?:(?:b[uú]scame|b[uú]scala|est[aá]|sale|pon|ponme|reacciona\s+a|mi\s+(?:canci[oó]n|tema|m[uú]sica)\s+(?:es|se\s+llama))\s+(?:en\s+(?:youtube|spotify|bandlab|soundcloud)\s+(?:como|por)?\s*|(?:como|por)\s+)?|(?:en\s+)?(?:youtube|spotify|bandlab|soundcloud)\s*[:\-]\s*)(.{3,95})$/i);
+  const platformSuffixMatch = !platformPrefixMatch
+    ? str.match(/^(.{3,85}?)\s+(?:en\s+|por\s+|-\s*)(youtube|spotify|bandlab|soundcloud)\s*[.!🔥🙏❤️🙌🏽]*$/i)
+    : null;
+
+  let extracted = '';
+  let detectedPlatform = 'youtube';
+  let detectedLabel = 'YouTube';
+
+  if (platformPrefixMatch) {
+    extracted = platformPrefixMatch[1].trim();
+    if (/spotify/i.test(str)) { detectedPlatform = 'spotify'; detectedLabel = 'Spotify'; }
+    else if (/bandlab/i.test(str)) { detectedPlatform = 'bandlab'; detectedLabel = 'BandLab'; }
+    else if (/soundcloud/i.test(str)) { detectedPlatform = 'soundcloud'; detectedLabel = 'SoundCloud'; }
+  } else if (platformSuffixMatch) {
+    extracted = platformSuffixMatch[1].trim();
+    const platWord = platformSuffixMatch[2].toLowerCase();
+    if (platWord === 'spotify') { detectedPlatform = 'spotify'; detectedLabel = 'Spotify'; }
+    else if (platWord === 'bandlab') { detectedPlatform = 'bandlab'; detectedLabel = 'BandLab'; }
+    else if (platWord === 'soundcloud') { detectedPlatform = 'soundcloud'; detectedLabel = 'SoundCloud'; }
+  } else if (isWaitingInQueue) {
+    // 3. Si el usuario YA ESTÁ EN LA LISTA y su disco sigue diciendo "Esperando Escucha...",
+    // aceptar directamente el nombre de su canción ("Canción - Artista" o "Artista Canción") aunque no ponga paréntesis ni "Escucha"
+    const isConversational = /^(?:hola|klk|buenas|saludos|gracias|amen|am[eé]n|ya|listo|ok|vale|dale|si|s[ií]|no|bro|manito|hermano| bendiciones|activo|fuego|duro|dur[ií]simo|jajaja|jeje|xd|porfa|por\s+favor|ya\s+te\s+segu[ií]|ya\s+di\s+like|no\s+me\s+deja|tiktok\s+borra|me\s+borra\s+el\s+link|no\s+puedo\s+poner\s+link)\b/i.test(str);
+    if (!isConversational && !/[?¿]/.test(str) && str.length >= 4 && str.length <= 85 && /\p{L}{2,}/u.test(str)) {
+      const words = str.split(/\s+/).filter(Boolean);
+      if (words.length >= 2 && words.length <= 12) {
+        extracted = str;
+      }
+    }
+  }
+
+  if (!extracted) return null;
+
+  const cleanTitle = extracted
+    .replace(/^[(\[«"':\-+]+|[)\]»"']$/g, '')
+    .replace(/\s*\+\s*/g, ' - ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanTitle || cleanTitle.length < 3 || !/\p{L}{2,}/u.test(cleanTitle)) return null;
+
+  return {
+    title: cleanTitle,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanTitle)}`,
+    platform: detectedPlatform,
+    label: detectedLabel,
+    isFallbackSong: true
   };
 }
 
@@ -1255,6 +1394,33 @@ async function resolverTituloDeLink(songObj, url, label, announceUpdate = false)
   }
 }
 
+// Resolver automáticamente el link directo de YouTube (https://www.youtube.com/watch?v=...)
+// cuando TikTok elimina el link de los comentarios y el usuario envía el nombre de su canción
+async function resolverLinkDirectoYouTube(songObj, searchQuery, announceUpdate = false) {
+  if (!songObj || !searchQuery) return;
+  try {
+    const results = await radioEngine.searchYouTube(searchQuery);
+    if (Array.isArray(results) && results.length > 0 && results[0].videoId) {
+      const best = results[0];
+      songObj.songUrl = `https://www.youtube.com/watch?v=${best.videoId}`;
+      songObj.songPlatform = 'youtube';
+      songObj.platform = 'youtube';
+      saveQueueData();
+      broadcast({
+        type: 'QUEUE_UPDATE',
+        queue: queueState.queue,
+        history: queueState.history,
+        eventType: announceUpdate ? 'update_song' : undefined,
+        songTitle: songObj.title,
+        songUser: songObj.user,
+        skipVoice: true,
+        announcement: announceUpdate ? `🎵 ¡@${songObj.user} agregó "${songObj.title}"!` : undefined
+      });
+      addLog(`🔗 Link directo de YouTube resuelto automáticamente para @${songObj.user}: ${songObj.songUrl} ("${best.title}")`, 'queue');
+    }
+  } catch (e) {}
+}
+
 function normalizarUserKey(u) {
   if (!u) return '';
   const clean = String(u).toLowerCase().replace(/^@/, '').trim();
@@ -1360,7 +1526,7 @@ function esComentarioSpam(userKey, comment) {
   return repetidos >= 2;
 }
 
-function processServerChat(comment, userChatName, userHandle = '', userId = '', isFollower = false, isModerator = false) {
+function processServerChat(comment, userChatName, userHandle = '', userId = '', isFollower = false, isModerator = false, extraChatMeta = {}) {
   const text = (comment || '').trim();
 
   // STREAMER & MODERATOR AUTHORIZATION CHECK
@@ -1532,11 +1698,17 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     return true;
   }
 
-  // Regla 4: Alguien comenta "Lista" en el chat -> Mostrar lista destacando su posición
-  if (/^lista\b/i.test(text)) {
+  // Regla 4: Alguien comenta "Lista" en el chat -> Si está en la lista mostrar SOLO esa persona + su posición #;
+  // si NO está en la lista mostrar cuántos likes le faltan o que envíe regalos
+  if (/^[!¡/]?(?:lista|fila|cola|mi\s+posici[oó]n|en\s+qu[eé]\s+puesto\s+voy)\b/i.test(text)) {
     const chatUser = (userChatName || 'Usuario').trim();
     const chatKey = normalizarUserKey(chatUser);
     const chatHandleKey = userHandle ? normalizarUserKey(userHandle) : '';
+
+    // Si el usuario ya cumplió los likes o regalo pero aún no se había verificado su entrada, verificar ahora
+    if (!botConfig.queueLocked) {
+      verificarCompletitudPasos(chatKey, { handle: userHandle, avatarUrl: extraChatMeta.avatarUrl || '' });
+    }
 
     const userIdx = queueState.queue.findIndex(s => {
       const k = normalizarUserKey(s.user);
@@ -1546,23 +1718,31 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
     });
 
     const userPosition = userIdx !== -1 ? userIdx + 1 : null;
+    const userSong = userIdx !== -1 ? queueState.queue[userIdx] : null;
+    const freeLikesNeeded = getFreeLikesReq();
+    const stepData = userSteps.get(chatKey) || (chatHandleKey ? userSteps.get(chatHandleKey) : null);
+    const likesGiven = Math.max(
+      stepData?.likesGiven || 0,
+      serverUserLikes.get(chatKey) || 0,
+      chatHandleKey ? (serverUserLikes.get(chatHandleKey) || 0) : 0
+    );
+    const likesMissing = Math.max(1, freeLikesNeeded - likesGiven);
 
     broadcast({
       type: 'SHOW_LIST',
       queue: queueState.queue,
       requestedBy: chatUser,
-      userPosition: userPosition
+      requestedHandle: userHandle || stepData?.handle || '',
+      requestedAvatar: (userSong && userSong.avatarUrl) || extraChatMeta.avatarUrl || stepData?.avatarUrl || '',
+      userPosition: userPosition,
+      userSong: userSong,
+      likesGiven: likesGiven,
+      likesMissing: likesMissing,
+      freeLikesReq: freeLikesNeeded
     });
-    addLog(`📋 ${chatUser} comentó "Lista" -> Mostrando lista (Posición: ${userPosition ? '#' + userPosition : 'No en lista'})`, 'chat');
+    addLog(`📋 ${chatUser} comentó "Lista" -> ${userPosition ? `Mostrando SOLO a @${chatUser} en Puesto #${userPosition}` : `No está en lista (Faltan ${likesMissing.toLocaleString()} likes o regalo)`}`, 'chat');
     return true;
   }
-
-  // #4 DETECCIÓN DE LINK DE CANCIÓN, (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS O COMANDO ESCUCHA + CANCIÓN + ARTISTA - SIN REQUISITO DE SEGUIR
-  const linkInfo = detectarLinkCancion(text);
-  const parenInfo = !linkInfo ? detectarCancionEnParentesis(text) : null;
-  const escuchaInfo = (!linkInfo && !parenInfo) ? detectarComandoEscucha(text) : null;
-  const textSongInfo = parenInfo || escuchaInfo;
-  if (!linkInfo && !textSongInfo) return false;
 
   const chatName = (userChatName || 'Usuario').trim();
   if (userHandle || userId) {
@@ -1572,9 +1752,9 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
   const userKey = normalizarUserKey(chatName);
   const handleKey = userHandle ? normalizarUserKey(userHandle) : '';
 
-  // Si la lista no está bloqueada, verificar si el usuario ya completó Corazón con los dedos o Likes Gratis antes de buscar su disco
+  // Si la lista no está bloqueada, verificar si el usuario ya completó Gorra o Likes Gratis antes de buscar su disco
   if (!botConfig.queueLocked) {
-    verificarCompletitudPasos(userKey);
+    verificarCompletitudPasos(userKey, { handle: userHandle, avatarUrl: extraChatMeta.avatarUrl || '' });
   }
 
   // BUSCAR SI EL USUARIO YA TIENE SU DISCO EN LA LISTA (sin exigir que sea seguidor)
@@ -1585,9 +1765,33 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
            (kh && (kh === userKey || (handleKey && kh === handleKey)));
   });
 
+  const isWaitingForSongInQueue = idx !== -1 && (
+    !queueState.queue[idx].songUrl ||
+    String(queueState.queue[idx].title || '').startsWith('Esperando ')
+  );
+
+  // Si el usuario tiene un link de música en su biografía de TikTok y comenta que TikTok le borra el link o pide usar el link de su perfil
+  let bioLinkInfo = null;
+  if (extraChatMeta.bioDescription) {
+    bioLinkInfo = detectarLinkCancion(extraChatMeta.bioDescription);
+  }
+
+  // #4 DETECCIÓN DE LINK DE CANCIÓN (INCLUYENDO LINKS CAMUFLADOS), (CANCIÓN + ARTISTA), ESCUCHA + CANCIÓN O NOMBRE DIRECTO CUANDO TIKTOK ELIMINA EL LINK
+  let linkInfo = detectarLinkCancion(text);
+  if (!linkInfo && bioLinkInfo && /(?:link|enlace|perfil|bio|biograf[ií]a|no\s+me\s+deja|borra)/i.test(text)) {
+    linkInfo = bioLinkInfo;
+  }
+  const parenInfo = !linkInfo ? detectarCancionEnParentesis(text) : null;
+  const escuchaInfo = (!linkInfo && !parenInfo) ? detectarComandoEscucha(text) : null;
+  const fallbackSongInfo = (!linkInfo && !parenInfo && !escuchaInfo)
+    ? detectarCancionSinLink(text, isWaitingForSongInQueue)
+    : null;
+  const textSongInfo = parenInfo || escuchaInfo || fallbackSongInfo;
+  if (!linkInfo && !textSongInfo) return false;
+
   if (idx !== -1) {
     const s = queueState.queue[idx];
-    const stepData = getUserStepData(userKey, chatName, userHandle);
+    const stepData = getUserStepData(userKey, chatName, userHandle, extraChatMeta.avatarUrl);
     stepData.pendingSongTitle = null;
     stepData.pendingSongUrl = null;
     if (linkInfo) {
@@ -1602,13 +1806,11 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
       addLog(`🔗 ${chatName} asignó link de ${linkInfo.label} (${linkInfo.url}) en posición #${idx + 1}`, 'chat');
       resolverTituloDeLink(s, linkInfo.url, linkInfo.label, true);
     } else if (textSongInfo) {
-      // ASIGNAR (CANCIÓN + ARTISTA) ENTRE PARÉNTESIS O COMANDO ESCUCHA + CANCIÓN + ARTISTA
+      // ASIGNAR CANCIÓN Y BUSCAR AUTOMÁTICAMENTE SU LINK DIRECTO DE YOUTUBE AUNQUE TIKTOK HAYA ELIMINADO EL LINK
       s.title = textSongInfo.title;
-      if (!s.songUrl) {
-        s.songUrl = textSongInfo.url;
-        s.songPlatform = 'youtube';
-        s.platform = 'youtube';
-      }
+      s.songUrl = textSongInfo.url;
+      s.songPlatform = textSongInfo.platform || 'youtube';
+      s.platform = textSongInfo.platform || 'youtube';
       s.status = 'unlocked';
       saveQueueData();
 
@@ -1622,15 +1824,23 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         skipVoice: true,
         announcement: `🎵 ¡@${s.user} agregó "${s.title}"!`
       });
-      addLog(`🎵 ${chatName} asignó su canción (${escuchaInfo ? 'Escucha' : 'Paréntesis'}): "${s.title}" en posición #${idx + 1}`, 'chat');
+      const metodoTxt = escuchaInfo ? 'Escucha' : (parenInfo ? 'Paréntesis' : 'Auto-Link sin censura');
+      addLog(`🎵 ${chatName} asignó su canción (${metodoTxt}): "${s.title}" en posición #${idx + 1}`, 'chat');
+      resolverLinkDirectoYouTube(s, textSongInfo.title, false);
     }
     return true;
   } else {
-    // Si aún no tiene su disco en la lista, guardar el título/link pendiente para cuando envíe el Corazón con los dedos o llegue a los Likes Gratis
-    const stepData = getUserStepData(userKey, chatName, userHandle);
+    // Si aún no tiene su disco en la lista, guardar el título/link pendiente para cuando envíe Gorra, regalo VIP o llegue a los Likes Gratis
+    const stepData = getUserStepData(userKey, chatName, userHandle, extraChatMeta.avatarUrl);
     if (textSongInfo) {
       stepData.pendingSongTitle = textSongInfo.title;
       stepData.pendingSongUrl = textSongInfo.url;
+      // Resolver el link directo de YouTube en segundo plano para tenerlo listo apenas entre a la lista
+      radioEngine.searchYouTube(textSongInfo.title).then(results => {
+        if (Array.isArray(results) && results.length > 0 && results[0].videoId) {
+          stepData.pendingSongUrl = `https://www.youtube.com/watch?v=${results[0].videoId}`;
+        }
+      }).catch(() => {});
     } else if (linkInfo) {
       stepData.pendingSongUrl = linkInfo.url;
       obtenerMetadatosDeLink(linkInfo.url, linkInfo.label).then(cleanTitle => {
@@ -1669,7 +1879,8 @@ function processServerChat(comment, userChatName, userHandle = '', userId = '', 
         skipVoice: true,
         announcement: `🎵 ¡Se agregó "${textSongInfo.title}" a la lista!`
       });
-      addLog(`🎵 Admin @${chatName} agregó "${textSongInfo.title}" (${escuchaInfo ? 'Escucha' : 'Paréntesis'})`, 'queue');
+      addLog(`🎵 Admin @${chatName} agregó "${textSongInfo.title}"`, 'queue');
+      resolverLinkDirectoYouTube(nuevoManual, textSongInfo.title, false);
       return true;
     }
 
@@ -2292,10 +2503,15 @@ async function connectToTikTok(rawUsername) {
       if (data.createTime && (data.createTime * 1000 < connectedAt - 2000)) return;
 
       const info = extractUserInfo(data);
-      const comment = (data.content || data.comment || '').trim();
+      // Extraer también fragmentos de displayText.pieces o subComment por si TikTok ocultó un link en data.comment
+      const piecesText = Array.isArray(data.common?.displayText?.pieces)
+        ? data.common.displayText.pieces.map(p => p?.stringValue || p?.value || '').filter(Boolean).join(' ')
+        : '';
+      const comment = (data.content || data.comment || data.subComment || piecesText || '').trim();
       if (!comment) return;
 
       const userKey = normalizarUserKey(info.chatName);
+      const bioDescription = data.user?.bioDescription || data.operator?.bioDescription || '';
 
       // SI LA ENCUESTA / VOTACIÓN DEL JURADO ESTÁ ACTIVA:
       if (votingState.active) {
@@ -2346,7 +2562,10 @@ async function connectToTikTok(rawUsername) {
         data.userBadgeList?.some(b => b.badgeSceneType === 1 || b.type === 'moderator')
       );
 
-      const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId, info.isFollower, isModerator);
+      const wasAction = processServerChat(comment, info.chatName, info.handle, info.userId, info.isFollower, isModerator, {
+        avatarUrl: info.avatarUrl,
+        bioDescription: bioDescription
+      });
       if (!wasAction) {
         // Lector de comentarios en voz alta (por defecto lee TODOS los comentarios salvo links/spam, con opción de filtrar desde el panel)
         const readerMode = botConfig.tts?.commentReaderMode || 'all';
@@ -2929,6 +3148,34 @@ wss.on('connection', (ws, req) => {
       } else if (payload.action === 'clearQueue') {
         reiniciarParaBloqueo(true);
         addLog(`🧹 Cola de canciones vaciada y contadores de TapTap reiniciados.`, 'queue');
+      } else if (payload.action === 'restoreQueueBackup') {
+        if (Array.isArray(payload.queue) && payload.queue.length > 0) {
+          const existingIds = new Set(queueState.queue.map(s => s && s.id).filter(Boolean));
+          const existingUsers = new Set(queueState.queue.map(s => normalizarUserKey(s && s.user)).filter(Boolean));
+          let restoredCount = 0;
+          for (const item of payload.queue) {
+            if (!item || !item.id) continue;
+            if (deletedSongIds.has(item.id)) continue;
+            if (String(item.id).startsWith('song_1791') || String(item.id).startsWith('disk_17926')) continue;
+            const uKey = normalizarUserKey(item.user);
+            if (!existingIds.has(item.id) && (!uKey || !existingUsers.has(uKey))) {
+              queueState.queue.push(item);
+              existingIds.add(item.id);
+              if (uKey) existingUsers.add(uKey);
+              restoredCount++;
+            }
+          }
+          if (restoredCount > 0) {
+            saveQueueData();
+            broadcast({
+              type: 'QUEUE_UPDATE',
+              queue: queueState.queue,
+              history: queueState.history,
+              skipVoice: true
+            });
+            addLog(`💾 Copia de seguridad restauró automáticamente ${restoredCount} canción(es) en la lista.`, 'queue');
+          }
+        }
       } else if (payload.action === 'syncQueue') {
         if (Array.isArray(payload.queue)) {
           // Detectar canciones que estaban en el servidor pero fueron quitadas en la nueva cola y limpiar su progreso
